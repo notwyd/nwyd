@@ -171,3 +171,181 @@ fn index_path(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::ErrorKind;
+
+    struct TestDirectory(PathBuf);
+
+    impl TestDirectory {
+        fn new() -> Self {
+            static NEXT: AtomicUsize = AtomicUsize::new(0);
+            loop {
+                let path = std::env::temp_dir().join(format!(
+                    "nwyd-assets-test-{}-{}",
+                    std::process::id(),
+                    NEXT.fetch_add(1, Ordering::Relaxed)
+                ));
+                match std::fs::create_dir(&path) {
+                    Ok(()) => return Self(path),
+                    Err(error) if error.kind() == ErrorKind::AlreadyExists => {}
+                    Err(error) => panic!("creating test directory: {error}"),
+                }
+            }
+        }
+
+        fn write(&self, name: &str, bytes: &[u8]) {
+            let path = self.0.join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, bytes).unwrap();
+        }
+    }
+
+    impl Drop for TestDirectory {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn lookup_keys_normalize_case_separators_and_dot_prefixes() {
+        for path in [
+            b"UI/Panel.BMP".as_slice(),
+            b"\\UI\\\\Panel.BMP\\",
+            b"././ui//panel.bmp/",
+            b".\\.\\UI\\Panel.bmp",
+        ] {
+            assert_eq!(fold(path), "ui/panel.bmp");
+        }
+        assert_eq!(fold(b""), "");
+        assert_eq!(fold(b"/\\//"), "");
+        assert_eq!(fold(b"././"), ".");
+    }
+
+    #[test]
+    fn lookup_keys_preserve_non_ascii_bytes_and_parent_components() {
+        assert_eq!(fold(b"UI/\xc9.BMP"), "ui/É.bmp");
+        assert_eq!(fold(b"UI/../Panel.BMP"), "ui/../panel.bmp");
+    }
+
+    #[test]
+    fn indexes_nested_files_and_preserves_actual_spelling() {
+        let root = TestDirectory::new();
+        root.write("UI/Panel.BMP", b"synthetic image");
+        root.write("Lang/EN/Labels.txt", b"synthetic text");
+        let game = GameDir::open(&root.0).unwrap();
+        assert_eq!(game.len(), 2);
+        assert!(!game.is_empty());
+        assert!(!game.contains(b"UI"));
+        assert!(game.contains(b".\\ui\\panel.bmp"));
+        assert_eq!(
+            game.resolve(b"UI/PANEL.BMP"),
+            Some(root.0.join("UI/Panel.BMP"))
+        );
+        let mut files: Vec<_> = game.iter().collect();
+        files.sort_unstable();
+        assert_eq!(files, ["Lang/EN/Labels.txt", "UI/Panel.BMP"]);
+    }
+
+    #[test]
+    fn empty_directory_has_no_indexed_assets() {
+        let root = TestDirectory::new();
+        let game = GameDir::open(&root.0).unwrap();
+        assert!(game.is_empty());
+        assert_eq!(game.len(), 0);
+        assert!(game.resolve(b"absent.bin").is_none());
+    }
+
+    #[test]
+    fn open_rejects_missing_roots_and_regular_files() {
+        let root = TestDirectory::new();
+        root.write("file.bin", b"synthetic");
+        for path in [root.0.join("missing"), root.0.join("file.bin")] {
+            assert_eq!(GameDir::open(path).unwrap_err().kind(), ErrorKind::NotFound);
+        }
+    }
+
+    #[test]
+    fn reads_binary_assets_and_counts_failed_attempts_across_clones() {
+        let root = TestDirectory::new();
+        root.write("Data.bin", b"\0NWYD\xff");
+        let game = GameDir::open(&root.0).unwrap();
+        let clone = game.clone();
+        assert_eq!(game.read(b"data.BIN").unwrap(), b"\0NWYD\xff");
+        assert_eq!(
+            clone.read(b"missing.bin").unwrap_err().kind(),
+            ErrorKind::NotFound
+        );
+        assert_eq!(game.reads(), 2);
+        assert_eq!(clone.reads(), 2);
+    }
+
+    #[test]
+    fn indexed_file_removed_before_read_returns_an_io_error() {
+        let root = TestDirectory::new();
+        root.write("Data.bin", b"synthetic");
+        let game = GameDir::open(&root.0).unwrap();
+        std::fs::remove_file(root.0.join("Data.bin")).unwrap();
+        assert_eq!(
+            game.read(b"data.bin").unwrap_err().kind(),
+            ErrorKind::NotFound
+        );
+    }
+
+    #[test]
+    fn selected_language_takes_precedence_over_english() {
+        let root = TestDirectory::new();
+        root.write("Lang/EN/Labels.txt", b"english");
+        root.write("Lang/PT/Labels.txt", b"portuguese");
+        let mut game = GameDir::open(&root.0).unwrap();
+        let english = game.clone();
+        game.set_language(Language::Portuguese);
+        assert_eq!(game.read_lang("labels.TXT").unwrap(), b"portuguese");
+        assert_eq!(english.read_lang("labels.txt").unwrap(), b"english");
+    }
+
+    #[test]
+    fn missing_translation_falls_back_to_english() {
+        let root = TestDirectory::new();
+        root.write("Lang/EN/Labels.txt", b"english");
+        let mut game = GameDir::open(&root.0).unwrap();
+        game.set_language(Language::Portuguese);
+        assert_eq!(game.read_lang("Labels.txt").unwrap(), b"english");
+        assert_eq!(
+            game.resolve_lang_in(Language::Turkish, "labels.txt"),
+            Some(root.0.join("Lang/EN/Labels.txt"))
+        );
+    }
+
+    #[test]
+    fn language_lookup_does_not_fall_back_to_an_unrelated_translation() {
+        let root = TestDirectory::new();
+        root.write("Lang/PT/Labels.txt", b"portuguese");
+        let mut game = GameDir::open(&root.0).unwrap();
+        assert_eq!(
+            game.read_lang("Labels.txt").unwrap_err().kind(),
+            ErrorKind::NotFound
+        );
+        game.set_language(Language::Turkish);
+        assert_eq!(
+            game.read_lang("Labels.txt").unwrap_err().kind(),
+            ErrorKind::NotFound
+        );
+    }
+
+    #[test]
+    fn case_collision_winner_does_not_depend_on_directory_order() {
+        for paths in [["ui/A.bmp", "UI/a.bmp"], ["UI/a.bmp", "ui/A.bmp"]] {
+            let mut index = FxHashMap::default();
+            let mut collisions = Vec::new();
+            for path in paths {
+                index_path(path, &mut index, &mut collisions);
+            }
+            assert_eq!(index.len(), 1);
+            assert_eq!(index["ui/a.bmp"], "UI/a.bmp");
+            assert_eq!(collisions, [("ui/a.bmp".to_owned(), "ui/A.bmp".to_owned())]);
+        }
+    }
+}
