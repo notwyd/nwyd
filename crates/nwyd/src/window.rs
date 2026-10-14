@@ -35,6 +35,8 @@ mod field_packets;
 mod game_settings;
 mod interaction_packets;
 mod inventory_packets;
+#[cfg(test)]
+mod keyboard_tests;
 mod lifecycle;
 mod live_packets;
 mod message_packets;
@@ -322,6 +324,13 @@ impl Client {
         state: ElementState,
         repeat: bool,
     ) {
+        // Web winit reports Backspace without text. Route its control character
+        // once on every backend, including native events that already supply it.
+        let text = match logical {
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::Backspace) => Some("\u{8}"),
+            _ => text,
+        };
+
         if matches!(
             logical, winit::keyboard::Key::Character(key) if key
             .eq_ignore_ascii_case("s")
