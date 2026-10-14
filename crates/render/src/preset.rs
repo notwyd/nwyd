@@ -1,5 +1,4 @@
 #[allow(dead_code)]
-
 pub mod d3d {
 
     pub const ZENABLE: u32 = 7;
@@ -132,7 +131,6 @@ pub mod d3d {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-
 pub enum RenderMode {
     Unlit3d = 0,
     Lit3d = 1,
@@ -145,7 +143,6 @@ pub enum RenderMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ColorOp {
     Modulate,
     SelectTextureRgb,
@@ -163,21 +160,18 @@ impl ColorOp {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AlphaTest {
     pub reference: u32,
     pub func: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Address {
     Wrap,
     Clamp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Preset {
     pub mode: RenderMode,
     pub blend: bool,

@@ -9,7 +9,6 @@ pub const CUTSCENE_DISTANCE: f32 = 11.0;
 pub const PLAYBACK_LEAD_MS: u32 = 100;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Keyframe {
     pub time_ms: u32,
     pub relative: u32,
@@ -27,7 +26,6 @@ impl Keyframe {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct CamAction {
     pub keyframes: Vec<Keyframe>,
 }
@@ -141,7 +139,6 @@ impl CamAction {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Sample {
     pub x: f32,
     pub y: f32,

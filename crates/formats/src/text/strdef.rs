@@ -37,7 +37,6 @@ pub fn checksum(buf: &[u8]) -> i32 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct StrDef {
     entries: Vec<String>,
     obfuscated: bool,

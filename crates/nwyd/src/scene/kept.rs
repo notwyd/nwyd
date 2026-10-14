@@ -1,7 +1,6 @@
 use formats::net::kept::{self, Line, Record};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Lines {
     pub slots: [Option<String>; kept::LINE_SLOTS],
 }
@@ -19,7 +18,6 @@ impl Lines {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Records {
     pub slots: [Option<Record>; kept::RECORD_SLOTS],
     pub gate: bool,

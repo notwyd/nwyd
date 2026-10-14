@@ -96,7 +96,6 @@ pub const VANISHED_NAME_COLOR: u32 = 0xFF77_7777;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[repr(i32)]
-
 pub enum RowState {
     #[default]
     Active = 0,
@@ -107,7 +106,6 @@ pub enum RowState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct RowVisual {
     pub state: RowState,
     pub name_color: u32,
@@ -160,7 +158,6 @@ impl RowVisual {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct LiveRow {
     pub level: i16,
     pub hp: i32,
@@ -202,7 +199,6 @@ pub fn compact_affects(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct RowVitals {
     pub level: i16,
     pub hp: i32,
@@ -220,7 +216,6 @@ impl From<&Member> for RowVitals {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct State {
     pub rows: Vec<Member>,
     pub row_visuals: Vec<RowVisual>,
@@ -354,7 +349,6 @@ pub fn vanished(scene: &mut FieldScene, entity: u16) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Joined {
     pub member: Member,
     pub replaced: bool,
@@ -364,7 +358,6 @@ pub struct Joined {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Invited {
     pub member: Member,
     pub cleared: usize,
@@ -375,7 +368,6 @@ pub struct Invited {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Leaving {
     pub leave: Leave,
     pub removed: Vec<u16>,
@@ -388,7 +380,6 @@ pub struct Leaving {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Marked {
     pub owner: u16,
     pub row: Option<usize>,
@@ -397,7 +388,6 @@ pub struct Marked {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Change {
     Joined(Joined),
     Invited(Invited),

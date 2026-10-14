@@ -14,7 +14,6 @@ const ITEMS_AT: usize = 0x04;
 const POSITIONS_AT: usize = ITEMS_AT + SLOTS * Item::LEN;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Confirm {
     pub mission: i32,
     pub item: [Item; SLOTS],

@@ -23,7 +23,6 @@ pub(crate) fn layouts<'a>(
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-
 struct Uniform {
     reprojection: [f32; 16],
     jitter_scale: [f32; 4],
@@ -240,7 +239,6 @@ pub(crate) fn fragment_options(
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -256,7 +254,6 @@ mod tests {
     }
 
     #[test]
-
     fn stationary_camera_has_identity_reprojection() {
         let current = clip(Vec3::new(4.0, 2.0, -8.0));
 
@@ -264,7 +261,6 @@ mod tests {
     }
 
     #[test]
-
     fn reprojection_maps_current_clip_position_to_previous_camera() {
         let current = clip(Vec3::new(4.0, 2.0, -8.0));
 
@@ -285,7 +281,6 @@ mod tests {
     }
 
     #[test]
-
     fn transparent_temporal_pass_preserves_motion_and_accumulates_bias() {
         let color = wgpu::ColorTargetState {
             format: wgpu::TextureFormat::Rgba8Unorm,
@@ -335,7 +330,6 @@ mod tests {
     }
 
     #[test]
-
     fn temporal_coverage_distinguishes_alpha_additive_and_opaque_passes() {
         let alpha = wgpu::BlendState::ALPHA_BLENDING;
 

@@ -31,7 +31,6 @@ pub const RESOLUTIONS: [[u32; 2]; 18] = [
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-
 pub struct Preferences {
     #[serde(default = "language::default_language", with = "language::serde")]
     pub language: Language,
@@ -114,7 +113,6 @@ impl Preferences {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-
     pub fn save(&self, path: &Path) -> Result<()> {
         use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -153,7 +151,6 @@ impl Preferences {
     }
 
     #[cfg(target_arch = "wasm32")]
-
     pub fn save(&self, path: &Path) -> Result<()> {
         self.validate()?;
 
@@ -243,7 +240,6 @@ mod language;
 pub use language::{available_languages, language_label, resolve_language};
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -287,7 +283,6 @@ mod tests {
     }
 
     #[test]
-
     fn config_import_clamps_volume_and_preserves_control_choices() {
         let mut config = Config::default();
 
@@ -321,7 +316,6 @@ mod tests {
     }
 
     #[test]
-
     fn validation_checks_resolution_volume_and_character_size_boundaries() {
         for resolution in [[640, 480], [8192, 8192]] {
             let mut prefs = preferences();
@@ -367,7 +361,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_schema_defaults_optional_fields_and_rejects_unknown_fields() {
         let prefs = preferences();
 
@@ -398,7 +391,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_save_round_trips_and_replaces_without_temporary_files() {
         let files = TestSettings::new();
 
@@ -430,7 +422,6 @@ mod tests {
     }
 
     #[test]
-
     fn legacy_preferences_are_imported_without_changing_game_files() {
         let game = TestSettings::new();
 
@@ -473,7 +464,6 @@ mod tests {
     }
 
     #[test]
-
     fn a_missing_legacy_file_does_not_create_a_settings_file() {
         let game = TestSettings::new();
 
@@ -490,7 +480,6 @@ mod tests {
     }
 
     #[test]
-
     fn legacy_size_migrates_and_server_owned_costume_flags_are_reset() {
         let files = TestSettings::new();
 
@@ -524,7 +513,6 @@ mod tests {
     }
 
     #[test]
-
     fn invalid_save_does_not_replace_existing_settings() {
         let files = TestSettings::new();
 
@@ -546,7 +534,6 @@ mod tests {
     }
 
     #[test]
-
     fn audio_and_input_application_preserves_other_config_slots() {
         let mut config = Config::default();
 
@@ -581,7 +568,6 @@ mod tests {
     }
 
     #[test]
-
     fn transient_appearance_flags_are_not_written_to_settings() {
         let mut prefs = preferences();
 
@@ -603,7 +589,6 @@ mod tests {
     }
 
     #[test]
-
     fn importing_browser_preferences_keeps_game_files_read_only_and_prefers_user_changes() {
         let files = TestSettings::new();
 

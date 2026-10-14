@@ -1,5 +1,4 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct FrameRate {
     rate: f32,
     frames: u32,
@@ -12,7 +11,6 @@ pub const RESAMPLE_AFTER_S: f32 = 2.0;
 pub const CAPTURE_RATE: f32 = 0.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Inputs {
     pub rate: f32,
     pub smoothing: formats::mesh::pose::Smoothing,
@@ -49,7 +47,6 @@ pub fn effects_enabled(quality: i16) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct EffectOptions {
     pub detail: super::aura::Detail,
     pub secondary: bool,
@@ -150,7 +147,6 @@ impl FrameRate {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Ladder {
     pub rungs: &'static [(f32, i32)],
     pub default: i32,
@@ -187,7 +183,6 @@ impl Ladder {
 pub const DETAIL: i32 = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum DetailGate {
     Always,
     Full,

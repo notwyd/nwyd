@@ -5,14 +5,12 @@ use super::{Matrix4, identity};
 use crate::error::{Error, Kind, Result};
 
 #[derive(Debug, Clone)]
-
 pub enum Slot<'a> {
     Loaded(&'a AnimClip),
     Missing,
 }
 
 #[derive(Debug, Clone)]
-
 pub struct ModelAnimation {
     pub model_id: u32,
     pub name: String,

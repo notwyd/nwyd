@@ -287,7 +287,6 @@ pub fn raise(
 }
 
 #[derive(Debug)]
-
 pub struct MeteorStorm {
     pub source: Vec3,
     pub dest: Vec3,

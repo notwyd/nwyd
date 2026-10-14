@@ -10,7 +10,6 @@ use formats::mesh::msa::StaticMesh;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct MeshVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
@@ -59,7 +58,6 @@ impl MeshVertex {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SubsetRange {
     pub start_index: u32,
     pub index_count: u32,
@@ -72,7 +70,6 @@ impl SubsetRange {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct MeshAlloc {
     pub base_vertex: i32,
     pub subsets: Vec<SubsetRange>,
@@ -80,7 +77,6 @@ pub struct MeshAlloc {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct MeshArena {
     pub vertices: Vec<MeshVertex>,
     pub indices: Vec<u16>,
@@ -180,7 +176,6 @@ impl Material {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-
 pub enum MeshPass {
     Opaque,
     Cutout,
@@ -274,7 +269,6 @@ impl MeshPass {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct ObjectUniforms {
     pub world: [f32; 16],
     pub normal_matrix: [f32; 16],
@@ -289,7 +283,6 @@ pub struct ObjectUniforms {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct DrawParams {
     pub material: Material,
     pub lighting: bool,
@@ -489,7 +482,6 @@ impl ObjectUniforms {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Stage1Blend {
     Modulate,
     AddSmooth,
@@ -545,7 +537,6 @@ pub fn normal_matrix(world: &Matrix4) -> Matrix4 {
 pub const NULL_TEXTURE: usize = usize::MAX;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct MeshDraw {
     pub pass: MeshPass,
     pub cull: Cull,
@@ -557,7 +548,6 @@ pub struct MeshDraw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-
 pub enum Cull {
     #[default]
     Ccw,
@@ -629,7 +619,6 @@ pub struct MeshRenderer {
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-
 struct TemporalObject {
     current: ObjectUniforms,
     previous_clip: [f32; 16],

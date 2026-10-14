@@ -11,7 +11,6 @@ pub const ICON_COLUMNS: u32 = 10;
 pub const ICON_CELL: u32 = 100;
 
 #[derive(Debug, Clone)]
-
 pub struct Tables {
     pub items: MissionItems,
     pub help: Vec<Help>,
@@ -236,7 +235,6 @@ impl Tables {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Click {
     Slot(i32),
     Material(usize),
@@ -255,7 +253,6 @@ pub fn confirmation() -> super::msgbox::Request {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refused {
     NothingSelected,
     ShortOfMaterials { group: usize, have: i32, need: i32 },
@@ -267,7 +264,6 @@ pub enum Refused {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Slot {
     pub id: i32,
     pub caption: String,
@@ -276,7 +272,6 @@ pub struct Slot {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Details {
     pub material: [Item; 8],
     pub counts: [Option<(i32, i32)>; 8],
@@ -506,7 +501,6 @@ impl Details {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct State {
     pub key: i32,
     pub npc: u16,
@@ -932,7 +926,6 @@ fn wire(confirm: &formats::net::mission::Confirm) -> Vec<u8> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Outcome {
     Navigated { to: i32 },
     MaterialSelected { slot: usize },
@@ -1144,7 +1137,6 @@ pub fn panel_clicks(scene: &mut super::field::FieldScene) -> Vec<Outcome> {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -1154,7 +1146,6 @@ mod tests {
     };
 
     #[test]
-
     fn material_override_captions_use_each_entry_codepage() {
         let row = mission::Mission {
             gold_cost: 0,

@@ -169,7 +169,6 @@ pub const FOOTPRINTS: [[[i32; COLS]; ROWS]; SLOTS] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Stamp {
     pub kind: i32,
     pub mode: i32,

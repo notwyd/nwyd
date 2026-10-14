@@ -69,7 +69,6 @@ pub const SNOW_CLASS: &super::effect_tree::Class = &super::effect_tree::Class {
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Flake {
     pub x: f32,
     pub y: f32,
@@ -78,7 +77,6 @@ pub struct Flake {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Snow {
     pub flakes: Vec<Flake>,
     pub half: f32,

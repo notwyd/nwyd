@@ -35,7 +35,6 @@ pub fn open(scene: &mut FieldScene, partner: crate::frame::PanelId, block_equipm
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Replaced {
     pub entity: u16,
     pub local: bool,

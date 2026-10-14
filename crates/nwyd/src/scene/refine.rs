@@ -68,7 +68,6 @@ pub const REPEAT_MS: u32 = 0x5DC;
 pub const AUTO_DELAY_MS: u32 = 0x7D0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AutoDelay(u32);
 
 impl Default for AutoDelay {
@@ -192,7 +191,6 @@ pub fn displayed_piece_accepts_powder(items: &ItemList, piece: Item, powder: Ite
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Source {
     pub at: Coord,
     pub selected: bool,
@@ -213,7 +211,6 @@ impl Default for Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Refine {
     pub mode: i32,
     pub current: i32,
@@ -309,7 +306,6 @@ pub fn preview_item(mut item: Item, raw: i32) -> Item {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Action {
     Send(Vec<u8>),
     Toast(usize),
@@ -319,7 +315,6 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AutoChanged {
     pub halted: bool,
     pub stop_caption: &'static str,
@@ -351,7 +346,6 @@ pub fn auto_changed(state: &mut Refine, open: bool, checked: u8) -> Option<AutoC
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Repeat {
     Refresh,
     Send,
@@ -445,7 +439,6 @@ pub fn recipe_frame(list: &MixList, mode: i32) -> Option<super::combine::Staged>
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct RecipeCell {
     pub value: i32,
     pub count: u32,
@@ -454,7 +447,6 @@ pub struct RecipeCell {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct RecipeFill {
     pub mode: i32,
     pub cells: [RecipeCell; 8],
@@ -462,7 +454,6 @@ pub struct RecipeFill {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct RecipeAdmission {
     pub need: usize,
     pub staged: Option<usize>,
@@ -1005,7 +996,6 @@ pub(super) fn admit_material_item(
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct ManualInput<'a> {
     pub client: u16,
     pub now_ms: u32,
@@ -1018,14 +1008,12 @@ pub struct ManualInput<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PowderSpend {
     pub at: Coord,
     pub after: Item,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ManualSend {
     pub frame: Option<Vec<u8>>,
     pub spend: Option<PowderSpend>,
@@ -1036,7 +1024,6 @@ pub struct ManualSend {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Manual {
     Idle { settle: bool },
     Refused { strdef: usize },
@@ -1254,7 +1241,6 @@ pub fn manual_after_notification(state: &mut Refine, powder: Item) {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct SettleInput<'a> {
     pub powder: Option<Item>,
     pub piece: Option<Item>,
@@ -1264,7 +1250,6 @@ pub struct SettleInput<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Settlement {
     pub recovered_powder: Option<Coord>,
     pub rejected_powder: bool,

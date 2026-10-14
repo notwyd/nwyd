@@ -17,7 +17,6 @@ pub struct Context<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Raised {
     Send {
         what: &'static str,

@@ -15,7 +15,6 @@ pub const POSITION_LIMIT: u16 = 5000;
 pub const MIN_SPEED: i32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Order {
     Walk,
     Teleport,
@@ -24,7 +23,6 @@ pub enum Order {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Action {
     pub x: i16,
     pub z: i16,

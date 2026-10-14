@@ -119,7 +119,6 @@ pub const DEATH_EXPLOSION_INTERVAL_MS: i32 = 0xD2;
 pub const DEATH_EXPLOSION_TINT: u32 = 0x4444_4444;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Recipe {
     pub at: Vec3,
     pub kind: i32,
@@ -191,7 +190,6 @@ fn lifted(at: Vec3, by: f32) -> Vec3 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Particle {
     pub at: Vec3,
     pub kind: i32,
@@ -347,7 +345,6 @@ pub fn spawn(scene: &mut BillboardScene, recipe: &Recipe, now_ms: u32, rng: &mut
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Raised {
     pub path: &'static str,
     pub nodes: usize,

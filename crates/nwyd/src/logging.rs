@@ -21,11 +21,9 @@ pub fn init() {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     #[test]
-
     fn both_log_facades_follow_the_build_profile() {
         if cfg!(debug_assertions) {
             assert_eq!(

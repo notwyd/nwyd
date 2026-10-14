@@ -110,7 +110,6 @@ const QUICK_HEAD_OFF: usize = 0x474;
 const UNKNOWN_478_OFF: usize = QUICK_HEAD_OFF + QUICK_HEAD;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Mob {
     pub name: [u8; NAME_LEN],
     pub unknown_010: [u8; 4],
@@ -306,7 +305,6 @@ fn mob_at(buf: &[u8], off: usize) -> Result<Mob> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct EnterWorld {
     pub x: u16,
     pub z: u16,

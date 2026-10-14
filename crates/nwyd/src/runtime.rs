@@ -24,14 +24,12 @@ pub mod social_packets;
 pub mod state;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum MusicOrder {
     BeforeOutbox,
     AfterOutbox,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum UpdateOutcome {
     Ready { game_time_ms: GameTime },
     Exit,

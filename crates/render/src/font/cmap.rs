@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
-
 pub struct CharMap {
     entries: HashMap<u32, u16>,
     selected: Option<(u16, u16)>,

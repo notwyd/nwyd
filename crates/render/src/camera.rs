@@ -3,7 +3,6 @@ use glam::Vec3;
 pub const FOV_FRACTION: f32 = 0.25;
 
 #[allow(clippy::approx_constant)]
-
 pub const PI: f32 = 3.1415927;
 
 pub const NEAR_BASE: f32 = 0.7;
@@ -17,7 +16,6 @@ pub const FAR_SKY: f32 = 70.0;
 pub const FAR_SKY_SPECIAL_ZONE: f32 = 90.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Matrix4(pub [f32; 16]);
 
 impl Matrix4 {
@@ -258,7 +256,6 @@ impl Matrix4 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Projection {
     pub fov_y: f32,
     pub aspect: f32,
@@ -282,7 +279,6 @@ impl Projection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct View {
     pub eye: Vec3,
     pub at: Vec3,
@@ -310,7 +306,6 @@ pub fn forward(yaw: f32, pitch: f32) -> Vec3 {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -323,7 +318,6 @@ mod tests {
     }
 
     #[test]
-
     fn view_places_eye_at_origin_and_target_on_positive_z() {
         let eye = Vec3::new(3.0, -2.0, 7.0);
 
@@ -348,7 +342,6 @@ mod tests {
     }
 
     #[test]
-
     fn perspective_maps_near_far_and_horizontal_edge_to_clip_bounds() {
         let matrix = Matrix4::perspective_fov_lh(std::f32::consts::FRAC_PI_2, 2.0, 1.0, 11.0);
 
@@ -363,7 +356,6 @@ mod tests {
     }
 
     #[test]
-
     fn matrix_composition_preserves_row_vector_transform_order() {
         let scale = Matrix4::scaling(2.0, 3.0, 4.0);
 
@@ -383,7 +375,6 @@ mod tests {
     }
 
     #[test]
-
     fn rotation_constructors_agree_on_axis_orientation() {
         let angle = std::f32::consts::FRAC_PI_2;
 
@@ -404,7 +395,6 @@ mod tests {
     }
 
     #[test]
-
     fn projection_uses_drawable_area_after_insets() {
         let projection = Projection::new((1024, 768), (224, 168), 300.0);
 

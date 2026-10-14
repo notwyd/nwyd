@@ -4,7 +4,6 @@ use crate::scene::{
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Member {
     pub source: Vec3,
     pub dest: Vec3,

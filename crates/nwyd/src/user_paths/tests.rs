@@ -42,7 +42,6 @@ impl Drop for TestDirectory {
 }
 
 #[test]
-
 fn settings_create_an_application_directory_outside_game_files() {
     let root = TestDirectory::new();
 
@@ -64,7 +63,6 @@ fn settings_create_an_application_directory_outside_game_files() {
 }
 
 #[test]
-
 fn game_profiles_are_isolated_and_canonical_paths_share_a_profile() {
     let root = TestDirectory::new();
 
@@ -110,7 +108,6 @@ fn game_profiles_are_isolated_and_canonical_paths_share_a_profile() {
 }
 
 #[test]
-
 fn quick_slots_fall_back_to_game_defaults_until_a_user_copy_exists() {
     let root = TestDirectory::new();
 
@@ -144,7 +141,6 @@ fn quick_slots_fall_back_to_game_defaults_until_a_user_copy_exists() {
 }
 
 #[test]
-
 fn quick_slots_do_not_hide_errors_in_an_existing_user_copy() {
     let root = TestDirectory::new();
 
@@ -162,7 +158,6 @@ fn quick_slots_do_not_hide_errors_in_an_existing_user_copy() {
 }
 
 #[test]
-
 fn guild_mark_defaults_are_seeded_once_and_game_files_remain_unchanged() {
     let root = TestDirectory::new();
 
@@ -192,7 +187,6 @@ fn guild_mark_defaults_are_seeded_once_and_game_files_remain_unchanged() {
 }
 
 #[test]
-
 fn absent_guild_mark_defaults_use_only_the_user_profile() {
     let root = TestDirectory::new();
 
@@ -212,7 +206,6 @@ fn absent_guild_mark_defaults_use_only_the_user_profile() {
 }
 
 #[test]
-
 fn legacy_preferences_are_resolved_without_writing_or_removing_them() {
     let root = TestDirectory::new();
 
@@ -241,7 +234,6 @@ fn legacy_preferences_are_resolved_without_writing_or_removing_them() {
 }
 
 #[test]
-
 fn virtual_game_profiles_import_defaults_without_requiring_a_host_directory() {
     let root = TestDirectory::new();
 
@@ -287,7 +279,6 @@ fn virtual_game_profiles_import_defaults_without_requiring_a_host_directory() {
 
 #[cfg(unix)]
 #[test]
-
 fn preferences_and_bindings_work_with_a_read_only_game_directory() {
     use std::os::unix::fs::PermissionsExt;
 

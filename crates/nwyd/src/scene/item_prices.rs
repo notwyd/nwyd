@@ -2,7 +2,6 @@ use super::Scene;
 use formats::net::item_prices::Update;
 
 #[derive(Debug, Default, Clone, Copy)]
-
 pub struct Retained {
     latest: Option<Update>,
 }

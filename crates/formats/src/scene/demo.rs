@@ -7,7 +7,6 @@ pub const ENDING_RECORD_LEN: usize = 48;
 pub const APPEARANCE_EFFECT: i16 = 0x12;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Actor {
     pub face: i32,
     pub helmet: i32,
@@ -41,14 +40,12 @@ impl Actor {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Roster {
     pub actors: Vec<Actor>,
     pub layout: Layout,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Layout {
     Roster,
     Ending,

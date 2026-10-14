@@ -5,7 +5,6 @@ use formats::net::arena::{self, Kill, List, Round};
 use ui::Strings;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Board {
     pub visible: bool,
     pub scores: [String; arena::SCORES],
@@ -16,7 +15,6 @@ pub struct Board {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct PanelFill {
     pub slot: usize,
     pub name: String,
@@ -25,7 +23,6 @@ pub struct PanelFill {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Rounded {
     pub visible: bool,
     pub banner: String,
@@ -37,7 +34,6 @@ pub struct Rounded {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Killed {
     pub banner: Option<String>,
     pub record: Option<usize>,
@@ -45,7 +41,6 @@ pub struct Killed {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Listed {
     pub slot: usize,
     pub cost: i32,
@@ -283,7 +278,6 @@ pub fn confirm(strings: Option<&Strings>, cost: i32) -> super::msgbox::Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Clicked {
     Closed,
     Asked(Box<super::msgbox::Request>),

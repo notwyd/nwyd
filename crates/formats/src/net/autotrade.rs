@@ -37,7 +37,6 @@ pub const TOKEN_OFF: usize = PRICES_OFF + SLOTS * 4;
 pub const OWNER_OFF: usize = TOKEN_OFF + 2;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Contents {
     pub title: [u8; TITLE_LEN],
     pub items: [Item; SLOTS],
@@ -158,7 +157,6 @@ pub const BUY_TOKEN_OFF: usize = 0x0C;
 pub const BUY_ITEM_OFF: usize = 0x10;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Buy {
     pub slot: i32,
     pub owner: u32,
@@ -208,7 +206,6 @@ pub const SOLD_OWNER_OFF: usize = 0x00;
 pub const SOLD_SLOT_OFF: usize = 0x04;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Sold {
     pub owner: u32,
     pub slot: i32,

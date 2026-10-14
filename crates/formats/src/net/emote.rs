@@ -31,7 +31,6 @@ pub const MODE_LEVEL_UP: i16 = 3;
 pub const MODE_PLAIN: i16 = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Emote {
     pub code: i16,
     pub mode: i16,

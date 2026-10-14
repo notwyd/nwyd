@@ -18,7 +18,6 @@ pub const SLOTS: usize = 5;
 pub const NO_SLOT: u8 = 0xFF;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Slot {
     pub char_name: String,
     pub slot: [u32; SLOTS],

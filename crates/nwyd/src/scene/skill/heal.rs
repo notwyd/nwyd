@@ -47,7 +47,6 @@ pub const SOUND: i64 = 0x9E;
 pub const SPAWN_ARGUMENT_COUNT: usize = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Heal {
     pub at: Vec3,
     pub birth_ms: u32,
@@ -103,7 +102,6 @@ pub fn particle_recipe(at: Vec3, count: i32) -> burst::Recipe {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub token: Heal,
     pub emitter: Option<Particle>,

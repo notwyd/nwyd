@@ -38,7 +38,6 @@ pub fn shape(kind: u32, texture: i16) -> (f32, u32) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Butterfly {
     pub record: usize,
     pub kind: u32,
@@ -282,13 +281,11 @@ pub fn material(distance: f32, light0: [f32; 4], light1: [f32; 4]) -> ([f32; 4],
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Flight {
     pub butterflies: Vec<Butterfly>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct OwnedFlight {
     pub butterflies: [Butterfly; 4],
     pub birth_ms: Option<u32>,

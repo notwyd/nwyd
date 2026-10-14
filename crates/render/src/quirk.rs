@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
-
 pub enum VendorClass {
     NvidiaMx = 0,
     Nvidia = 1,

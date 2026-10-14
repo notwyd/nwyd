@@ -17,7 +17,6 @@ pub fn proximity_opacity(at: Vec3, target: Option<Vec3>) -> Option<f32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Yaw {
     Record,
     RecordQuarterTurn,
@@ -26,7 +25,6 @@ pub enum Yaw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Pitch {
     Zero,
     Swing,
@@ -34,14 +32,12 @@ pub enum Pitch {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Gate {
     Always,
     PlayerNotRoofed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Part {
     pub mesh_id: u32,
     pub offset: Vec3,
@@ -217,7 +213,6 @@ pub fn uv_scroll(mode: u8, now: u32) -> [[f32; 4]; 2] {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Source {
     pub kind: u32,
     pub position: Vec3,
@@ -226,7 +221,6 @@ pub struct Source {
 }
 
 #[derive(Debug, Default)]
-
 pub struct Births {
     pub billboards: Vec<super::effects::Billboard>,
     pub particle: Option<super::burst::Recipe>,

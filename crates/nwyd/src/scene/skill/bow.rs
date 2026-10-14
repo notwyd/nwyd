@@ -8,7 +8,6 @@ pub fn admits(skill: i16) -> bool {
 }
 
 #[derive(Debug)]
-
 pub struct Built {
     pub companion: Option<Arrow>,
     pub arrow: Option<Arrow>,

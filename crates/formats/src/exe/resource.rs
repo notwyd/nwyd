@@ -8,7 +8,6 @@ pub const RT_GROUP_CURSOR: u32 = 12;
 const KIND: Kind = Kind::Executable;
 
 #[derive(Debug, Clone, Copy)]
-
 struct Section {
     rva: u32,
     virtual_size: u32,
@@ -17,7 +16,6 @@ struct Section {
 }
 
 #[derive(Debug)]
-
 pub struct Resources<'a> {
     image: &'a [u8],
     sections: Vec<Section>,

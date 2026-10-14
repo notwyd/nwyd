@@ -58,7 +58,6 @@ pub const AIR_MOVE_BOB_BASE_MS: u32 = 1000;
 pub const AIR_MOVE_BOB_RANDOM_DIVISOR: f64 = 8000.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum AirMoveStage {
     Rise,
     Route,
@@ -67,7 +66,6 @@ pub enum AirMoveStage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct AirMovePose {
     pub position: [f32; 3],
     pub ground_y: f32,
@@ -77,14 +75,12 @@ pub struct AirMovePose {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum AirMoveTick {
     Active,
     Teardown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct AirMoveFlight {
     stage: AirMoveStage,
     stamp_ms: u32,
@@ -345,13 +341,11 @@ pub const OK: &str = "Ok";
 pub const CLOSE: &str = "Close";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Mode {
     AirMove,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Portal {
     pub mode: Option<Mode>,
     pub departed: Option<u32>,
@@ -392,7 +386,6 @@ pub fn arrive(index: u32) -> Vec<u8> {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Row {
     pub name: String,
     pub pos: String,

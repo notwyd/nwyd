@@ -189,7 +189,6 @@ unsafe extern "system" fn host_proc(hwnd: HWND, message: u32, wp: WPARAM, lp: LP
 }
 
 #[implement(IOleClientSite, IOleInPlaceSite, IOleInPlaceFrame, IDocHostUIHandler)]
-
 struct Site {
     hwnd: HWND,
 }

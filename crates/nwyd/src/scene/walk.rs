@@ -12,7 +12,6 @@ pub const FULL_FLATTEN_SPEED: f32 = 10.0;
 pub const DISOWN_DISTANCE: i32 = 0x22;
 
 #[derive(Debug, Clone)]
-
 pub struct Mover {
     pub turn_origin: [f32; 2],
     position: [f32; 2],
@@ -34,7 +33,6 @@ pub struct Mover {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Step {
     pub position: [f32; 2],
     pub ground: f32,

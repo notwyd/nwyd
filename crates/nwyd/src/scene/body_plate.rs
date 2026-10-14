@@ -3,7 +3,6 @@ use super::nameplate::{NAME_LEVEL_CLAMP, OUTLINE_BELOW};
 use formats::net::plate::{GuildLine, LevelChange, MOB_NAME_LEVEL, PLAYER_ID_LIMIT};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct LevelApplied {
     pub entity: u16,
     pub index: Option<usize>,
@@ -16,7 +15,6 @@ pub struct LevelApplied {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct GuildApplied {
     pub entity: u16,
     pub index: Option<usize>,

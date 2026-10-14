@@ -36,7 +36,6 @@ pub const FIREWORK_LIFT: f32 = super::firework::ANCHOR_LIFT;
 pub const LEVEL_UP_KIND: i32 = 0;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Emoted {
     pub entity: u16,
     pub index: Option<usize>,
@@ -53,7 +52,6 @@ pub struct Emoted {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Outcome {
     NoBody,
     Firework { pattern: i32 },
@@ -300,7 +298,6 @@ pub fn describe(applied: &Emoted) -> String {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Keys {
     pub floor_ms: u32,
     pub swallow_next: bool,
@@ -331,7 +328,6 @@ pub const CODE_SEAT: i16 = 0x0D;
 pub const CODE_PUNISH: i16 = 0x0F;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refusal {
     Editing,
     Mounted,
@@ -345,7 +341,6 @@ pub enum Refusal {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Press {
     Unclaimed,
     Refused(Refusal),

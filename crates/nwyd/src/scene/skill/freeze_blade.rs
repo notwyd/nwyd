@@ -10,7 +10,6 @@ pub const SPAWN_ARGUMENT_COUNT: usize = 7;
 pub const OBJECT_SIZE: u16 = 188;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Order {
     pub at: PositionRef,
     pub kind: i32,

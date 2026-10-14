@@ -8,13 +8,11 @@ use std::{
 };
 
 #[cfg(not(target_arch = "wasm32"))]
-
 fn config_base() -> Result<PathBuf> {
     dirs::config_dir().context("locating the user configuration directory")
 }
 
 #[cfg(target_arch = "wasm32")]
-
 fn config_base() -> Result<PathBuf> {
     // These paths are browser-storage keys, never host filesystem paths.
     Ok(PathBuf::from("browser"))
@@ -150,13 +148,11 @@ pub fn write_quick_slots(game: &GameDir, bytes: &[u8]) -> Result<()> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub(crate) fn read(path: &Path) -> std::io::Result<Vec<u8>> {
     fs::read(path)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub(crate) fn write(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     fs::write(path, bytes)
 }

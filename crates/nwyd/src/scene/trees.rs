@@ -61,7 +61,6 @@ pub const LIGHT0_MIX: f32 = 0.6;
 pub const EMISSIVE_MIX: f32 = 0.4;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Tree {
     pub record: usize,
     pub kind: u32,
@@ -152,7 +151,6 @@ pub fn material(terrain: [f32; 4], light0: [f32; 4], light1: [f32; 4]) -> ([f32;
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Grove {
     pub trees: Vec<Tree>,
     pub unresolved: Vec<(usize, u32)>,

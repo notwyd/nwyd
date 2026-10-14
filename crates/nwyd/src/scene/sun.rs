@@ -21,7 +21,6 @@ pub const Z_FIRST: f32 = 0.8;
 pub const Z_STEP: f32 = 0.04;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Flare {
     pub texture: usize,
     pub axis: f32,
@@ -111,7 +110,6 @@ pub fn sizes(width: u32) -> [f32; 12] {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Element {
     pub texture: usize,
     pub centre: (f32, f32),
@@ -121,7 +119,6 @@ pub struct Element {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Sun {
     pub offset: Vec3,
     pub scale: f32,

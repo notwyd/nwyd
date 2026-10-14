@@ -43,21 +43,18 @@ pub const OFFLINE_TAG_PASS: &[(&str, bool)] = &[
 pub(crate) mod language_tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Form {
     ServerSelect,
     Login,
 }
 
 #[derive(Debug)]
-
 pub struct PlacedPanel {
     pub ui: PanelUi,
     pub origin: (i32, i32),
 }
 
 #[derive(Debug)]
-
 pub struct GuiTexture {
     pub slot: i32,
     pub path: String,
@@ -67,7 +64,6 @@ pub struct GuiTexture {
 }
 
 #[derive(Debug)]
-
 pub struct LoginPanels {
     pub legacy_boxes: super::legacy_message_box::Dialogs,
     pub notice: super::notice::Overlay,
@@ -114,7 +110,6 @@ pub struct LoginPanels {
 }
 
 #[derive(Debug)]
-
 pub struct LanguageUpdate {
     game: GameDir,
     strings: Strings,

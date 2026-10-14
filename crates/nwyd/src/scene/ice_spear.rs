@@ -52,7 +52,6 @@ pub const IMPACT_KIND: i32 = 1;
 pub const IMPACT_DROP: f32 = 1.0;
 
 #[derive(Debug)]
-
 pub struct IceSpear {
     pub source: Vec3,
     pub dest: Vec3,

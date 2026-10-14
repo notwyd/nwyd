@@ -171,7 +171,6 @@ pub const QUEST_GREY: u32 = 0xFF77_7777;
 pub const QUEST_GREEN: u32 = 0xFF00_FF00;
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Quest {
     pub class_mask: u8,
     pub level: i32,
@@ -181,7 +180,6 @@ pub struct Quest {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct ColorLine {
     pub color: u32,
     pub text: String,
@@ -861,7 +859,6 @@ pub fn inventory_refresh(
 }
 
 #[derive(Debug, Clone)]
-
 pub(crate) struct InventoryWidgets {
     cells: [Option<ui::element::Instance>; 60],
     tabs: [Option<ui::element::Instance>; 4],
@@ -1086,7 +1083,6 @@ pub fn cargo_created(screen: &mut Screen) {
 }
 
 #[derive(Debug, Clone)]
-
 pub(crate) struct CargoWidgets {
     cells: [Option<ui::element::Instance>; 120],
     tabs: [Option<ui::element::Instance>; 3],
@@ -1808,7 +1804,6 @@ pub fn help_page(screen: &mut Screen, page: i32, lines: &[ColorLine]) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum HelpCommand {
     Refilled,
     Notice,
@@ -3176,7 +3171,6 @@ pub fn combine_created(screen: &mut Screen, strings: &Strings) {
 }
 
 #[derive(Debug, Clone, Default)]
-
 pub(crate) struct CombineWidgets {
     pub materials: [Option<ui::element::Instance>; 3],
     results: [Option<ui::element::Instance>; 2],
@@ -3505,7 +3499,6 @@ pub fn mix_refresh(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn collection_refresh(
     screen: &mut Screen,
     book: &super::collection::Book,
@@ -4219,14 +4212,12 @@ pub fn refine_pulse_tick(
 }
 
 #[cfg(test)]
-
 mod language_tests {
 
     use super::*;
     use formats::text::{Codepage, codepage};
 
     #[test]
-
     fn malformed_help_prefixes_do_not_split_unicode_codepoints() {
         assert!(color_line("FFFFFą synthetic").is_none());
 
@@ -4236,7 +4227,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn help_and_quest_text_decode_the_resource_codepage() {
         let cp = Codepage::Windows1250;
 

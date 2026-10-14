@@ -2,7 +2,6 @@ use glam::{Vec2, Vec3};
 use render::camera::{self, View};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Mode {
     Orbit,
     Fixed,
@@ -38,7 +37,6 @@ pub const CLEARANCE_STEP: f32 = 0.05;
 pub const CLEARANCE_FIRST_STEP: f32 = 1.0;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Rider {
     pub mounted: bool,
     pub mount_model: Option<u32>,
@@ -76,7 +74,6 @@ pub const TALL_MOUNT_EXEMPT_KIND: i16 = 3;
 pub const MID_MOUNT: u32 = 0x26;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct MouseInput {
     pub dx: i32,
     pub dy: i32,
@@ -147,7 +144,6 @@ pub fn next_view(view: i32, low_ceiling: bool) -> i32 {
 pub const VIEWS: i32 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Shake {
     pub birth_ms: u32,
     pub strength: u32,
@@ -156,7 +152,6 @@ pub struct Shake {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Camera {
     pub mode: Mode,
     pub eye_mode: i32,

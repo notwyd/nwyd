@@ -36,7 +36,6 @@ pub fn encrypt(buf: &mut [u8]) {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Server {
     pub status_url: String,
     pub channels: Vec<String>,
@@ -49,7 +48,6 @@ impl Server {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct ServerList {
     pub header: [u8; HEADER_LEN],
     pub servers: Vec<Server>,

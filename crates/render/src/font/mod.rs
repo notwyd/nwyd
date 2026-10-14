@@ -99,7 +99,6 @@ pub mod shadow {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Glyph {
     pub advance: i32,
     pub page: usize,
@@ -107,7 +106,6 @@ pub struct Glyph {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Placed {
     pub page: usize,
     pub cell: [i32; 4],
@@ -116,7 +114,6 @@ pub struct Placed {
 }
 
 #[derive(Debug)]
-
 pub struct Page {
     pixels: Vec<u8>,
     cell: u32,
@@ -264,7 +261,6 @@ fn blit(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct TextBitmap {
     pub width: u32,
     pub height: u32,

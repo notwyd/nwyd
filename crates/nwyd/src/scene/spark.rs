@@ -73,14 +73,12 @@ fn lerp_delta(a: Vec3, b: Vec3, t: f32) -> Vec3 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct TrackedBody {
     pub entity: u16,
     pub position: Vec3,
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Spark {
     pub source: Vec3,
     pub dest: Vec3,
@@ -101,7 +99,6 @@ pub struct Spark {
 
 impl Spark {
     #[allow(clippy::too_many_arguments)]
-
     pub fn new(
         source: Vec3,
         target: Option<TrackedBody>,
@@ -383,7 +380,6 @@ impl Spark {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct BoneSpark {
     pub owner_key: Option<super::effect_context::ActorKey>,
     pub bone_id: i32,
@@ -403,7 +399,6 @@ pub struct BoneSpark {
 
 impl BoneSpark {
     #[allow(clippy::too_many_arguments)]
-
     pub fn new(
         bone_id: i32,
         near_len: f32,

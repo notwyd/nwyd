@@ -5,7 +5,6 @@ use formats::net::account::Item;
 pub const KEY: u8 = 0x7A;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refusal {
     InputLocked,
     SharedFloor,
@@ -40,7 +39,6 @@ pub fn admit(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Outcome {
     Refused(Refusal),
     NoScroll,
@@ -49,7 +47,6 @@ pub enum Outcome {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Spent {
     pub slot: i32,
     pub previous_count: i32,

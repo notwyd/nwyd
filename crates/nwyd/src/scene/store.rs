@@ -48,7 +48,6 @@ pub const MAX_PRICE: i32 = 1_999_999_999;
 pub const OWNER_NOTICE_MS: u32 = 2_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PricePrompt {
     pub captured_item: i32,
     pub source_slot: usize,
@@ -127,7 +126,6 @@ fn price_confirmation(panels: &Panels, id: usize, context: u32) -> Option<msgbox
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Price {
     Empty,
     Invalid,
@@ -213,7 +211,6 @@ pub fn begin_price(panels: &mut Panels, entered: &Entered, source_slot: i32) -> 
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Stocked {
     Placed {
         slot: usize,
@@ -266,7 +263,6 @@ pub fn stock(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Priced {
     NotOpen,
     NotOurs,
@@ -412,7 +408,6 @@ fn stock_from_cargo(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Announced {
     Empty,
     Sent(Vec<u8>),
@@ -495,7 +490,6 @@ pub const NO_SPACE_COLOR: u32 = 0xFFFF_AAAA;
 pub const MONEY_USE_KIND: i32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Opened {
     Browsing { owner: u16, filled: usize },
     Own { title: String },
@@ -513,7 +507,6 @@ pub fn prompt() -> msgbox::Request {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Started {
     Opened,
     AlreadyOpen,
@@ -676,7 +669,6 @@ pub fn open_selling(panels: &mut Panels) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Closed {
     WasShut,
     Browsed { owner: u16 },
@@ -792,7 +784,6 @@ pub fn slot_sold(scene: &mut FieldScene, sold: &Sold) -> Sale {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Sale {
     Cleared { slot: usize },
     NotOpen,
@@ -828,7 +819,6 @@ pub fn frame(buy: &Buy) -> Vec<u8> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Bought {
     Asked { slot: usize },
     MyOwnShop,

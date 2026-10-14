@@ -48,7 +48,6 @@ pub fn column_at(body: Vec3, i: i32) -> Vec3 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Burst {
     pub entity: u16,
     pub index: Option<usize>,

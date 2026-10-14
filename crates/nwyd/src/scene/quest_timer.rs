@@ -11,13 +11,11 @@ pub const DESTINATION_X: std::ops::RangeInclusive<i32> = 26..=30;
 pub const DESTINATION_Z: std::ops::RangeInclusive<i32> = 8..=12;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct State {
     pub started_at: u32,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Update {
     pub visible: Option<bool>,
     pub text: Option<String>,

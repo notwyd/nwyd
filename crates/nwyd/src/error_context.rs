@@ -1,7 +1,6 @@
 use std::fmt;
 
 #[macro_export]
-
 macro_rules! internal_reason {
     ($code:literal, $description:literal) => {
         $description
@@ -9,7 +8,6 @@ macro_rules! internal_reason {
 }
 
 #[derive(Clone, Copy)]
-
 pub enum Operation {
     GameDirectory,
     Scene,

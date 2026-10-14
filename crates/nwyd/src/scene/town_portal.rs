@@ -86,7 +86,6 @@ pub const CLASS: Class = Class {
 };
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct TownPortal {
     pub kind: i32,
     pub position: Vec3,

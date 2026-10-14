@@ -5,7 +5,6 @@ use crate::util::u32_at;
 const HEADER_LEN: usize = 8;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct AnimClip {
     pub num_frames: usize,
     pub num_bones: usize,

@@ -89,7 +89,6 @@ pub fn origin(layout: &Layout, parent: (f32, f32), control: Rect) -> (f32, f32) 
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Line {
     slashed: bool,
     max_width: u32,

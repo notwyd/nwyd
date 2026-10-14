@@ -7,7 +7,6 @@ use super::{
 use glam::Vec3;
 
 #[derive(Default)]
-
 struct Burst {
     mark: Option<Shade>,
     sprites: Vec<Billboard>,

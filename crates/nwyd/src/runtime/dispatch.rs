@@ -3,7 +3,6 @@ use protocol::transport::Event;
 use std::ops::ControlFlow;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PacketFlow {
     Continue,
     RetireSocket,
@@ -11,7 +10,6 @@ pub enum PacketFlow {
 }
 
 #[derive(Default)]
-
 pub struct BatchEffects {
     needs_upload: bool,
 }

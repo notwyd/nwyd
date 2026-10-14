@@ -26,7 +26,6 @@ pub const CANCEL_DISTANCE: i32 = 0x14;
 pub const STAMP_ROWS: i16 = 0xF8;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Pending {
     pub fire_at_ms: u32,
     pub to: glam::Vec3,
@@ -77,7 +76,6 @@ pub fn own_spawns(skill: i16) -> Vec<&'static formats::vfx::Spawn> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Recipe {
     Baseline(i16),
     Built(i16),
@@ -122,7 +120,6 @@ pub fn recipe_for(skill: i16) -> Recipe {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Blocking {
     pub class: dispatch::Class,
     pub codes: usize,
@@ -196,7 +193,6 @@ pub fn blockers() -> Vec<Blocking> {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Volley {
     pub armed: bool,
     pub shots: i32,
@@ -242,7 +238,6 @@ pub fn schedule_effect(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Fired {
     Waiting,
     Dispatch(Recipe),
@@ -296,7 +291,6 @@ pub fn pending_of(actor: &Actor) -> Option<&Pending> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Dispatched {
     pub actor: usize,
     pub recipe: Recipe,

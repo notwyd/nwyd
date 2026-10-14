@@ -26,7 +26,6 @@ pub fn pixel_size(height: i32, zoom: f32) -> u32 {
 }
 
 #[derive(Default)]
-
 pub struct FontTable {
     fonts: BTreeMap<i32, Font>,
     notes: Vec<String>,
@@ -93,7 +92,6 @@ impl FontTable {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Cached {
     pub text: String,
     pub rect: [i32; 4],
@@ -104,7 +102,6 @@ pub struct Cached {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct TextCache<K> {
     entries: HashMap<K, Cached>,
     built: usize,

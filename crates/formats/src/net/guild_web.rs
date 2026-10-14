@@ -25,7 +25,6 @@ pub const QUERIES: [&str; 6] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Endpoint {
     Info,
     Members,
@@ -52,7 +51,6 @@ impl Endpoint {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Info {
     pub uid: i32,
     pub clan: i32,
@@ -71,7 +69,6 @@ pub struct Info {
 pub const MEMBER_COUNT_BLANK: i32 = -1;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Member {
     pub char_uid: i32,
     pub rank: i32,
@@ -84,7 +81,6 @@ pub struct Member {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct NameCheck {
     pub result: i32,
     pub name: String,
@@ -122,7 +118,6 @@ impl Member {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Json {
     Null,
     Bool(bool),

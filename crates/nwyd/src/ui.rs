@@ -47,7 +47,6 @@ pub fn strings(game: &GameDir) -> Strings {
 }
 
 #[derive(Debug)]
-
 struct LanguageText {
     game: GameDir,
     cache: std::sync::Mutex<HashMap<String, Option<String>>>,
@@ -75,7 +74,6 @@ impl ui::text::FileText for LanguageText {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Source {
     Texture(i32),
     Caption(Owner, u32),
@@ -88,7 +86,6 @@ pub enum Source {
 pub const FONT_ZOOM: f32 = 1.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PanelDraw {
     pub owner: Owner,
     pub source: Source,
@@ -122,7 +119,6 @@ impl ui::layout::Measure for FontMeasure<'_> {
 }
 
 #[derive(Debug)]
-
 pub struct PanelUi {
     identity: u64,
     lifetime: std::sync::Arc<()>,
@@ -148,7 +144,6 @@ pub struct PanelUi {
 }
 
 #[derive(Debug)]
-
 pub(crate) struct IconImage {
     pub path: String,
     primary: String,
@@ -1632,7 +1627,6 @@ pub fn load_item_help(game: &GameDir) -> std::io::Result<Vec<formats::data::item
 }
 
 #[cfg(test)]
-
 mod language_tests {
 
     use super::*;
@@ -1691,7 +1685,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn relocalization_keeps_panel_identity_and_advances_caption_texture_revisions() {
         let root = Directory::new();
 
@@ -1795,7 +1788,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn selected_resources_decode_in_their_language_with_one_read() {
         let root = Directory::new();
 
@@ -1815,7 +1807,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn english_fallback_uses_english_encoding_and_existing_translation_errors_propagate() {
         let root = Directory::new();
 
@@ -1846,7 +1837,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn ui_captions_and_character_descriptions_respect_individual_resource_languages() {
         let root = Directory::new();
 

@@ -215,14 +215,12 @@ pub fn assemble(kind: Shader) -> String {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
     use wgpu::naga;
 
     #[test]
-
     fn every_shader_variant_parses_and_validates() {
         for kind in super::super::SHADERS {
             let source = assemble(kind);

@@ -4,7 +4,6 @@ use std::{collections::HashMap, sync::mpsc};
 use web_time::{Duration, Instant};
 
 #[derive(Debug)]
-
 pub(crate) struct Prepared {
     pub serial: u64,
     pub terrain: Terrain,
@@ -15,7 +14,6 @@ pub(crate) struct Prepared {
 }
 
 #[derive(Debug)]
-
 pub(crate) struct Resources {
     pub objects: objects::resources::Bundle,
     pub actors: actors::resources::Bundle,
@@ -24,7 +22,6 @@ pub(crate) struct Resources {
 }
 
 #[derive(Debug)]
-
 pub(super) struct Inputs {
     pub registries: Arc<Registries>,
     pub actors: actors::resources::Snapshot,
@@ -33,7 +30,6 @@ pub(super) struct Inputs {
 }
 
 #[derive(Debug)]
-
 struct Request {
     zone: (u8, u8),
     resident: Vec<i32>,
@@ -155,7 +151,6 @@ fn prepare_resources(game: &GameDir, prepared: &mut Prepared, inputs: Inputs) ->
 type Reply = ((u8, u8), Result<Option<Prepared>>);
 
 #[derive(Debug)]
-
 pub(super) struct Loader {
     requests: mpsc::SyncSender<Request>,
     replies: mpsc::Receiver<Reply>,

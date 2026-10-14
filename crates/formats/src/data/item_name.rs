@@ -8,7 +8,6 @@ pub const OBFUSCATED_PREFIX: usize = 0x3E;
 pub const NAME_LEN: usize = 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Record {
     pub id: i32,
     pub name: Vec<u8>,

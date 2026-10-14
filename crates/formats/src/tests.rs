@@ -5,7 +5,6 @@ use error::Kind;
 use text::{Codepage, codepage};
 
 #[test]
-
 fn binary_reads_decode_unaligned_little_endian_values() {
     let bytes = [0, 0x78, 0x56, 0x34, 0x12];
 
@@ -17,7 +16,6 @@ fn binary_reads_decode_unaligned_little_endian_values() {
 }
 
 #[test]
-
 fn binary_reads_reject_truncated_and_overflowing_offsets() {
     for offset in [1, usize::MAX - 1, usize::MAX] {
         assert!(matches!(
@@ -40,7 +38,6 @@ fn binary_reads_reject_truncated_and_overflowing_offsets() {
 }
 
 #[test]
-
 fn config_preserves_signed_words_in_little_endian_order() {
     let mut config = Config {
         raw: std::array::from_fn(|i| i as i16 - 8),
@@ -58,7 +55,6 @@ fn config_preserves_signed_words_in_little_endian_order() {
 }
 
 #[test]
-
 fn config_rejects_all_short_files_and_ignores_trailing_bytes() {
     let config = Config::default();
 
@@ -80,7 +76,6 @@ fn config_rejects_all_short_files_and_ignores_trailing_bytes() {
 }
 
 #[test]
-
 fn config_resolution_is_one_based_with_fallback_for_invalid_indices() {
     let mut config = Config::default();
 
@@ -98,7 +93,6 @@ fn config_resolution_is_one_based_with_fallback_for_invalid_indices() {
 }
 
 #[test]
-
 fn config_distinguishes_unspecified_window_mode_and_clamps_brightness() {
     let mut config = Config::default();
 
@@ -127,7 +121,6 @@ fn config_distinguishes_unspecified_window_mode_and_clamps_brightness() {
 }
 
 #[test]
-
 fn windows_codepage_handles_typographic_characters_and_lossy_replacements() {
     let encoded = b"\x80 \x93Ol\xe1\x94 \x97 \x99";
 
@@ -141,7 +134,6 @@ fn windows_codepage_handles_typographic_characters_and_lossy_replacements() {
 }
 
 #[test]
-
 fn windows_codepage_round_trips_every_byte() {
     let bytes: Vec<u8> = (0..=255).collect();
 
@@ -151,7 +143,6 @@ fn windows_codepage_round_trips_every_byte() {
 }
 
 #[test]
-
 fn envelope_decodes_xor_and_requires_a_valid_checksum_trailer() {
     let encoded = [0x5a, 0xff, 0];
 
@@ -189,7 +180,6 @@ fn envelope_decodes_xor_and_requires_a_valid_checksum_trailer() {
 }
 
 #[test]
-
 fn synthetic_quick_slots_round_trip_and_pad_unused_records() {
     let slot = quick_slot::Slot {
         char_name: "test-character".to_owned(),
@@ -217,7 +207,6 @@ fn synthetic_quick_slots_round_trip_and_pad_unused_records() {
 }
 
 #[test]
-
 fn quick_slot_claim_keeps_matching_bindings_but_clears_evicted_bindings() {
     let mut slots: Vec<_> = (0..3)
         .map(|index| quick_slot::Slot {
@@ -243,7 +232,6 @@ fn quick_slot_claim_keeps_matching_bindings_but_clears_evicted_bindings() {
 }
 
 #[test]
-
 fn quick_slot_selection_prefers_free_records_and_does_not_evict_future_records() {
     let occupied = quick_slot::Slot {
         char_name: "test-occupied".to_owned(),
@@ -266,7 +254,6 @@ fn quick_slot_selection_prefers_free_records_and_does_not_evict_future_records()
 }
 
 #[test]
-
 fn sound_list_normalizes_paths_and_last_duplicate_wins() {
     let list =
         audio::sound_list::parse(b"1 sound\\old.wav 1\n2 sound/two.wav 3\n1 sound\\\\new.wav 2")
@@ -298,7 +285,6 @@ fn sound_list_normalizes_paths_and_last_duplicate_wins() {
 }
 
 #[test]
-
 fn sound_list_rejects_invalid_indices_and_malformed_numbers() {
     for bytes in [
         b"0 file.wav 1".as_slice(),
@@ -318,7 +304,6 @@ fn sound_list_rejects_invalid_indices_and_malformed_numbers() {
 }
 
 #[test]
-
 fn weather_preserves_unknown_codes_without_enabling_precipitation() {
     use net::weather::{self, Forecast};
 

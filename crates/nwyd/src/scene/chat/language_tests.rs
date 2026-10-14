@@ -2,7 +2,6 @@ use super::*;
 use crate::scene::login_panels::language_tests::{placed, translated};
 
 #[test]
-
 fn runtime_language_preserves_chat_draft_history_cooldowns_and_mode() {
     let mut panels = Panels::for_test();
 
@@ -132,7 +131,6 @@ fn runtime_language_preserves_chat_draft_history_cooldowns_and_mode() {
 }
 
 #[test]
-
 fn runtime_language_shout_submission_preserves_command_intent() {
     let mut panels = Panels::for_test();
 
@@ -213,7 +211,6 @@ fn runtime_language_shout_submission_preserves_command_intent() {
 }
 
 #[test]
-
 fn runtime_language_prior_command_drafts_keep_semantic_packets() {
     for (record, old, new) in [
         (61, "answer", "responder"),
@@ -280,7 +277,6 @@ fn runtime_language_prior_command_drafts_keep_semantic_packets() {
 }
 
 #[test]
-
 fn runtime_language_prior_local_command_draft_stays_local() {
     let mut panels = Panels::for_test();
 
@@ -326,7 +322,6 @@ fn runtime_language_prior_local_command_draft_stays_local() {
 }
 
 #[test]
-
 fn runtime_language_default_helm_command_remains_command_after_translation() {
     let mut panels = Panels::for_test();
 
@@ -372,7 +367,6 @@ fn runtime_language_default_helm_command_remains_command_after_translation() {
 }
 
 #[test]
-
 fn runtime_language_current_commands_precede_historical_alias_collisions() {
     for previous_record in [518, 1951, 1184, 234, 61] {
         for word in [
@@ -453,7 +447,6 @@ fn runtime_language_current_commands_precede_historical_alias_collisions() {
 }
 
 #[test]
-
 fn runtime_language_current_commands_precede_historical_shout_mode() {
     for word in [
         "tab",
@@ -502,7 +495,6 @@ fn runtime_language_current_commands_precede_historical_shout_mode() {
 }
 
 #[test]
-
 fn runtime_language_relocalize_refreshes_draft_mode_and_preserves_empty_selection() {
     for (draft, expected_mode, expected_label) in [
         ("/tab Example", WHISPER, "WhisperNew"),

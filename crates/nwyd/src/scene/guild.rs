@@ -2,7 +2,6 @@ use super::field::FieldScene;
 use formats::net::guild::{Command, EFFECT_KIND, Membership, PANEL_CONTENT, SOUND_SLOT};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Ping {
     Guildless,
     UpdateConn {
@@ -70,7 +69,6 @@ pub fn report_offline(scene: &mut FieldScene) -> Option<super::guild_panel::Conn
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PanelArm {
     NotReached,
     Refreshed,
@@ -80,7 +78,6 @@ pub enum PanelArm {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Applied {
     pub command: Command,
     pub raw_command: i32,

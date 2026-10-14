@@ -7,7 +7,6 @@ use crate::{
 use ui::text_entry::Mods;
 
 #[derive(Default)]
-
 pub struct InputState {
     pub(crate) mods: Mods,
     pub(crate) pointer_state: crate::scene::cursor::PointerState,

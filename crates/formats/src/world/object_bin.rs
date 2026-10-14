@@ -29,7 +29,6 @@ pub const KEY: [u8; 170] = [
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ObjectMasks {
     data: Vec<u8>,
 }
@@ -49,7 +48,6 @@ pub fn decrypt(cipher: &mut [u8]) {
 
 pub fn checksum(cipher: &[u8]) -> u32 {
     #[inline]
-
     fn trunc_mod4(v: i8) -> i32 {
         (v as i32) % 4
     }

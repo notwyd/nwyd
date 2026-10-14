@@ -10,7 +10,6 @@ use render::{
 pub const SNOW_TEXTURE: usize = 422;
 
 #[derive(Debug, Clone)]
-
 struct Gust {
     birth: Option<u32>,
     elapsed: u32,
@@ -20,7 +19,6 @@ struct Gust {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Gusts {
     last: u32,
     interval: u32,

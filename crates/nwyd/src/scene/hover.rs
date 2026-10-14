@@ -17,7 +17,6 @@ pub fn distance(a: (f32, f32), b: (f32, f32)) -> f32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Gate {
     Parked,
     Clear,
@@ -50,7 +49,6 @@ pub fn gate(actor: &Actor, is_player: bool, viewer_sees_hidden: bool, armed: u8)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Hovered {
     pub entity: Option<u16>,
     pub changed: bool,

@@ -149,7 +149,6 @@ pub fn line_of_sight(
 pub const CLIFF_DROP: i32 = 30;
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct HeightField<'a> {
     heights: &'a [i8],
     origin: (i32, i32),
@@ -211,7 +210,6 @@ impl<'a> HeightField<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Path {
     pub dirs: Vec<u8>,
     pub reached: (i32, i32),

@@ -18,7 +18,6 @@ pub const INDOOR_TEXTURES: [usize; 2] = [8, 9];
 pub const LAVA_TEXTURE: usize = 406;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Branch {
     Outdoor,
     Lava,
@@ -85,7 +84,6 @@ pub fn blend_enabled(scene_state: u32, x: f32, z: f32) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Sea {
     pub zone: (u8, u8),
     pub environment: i32,
@@ -273,7 +271,6 @@ pub fn build(records: &[ObjRecord], zone: (u8, u8), scene_state: u32) -> Vec<Sea
 }
 
 #[derive(Debug)]
-
 pub struct SeaScene {
     pub seas: Vec<Sea>,
     pub textures: Vec<BoundTexture>,
@@ -454,7 +451,6 @@ impl SeaScene {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct Frame {
     pub objects: Vec<SeaUniforms>,
     pub vertices: Vec<SeaVertex>,

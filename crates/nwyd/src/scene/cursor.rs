@@ -8,7 +8,6 @@ use render::device::Gpu;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, Default)]
-
 pub enum Location {
     #[default]
     Initial,
@@ -27,7 +26,6 @@ impl Location {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct EngineSprite {
     sets: formats::texture::texture_set_list::TextureSetList,
     textures: BTreeMap<u32, LoadedTexture>,
@@ -126,7 +124,6 @@ pub const FRAME_NORMAL: u32 = 0;
 pub const FRAME_ALTERNATE: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Pointer {
     Hidden,
     Normal,
@@ -174,7 +171,6 @@ pub fn hovered_emissive(scene: &FieldScene) -> Option<[f32; 4]> {
 pub const NO_HOVER: Option<[f32; 4]> = None;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PointerState {
     pub frame: u32,
     pub shown: Option<Pointer>,
@@ -225,7 +221,6 @@ impl PointerState {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Pointers {
     pub mode: CursorMode,
     pub normal: Option<exe::Cursor>,

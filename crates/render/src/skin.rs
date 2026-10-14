@@ -11,7 +11,6 @@ use formats::mesh::msh::{MAX_BONE_PALETTE, SkinMesh};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct SkinVertexGpu {
     pub position: [f32; 3],
     pub normal: [f32; 3],
@@ -67,7 +66,6 @@ impl SkinVertexGpu {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SkinAlloc {
     pub base_vertex: i32,
     pub start_index: u32,
@@ -83,7 +81,6 @@ impl SkinAlloc {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct SkinArena {
     pub vertices: Vec<SkinVertexGpu>,
     pub indices: Vec<u16>,
@@ -149,7 +146,6 @@ impl SkinArena {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct BonePalette {
     pub bones: [[f32; 16]; MAX_BONE_PALETTE],
 }
@@ -158,7 +154,6 @@ pub type MotionKey = (u64, u64);
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-
 struct TemporalPalette {
     current: BonePalette,
     previous: BonePalette,
@@ -167,7 +162,6 @@ struct TemporalPalette {
 }
 
 #[derive(Default)]
-
 struct PaletteHistory {
     previous: std::collections::HashMap<MotionKey, (BonePalette, [f32; 16])>,
 }
@@ -296,7 +290,6 @@ pub fn skin_light_direction() -> [f32; 4] {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct SkinFrame {
     pub projection: [f32; 16],
     pub view_inverse: [f32; 16],
@@ -327,7 +320,6 @@ impl SkinFrame {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct SkinObject {
     pub material_diffuse: [f32; 4],
     pub material_ambient_emissive: [f32; 4],
@@ -338,7 +330,6 @@ pub struct SkinObject {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SkinFog {
     pub start: f32,
     pub end: f32,
@@ -356,7 +347,6 @@ impl SkinFog {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SkinParams {
     pub diffuse: [f32; 4],
     pub ambient: [f32; 4],
@@ -372,7 +362,6 @@ pub struct SkinParams {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
-
 pub enum GlowMode {
     Off = 0,
     Modulate = 1,
@@ -463,7 +452,6 @@ impl SkinObject {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum SkinPass {
     Opaque,
     Highlight,
@@ -547,7 +535,6 @@ impl SkinPass {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SkinDraw {
     pub pass: SkinPass,
     pub part: usize,
@@ -590,7 +577,6 @@ pub struct SkinRenderer {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct SkinDrops {
     pub palette_demand: u32,
     pub over_capacity: u32,
@@ -1023,7 +1009,6 @@ impl SkinRenderer {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     pub fn prepare_with_history(
         &mut self,
         gpu: &Gpu,
@@ -1223,7 +1208,6 @@ impl SkinRenderer {
 }
 
 #[derive(Default)]
-
 struct DrawBindings {
     object: Option<u32>,
     texture: Option<Option<usize>>,

@@ -3,7 +3,6 @@ use formats::net::npc_line::{self, NpcLine};
 use formats::text::string_table::StringTable;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Applied {
     pub entity: u16,
     pub index: Option<usize>,

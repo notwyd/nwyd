@@ -4,7 +4,6 @@ use glam::Vec3;
 use render::camera::Matrix4;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub enum MeshSubmission {
     Glow(Glow),
     RotateLit(RotateLit),
@@ -13,7 +12,6 @@ pub enum MeshSubmission {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct AuthoredMesh {
     pub mesh_id: u32,
     pub world: Matrix4,
@@ -22,7 +20,6 @@ pub struct AuthoredMesh {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub enum MeshMaterial {
     Opaque,
     Additive,
@@ -100,7 +97,6 @@ impl AuthoredMesh {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct TexturedMesh {
     pub mesh_id: u32,
     pub world: Matrix4,
@@ -140,7 +136,6 @@ impl From<Glow> for MeshSubmission {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct RotateLit {
     pub mesh_id: i32,
     pub position: Vec3,
@@ -149,7 +144,6 @@ pub struct RotateLit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum OwnedGroup {
     HumanRotors(u16),
     HumanAffect(super::effect_context::ActorKey, u16),
@@ -161,7 +155,6 @@ pub enum OwnedGroup {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Removal {
     Expired,
     Replaced,
@@ -176,14 +169,12 @@ pub struct RemovalContext<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Pass {
     Effect,
     Mesh,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Base {
     VisualEffect,
     SceneNode,
@@ -194,7 +185,6 @@ pub const SCENE_NODE_METHOD_COUNT: usize = 14;
 pub const VISUAL_EFFECT_METHOD_COUNT: usize = 15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Cull {
     Kept,
     Rejected,
@@ -202,7 +192,6 @@ pub enum Cull {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Class {
     pub name: &'static str,
     pub method_count: usize,
@@ -220,7 +209,6 @@ impl Class {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Tick {
     pub now_ms: u32,
     pub yaw: f32,
@@ -324,7 +312,6 @@ pub trait Effect: std::fmt::Debug {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refused {
     CullOnSceneNode,
     MethodCountDisagreesWithBase,
@@ -337,7 +324,6 @@ const PROBE_EYES: [Vec3; 3] = [
 ];
 
 #[derive(Debug, Default)]
-
 pub struct Tree {
     nodes: Vec<Box<dyn Effect>>,
     human_controls: human::Controls,

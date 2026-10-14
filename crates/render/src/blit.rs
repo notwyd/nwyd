@@ -4,7 +4,6 @@ use crate::target::Offscreen;
 pub const LETTERBOX: wgpu::Color = wgpu::Color::BLACK;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Fit {
     pub x: u32,
     pub y: u32,

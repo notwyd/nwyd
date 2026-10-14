@@ -39,7 +39,6 @@ pub const CAMERA_CREATE: &str = r"UI\CreCamAction.bin";
 mod language_tests;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Cameras {
     pub select: CamAction,
     pub deselect: CamAction,
@@ -57,7 +56,6 @@ impl Cameras {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Mode {
     #[default]
     Select,
@@ -88,7 +86,6 @@ pub const APPROACH_BACKOFF: f32 = 4.0;
 pub const APPROACH_YAW: f32 = f32::from_bits(0x4233_126F);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Approach {
     Toward,
     Away,
@@ -133,7 +130,6 @@ pub fn approach(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Pane {
     pub script: &'static [u8],
     pub nui_id: u32,
@@ -183,7 +179,6 @@ pub use super::lock::{
 };
 
 #[derive(Debug)]
-
 pub struct Panels {
     pub panes: [PlacedPanel; 4],
     delete_owner: ui::element::Instance,
@@ -636,7 +631,6 @@ pub fn restore_selection_bodies(block: &mut Block, substitute: i16) {
 }
 
 #[derive(Debug)]
-
 pub struct SelectChar {
     pub selection_body_write: Option<i16>,
     pub legacy_boxes: super::legacy_message_box::Dialogs,
@@ -1056,7 +1050,6 @@ pub fn world_frame(scene: &mut SelectChar, backbuffer: (u32, u32)) -> WorldFrame
 }
 
 #[derive(Debug)]
-
 pub struct LanguageUpdate {
     game: GameDir,
     strings: Strings,

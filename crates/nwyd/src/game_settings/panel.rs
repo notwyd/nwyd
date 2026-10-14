@@ -17,7 +17,6 @@ use ui::{
 const CAPTIONS: u32 = 0x0002_0000;
 
 #[derive(Clone, Copy)]
-
 enum Slider {
     Music,
     Sound,
@@ -238,7 +237,6 @@ pub struct Panel {
 
 impl Panel {
     #[cfg(test)]
-
     pub(crate) fn for_test(preferences: Preferences) -> Self {
         let chains = crate::fonts::Chains::default();
 

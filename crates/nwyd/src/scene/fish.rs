@@ -24,7 +24,6 @@ pub const WIDE_Z: f32 = 0.3;
 pub const TIGHT: f32 = 0.1;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Fish {
     pub record: usize,
     pub kind: u32,
@@ -191,7 +190,6 @@ pub fn material(terrain: [f32; 4], light0: [f32; 4], light1: [f32; 4]) -> ([f32;
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct School {
     pub fish: Vec<Fish>,
 }

@@ -2,7 +2,6 @@ use glam::Vec3;
 use render::cull::Aabb;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct State {
     pub opacity: f32,
     last: Option<u32>,

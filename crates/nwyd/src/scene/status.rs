@@ -18,7 +18,6 @@ pub const FIELDS: usize = 12;
 pub const CHANNELS: usize = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Status {
     pub populations: [i32; CHANNELS],
     pub spare: i32,
@@ -26,7 +25,6 @@ pub struct Status {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ParsedStatus {
     pub status: Status,
     pub converted: usize,
@@ -37,7 +35,6 @@ fn plain_answers(values: Vec<Option<ParsedStatus>>) -> Vec<Option<Status>> {
 }
 
 #[derive(Debug)]
-
 struct Batch {
     generation: u64,
     answers: Vec<Option<Option<ParsedStatus>>>,
@@ -45,7 +42,6 @@ struct Batch {
 }
 
 #[derive(Debug)]
-
 struct Reply {
     generation: u64,
     record: usize,
@@ -53,7 +49,6 @@ struct Reply {
 }
 
 #[derive(Debug)]
-
 pub struct AggregateFetch {
     pub timeout: Option<Duration>,
     pub requested: Vec<(u64, usize, String)>,
@@ -272,7 +267,6 @@ impl Status {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Error {
     NotHttp(String),
     Unreachable(String),
@@ -433,13 +427,11 @@ pub fn parse_fields(body: &str) -> ParsedStatus {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn fetch(url: &str, timeout: Duration) -> Result<Status, Error> {
     fetch_fields(url, timeout).map(|p| p.status)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn fetch_fields(url: &str, timeout: Duration) -> Result<ParsedStatus, Error> {
     #[cfg(windows)]
     {
@@ -461,7 +453,6 @@ pub fn fetch_fields(url: &str, timeout: Duration) -> Result<ParsedStatus, Error>
 }
 
 #[cfg(not(any(windows, target_arch = "wasm32")))]
-
 fn status_agent(tls: ureq::tls::TlsConfig) -> ureq::Agent {
     let config = ureq::Agent::config_builder()
         .tls_config(tls)
@@ -477,7 +468,6 @@ fn status_agent(tls: ureq::tls::TlsConfig) -> ureq::Agent {
 }
 
 #[cfg(not(any(windows, target_arch = "wasm32")))]
-
 fn fetch_with_agent(
     value: &str,
     timeout: Duration,
@@ -560,7 +550,6 @@ fn fetch_with_agent(
 }
 
 #[cfg(target_arch = "wasm32")]
-
 pub async fn fetch_fields_async(value: &str, timeout: Duration) -> Result<ParsedStatus, Error> {
     let url = status_url(value)?;
 

@@ -140,7 +140,6 @@ pub(crate) fn guildmark_get(url: &str, limit: usize) -> io::Result<Vec<u8>> {
 }
 
 #[derive(Default)]
-
 pub(crate) struct Post {
     connection: Option<Handle>,
     session: Option<Handle>,

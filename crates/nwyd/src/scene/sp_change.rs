@@ -202,7 +202,6 @@ pub fn spin_burst(at: Vec3, t: f32) -> Burst {
 }
 
 #[derive(Debug)]
-
 pub struct Built {
     pub emitter: SpChange,
     pub afterimages: Vec<SkinMeshEffect>,
@@ -225,7 +224,6 @@ pub fn build(at: Vec3, mode: i32, yaw: f32, now_ms: u32) -> Built {
 }
 
 #[derive(Debug)]
-
 pub struct SpChange {
     pub owner: Option<super::effect_context::ActorKey>,
     pub mode: i32,

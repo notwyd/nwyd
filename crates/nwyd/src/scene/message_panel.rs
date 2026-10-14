@@ -15,7 +15,6 @@ use render::sprite::{Quad, UvRule};
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
-
 pub struct Overlay {
     pub state: MessagePanel,
     sets: TextureSetList,
@@ -34,7 +33,6 @@ impl Overlay {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         Self {
             state: MessagePanel::new(),

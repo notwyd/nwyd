@@ -33,7 +33,6 @@ pub const QUESTION_STRDEF: usize = 28;
 pub const SOURCE_NONE: u8 = 0xFF;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Offer {
     pub items: [Item; SLOTS],
     pub source_slots: [u8; SLOTS],

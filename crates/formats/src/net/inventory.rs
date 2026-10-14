@@ -13,7 +13,6 @@ pub const PAYLOAD_LEN: usize = GOLD_OFF + 4;
 pub const FRAME_LEN: usize = PAYLOAD_LEN + 0x0C;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Bag {
     pub carry: [Item; SLOTS],
     pub gold: u32,

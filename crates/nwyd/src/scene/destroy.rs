@@ -22,7 +22,6 @@ pub const MAX_SLOT: i32 = 0x3C;
 pub const CARRIED_GROUP: i32 = ui::widget::cell_group::INVENTORY;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Prompt {
     pub item_id: u16,
     pub slot: i32,

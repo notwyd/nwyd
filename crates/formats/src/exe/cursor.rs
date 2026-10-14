@@ -5,7 +5,6 @@ use crate::util::{u16_at, u32_at};
 const KIND: Kind = Kind::Executable;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Cursor {
     pub width: u32,
     pub height: u32,

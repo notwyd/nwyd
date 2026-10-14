@@ -10,13 +10,11 @@ pub const SPAWN_ARGUMENT_COUNT: usize = 12;
 pub const OBJECT_SIZE: u16 = 148;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Unmodelled {
     Patch { offset: u16, bytes: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Order {
     pub source: PositionRef,
     pub dest: PositionRef,

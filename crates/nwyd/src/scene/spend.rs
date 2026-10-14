@@ -20,7 +20,6 @@ pub const STAT_BUTTONS: [&str; 4] = ["StatBtn0", "StatBtn1", "StatBtn2", "StatBt
 pub const MASTERY_BUTTONS: [&str; 4] = ["MasterBtn0", "MasterBtn1", "MasterBtn2", "MasterBtn3"];
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Repeat {
     pub left_down: bool,
     button: u8,
@@ -127,14 +126,12 @@ pub fn tick(panels: &mut Panels, entered: &Entered, body: Option<Raise>, now: u3
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Spent {
     Sent { kind: u16, index: u16 },
     Refused(Refused),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refused {
     NoBody,
     Dead,
@@ -143,7 +140,6 @@ pub enum Refused {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Raise {
     pub dead: bool,
     pub absent: bool,

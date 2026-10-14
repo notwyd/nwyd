@@ -2,7 +2,6 @@ use super::field::FieldScene;
 use formats::net::kickout::{self, Kickout};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct MessagePanel {
     pub visible: bool,
     pub shown_at_ms: u32,
@@ -86,7 +85,6 @@ pub fn level_of(scene: &FieldScene) -> Option<i16> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Applied {
     Characters {
         code: i16,
@@ -104,7 +102,6 @@ pub enum Applied {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Banner {
     pub record: usize,
     pub life_ms: u32,

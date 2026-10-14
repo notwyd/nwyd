@@ -34,7 +34,6 @@ pub fn travel_time_ms(src: Vec3, dst: Vec3) -> u32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Blend {
     Alpha,
     Additive,
@@ -79,7 +78,6 @@ impl Blend {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ColourAnim {
     None,
     Cosine,
@@ -121,7 +119,6 @@ impl ColourAnim {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Motion {
     None,
     Rise,
@@ -177,7 +174,6 @@ pub const BEAD_STYLE: i32 = 0;
 pub const ORBIT_BEAD_ARGB: u32 = 0xFFFF_0000;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Mote {
     pub kind: usize,
     pub lifetime_ms: u32,
@@ -267,7 +263,6 @@ pub fn owner_seek_mote(roll: u32) -> Mote {
 }
 
 #[derive(Debug, Default, Clone)]
-
 pub struct Emissions {
     pub beads: Vec<super::skill::poison::Built>,
     pub motes: Vec<Billboard>,
@@ -326,7 +321,6 @@ pub fn mote_billboard(mote: &Mote, at: Vec3, rng: &mut Lcg) -> Billboard {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Owner {
     pub position: Vec3,
     pub yaw: f32,
@@ -335,7 +329,6 @@ pub struct Owner {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Rig {
     pub model: usize,
     pub mesh_id: i32,
@@ -369,7 +362,6 @@ impl Rig {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct SkinMeshEffect {
     pub construction: Option<SkinConstruction>,
     pub owner: Option<super::effect_context::ActorKey>,
@@ -972,7 +964,6 @@ impl SkinMeshEffect {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct SkinInput {
     pub model_id: i32,
     pub parts: [formats::mesh::appearance::PartRef; 8],
@@ -983,7 +974,6 @@ pub struct SkinInput {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct SkinConstruction {
     pub primary: SkinInput,
     pub secondary: Option<SkinInput>,
@@ -1019,7 +1009,6 @@ pub struct Emit<'a> {
 pub const EFFECT_ALPHA_REFERENCE: f32 = 0.0;
 
 #[derive(Debug)]
-
 pub enum Removal {
     Fire(Vec3),
     Orbit(Box<SkinMeshEffect>),
@@ -1069,7 +1058,6 @@ impl SkinMeshEffect {
 }
 
 #[derive(Debug, Default)]
-
 pub struct SkinFxScene {
     pub objects: Vec<SkinMeshEffect>,
     pub released: usize,
@@ -1232,7 +1220,6 @@ pub fn afterimage(body: BodySnapshot) -> SkinMeshEffect {
 pub const YAW_EXEMPT_WEAPON_CLASS: i32 = 0x65;
 
 #[derive(Debug, Clone)]
-
 pub struct RigSnapshot {
     pub model: usize,
     pub mesh_id: i32,
@@ -1240,7 +1227,6 @@ pub struct RigSnapshot {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct BodySnapshot {
     pub mesh_id: i32,
     pub model: usize,

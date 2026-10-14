@@ -38,7 +38,6 @@ pub(crate) fn relocated(actor: &mut super::actors::Actor, effects: &mut Billboar
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-
 pub struct MotionState {
     pub water_ms: u32,
     pub previous_body: Vec3,
@@ -211,7 +210,6 @@ pub(crate) fn body_cloud(
 }
 
 #[derive(Debug)]
-
 struct HandSprite {
     group: OwnedGroup,
     billboard: Billboard,
@@ -329,7 +327,6 @@ pub(crate) fn hand_sprites(
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-
 struct Pet {
     model: i32,
     part: i16,
@@ -525,7 +522,6 @@ pub(crate) fn held_skins(actors: &mut ActorScene, now: u32) {
 }
 
 #[derive(Debug)]
-
 struct OwnedQuad {
     key: ActorKey,
     slot: u16,
@@ -538,7 +534,6 @@ struct OwnedQuad {
 }
 
 #[derive(Debug)]
-
 struct StatusSprite {
     key: ActorKey,
     slot: u16,
@@ -684,7 +679,6 @@ fn status_sprites(actors: &ActorScene, effects: &mut BillboardScene, now: u32) {
 }
 
 #[derive(Debug)]
-
 struct OwnedMesh {
     key: ActorKey,
     slot: u16,

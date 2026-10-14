@@ -26,7 +26,6 @@ pub const RULE_BLOCK: usize = 0x1E0;
 pub const RULE_GROUPS: usize = MATERIALS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Rule {
     pub kind: i32,
     pub count: i32,
@@ -35,7 +34,6 @@ pub struct Rule {
 pub const TAIL_AT: usize = REWARDS_AT + REWARDS * Item::LEN;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Mission {
     pub gold_cost: i32,
     pub key: i32,
@@ -114,7 +112,6 @@ impl Mission {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct MissionItems {
     pub missions: Vec<Mission>,
 }

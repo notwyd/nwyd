@@ -8,7 +8,6 @@ pub const VARIANTS: u32 = 23;
 pub const STATES: u32 = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Class {
     Arrow,
     EffectBillboard,

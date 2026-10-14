@@ -2,7 +2,6 @@ use super::{effect_context::Construction, field::FieldScene};
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Blind {
     pub birth_ms: u32,
     pub lifetime_ms: u32,

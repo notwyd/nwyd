@@ -30,7 +30,6 @@ pub const SHIPPED_GLOW_RECORDS: [(&str, f32, f32); 2] = [
 pub const MODE_CACHE_POSITION: (f32, f32) = (2366.5, 3926.5);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Glow {
     Off,
     Breathe,
@@ -73,7 +72,6 @@ impl Glow {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct GlowFrame {
     pub size: Vec3,
     pub argb: u32,
@@ -149,7 +147,6 @@ pub const ATTACHED_TEXTURE: usize = 7;
 pub const ATTACHED_RADIUS: f32 = 1.0;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Attached {
     pub shade: Shade,
     pub placed: bool,
@@ -199,7 +196,6 @@ pub fn attach(slot: &mut Option<Attached>, argb: u32, grid: i32) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct BillboardWithShade {
     pub billboard: super::effects::Billboard,
     pub attached: Option<Attached>,

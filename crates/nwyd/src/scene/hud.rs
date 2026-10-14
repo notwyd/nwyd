@@ -107,7 +107,6 @@ pub const BUFF_CELLS: usize = affect::AFFECTS;
 pub const EXP_LAMPS: usize = 3;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct EffectStrings {
     names: Vec<String>,
     subnames: Vec<String>,
@@ -151,7 +150,6 @@ impl EffectStrings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AffectTooltip {
     pub kind: u8,
     pub value: u16,
@@ -268,7 +266,6 @@ pub const TOAST_POTION_ON: usize = 480;
 pub const TOAST_COLOR: u32 = 0xFFFF_AAAA;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Experience {
     pub lamps: usize,
     pub tenth: i64,
@@ -315,7 +312,6 @@ impl Experience {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Combat {
     pub mode: i32,
     pub potion: i32,
@@ -405,7 +401,6 @@ impl Combat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct InputLock {
     pub stamps: [u32; LOCK_STAMPS],
 }
@@ -429,7 +424,6 @@ impl InputLock {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Cycle {
     Mode(i32),
     Potion(i32),
@@ -438,7 +432,6 @@ pub enum Cycle {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Command {
     SelectSkill(usize),
     SelectQuick(usize),
@@ -454,7 +447,6 @@ pub enum Command {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Plate {
     pub name: String,
     pub level: u32,
@@ -466,7 +458,6 @@ pub struct Plate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct TargetPlate {
     pub actor: usize,
     pub name: String,

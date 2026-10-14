@@ -8,7 +8,6 @@ struct Work {
 }
 
 #[derive(Default)]
-
 struct Pool {
     jobs: Vec<Work>,
     completed: VecDeque<(mpsc::Sender<Got>, Got)>,

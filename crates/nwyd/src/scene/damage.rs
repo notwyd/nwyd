@@ -10,7 +10,6 @@ use std::f32::consts::PI;
 const FONT_KEY: u32 = 0x0700_0000;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct FontStyle {
     pub colour: u32,
     pub scale: f32,
@@ -61,7 +60,6 @@ pub const EXP_LIFE_MS: u32 = 0x4B0;
 pub const HOLD_MS: [u32; 5] = [100, 300, 400, 500, 600];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Ramp {
     pub from: f32,
     pub until: f32,
@@ -95,7 +93,6 @@ impl Ramp {
 pub const KNEE: f32 = 0.8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Drift(pub u16);
 
 impl Drift {
@@ -175,7 +172,6 @@ pub fn query_glyph(set: u32) -> i32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Glyph {
     pub x: f32,
     pub y: f32,
@@ -270,7 +266,6 @@ pub fn advance(index: i32, items: &[Item], scale: f32, sx: f32) -> f32 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Number {
     pub kind: u8,
     pub text: String,
@@ -294,7 +289,6 @@ pub struct Number {
 
 impl Number {
     #[allow(clippy::too_many_arguments)]
-
     pub fn new(
         text: &str,
         at: (f32, f32),
@@ -506,7 +500,6 @@ pub fn set_of(kind: u8) -> Option<u32> {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Numbers {
     pub live: Vec<Number>,
     pub draw_suppressed: bool,

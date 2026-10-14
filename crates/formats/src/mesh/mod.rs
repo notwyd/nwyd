@@ -12,7 +12,6 @@ pub mod registry;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct StaticVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
@@ -22,7 +21,6 @@ pub struct StaticVertex {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SkinVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
@@ -67,7 +65,6 @@ pub(crate) fn read_matrix(bytes: &[u8]) -> Matrix4 {
 }
 
 #[inline]
-
 pub(crate) fn read_f32(bytes: &[u8], off: usize) -> f32 {
     f32::from_le_bytes(
         bytes[off..off + 4]
@@ -77,7 +74,6 @@ pub(crate) fn read_f32(bytes: &[u8], off: usize) -> f32 {
 }
 
 #[inline]
-
 pub(crate) fn read_vec3(bytes: &[u8], off: usize) -> [f32; 3] {
     [
         read_f32(bytes, off),
@@ -87,7 +83,6 @@ pub(crate) fn read_vec3(bytes: &[u8], off: usize) -> [f32; 3] {
 }
 
 #[inline]
-
 pub(crate) fn read_vec2(bytes: &[u8], off: usize) -> [f32; 2] {
     [read_f32(bytes, off), read_f32(bytes, off + 4)]
 }

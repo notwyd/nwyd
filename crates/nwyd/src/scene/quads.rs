@@ -29,7 +29,6 @@ pub const FROZEN_T: f32 = 0.3;
 pub const COLOUR_MODE: i32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct GroundQuad {
     pub owner: usize,
     pub slot: Slot,
@@ -44,7 +43,6 @@ pub struct GroundQuad {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Slot {
     Body,
     Glow,
@@ -227,7 +225,6 @@ impl GroundQuad {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Life {
     pub lifetime_ms: u32,
     pub elapsed_ms: u32,

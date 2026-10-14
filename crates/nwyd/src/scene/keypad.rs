@@ -30,7 +30,6 @@ pub const MASK: &str = "**********";
 pub const PRESS_MS: u32 = 200;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Pad {
     pub labels: [u8; DIGITS],
     pub typed: Vec<u8>,

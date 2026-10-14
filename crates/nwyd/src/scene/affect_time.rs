@@ -1,5 +1,4 @@
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Clock {
     pub year: i32,
     pub day: i32,
@@ -100,7 +99,6 @@ impl Clock {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Duration {
     Empty,
     Seconds(i32),

@@ -5,7 +5,6 @@ pub const MAX_MESH_ID: u32 = 3499;
 pub const PRIMARY_SLOTS: usize = 3500;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct MeshList {
     entries: BTreeMap<u32, String>,
 }

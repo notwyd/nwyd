@@ -6,7 +6,6 @@ use formats::net::account::Item;
 use formats::net::backpack::{Arrival, Clear, Container};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Arrived {
     Gold {
         amount: u32,
@@ -25,7 +24,6 @@ pub enum Arrived {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Cleared {
     pub container: Option<Container>,
     pub slot: u32,

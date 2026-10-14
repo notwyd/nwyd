@@ -84,7 +84,6 @@ pub const SHADE_MS: u32 = 3000;
 pub const DETAIL_GATE: DetailGate = DetailGate::Always;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Flash {
     pub at: Vec3,
     pub reserved_parameter: i32,
@@ -130,7 +129,6 @@ impl Effect for Flash {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub billboards: Vec<Billboard>,
     pub quads: Vec<TimedQuad>,

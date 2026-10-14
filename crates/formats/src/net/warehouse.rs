@@ -26,7 +26,6 @@ pub mod at {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Change {
     Set,
     Deposit,
@@ -57,14 +56,12 @@ impl Change {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Balances {
     pub carried: u32,
     pub warehouse: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Move {
     pub change: Change,
     pub amount: u32,

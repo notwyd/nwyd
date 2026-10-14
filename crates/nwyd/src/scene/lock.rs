@@ -55,7 +55,6 @@ pub fn packet(pin: &[u8], confirm: bool) -> [u8; LEN] {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Ok {
     Unlock(Box<[u8; LEN]>),
     Delete(Box<[u8; delete::DELETE_LEN]>),
@@ -92,7 +91,6 @@ impl Ok {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Change {
     Submit(Box<[u8; LEN]>),
     Saved,
@@ -120,7 +118,6 @@ pub fn change(state: u8, typed: &[u8], saved: &[u8]) -> Change {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Reply {
     Unlocked,
     ChangeAccepted,

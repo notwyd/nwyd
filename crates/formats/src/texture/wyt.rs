@@ -17,7 +17,6 @@ const IMAGE_TYPE_RLE_TRUECOLOR: u8 = 10;
 const DESCRIPTOR_TOP_ORIGIN: u8 = 0x20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct TgaHeader {
     pub id_length: u8,
     pub colormap_type: u8,
@@ -69,13 +68,11 @@ impl TgaHeader {
 }
 
 #[inline]
-
 const fn expand5(v: u8) -> u8 {
     (v << 3) | (v >> 2)
 }
 
 #[inline]
-
 fn to_rgba(src: &[u8], bpp: usize, grayscale: bool) -> [u8; 4] {
     match (bpp, grayscale) {
         (4, _) => [src[2], src[1], src[0], src[3]],

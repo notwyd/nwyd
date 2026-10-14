@@ -17,7 +17,6 @@ pub const PORTAL_LIFE_MS: u32 = 1_000;
 pub const PORTAL_SOUND: u32 = 0x9F;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Vanished {
     pub entity: u16,
     pub index: Option<usize>,
@@ -34,7 +33,6 @@ pub struct Vanished {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct PanelTeardown {
     pub pgt_menu: bool,
     pub item_shop: bool,

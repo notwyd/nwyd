@@ -1,7 +1,6 @@
 use crate::text::Codepage;
 
 #[derive(Clone, PartialEq, Eq)]
-
 pub struct Credentials {
     pub kind: u16,
     account: String,
@@ -32,7 +31,6 @@ impl std::fmt::Debug for Credentials {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Error {
     ShortBlob,
     NonDecimal,

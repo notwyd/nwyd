@@ -7,7 +7,6 @@ pub const SLOTS: usize = 4;
 pub type Row = [i32; FIELDS];
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct SelChar {
     pub rows: Vec<Row>,
 }

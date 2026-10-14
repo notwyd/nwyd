@@ -76,7 +76,6 @@ pub const MINIMUM_LEN: usize = MOTTO_OFF;
 pub const SHOP_LEN: usize = MOTTO_OFF + MOTTO_LEN;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Spawn {
     pub x: i16,
     pub z: i16,

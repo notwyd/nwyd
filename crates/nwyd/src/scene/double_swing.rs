@@ -65,7 +65,6 @@ pub mod mode {
 }
 
 #[derive(Debug)]
-
 pub struct DoubleSwing {
     pub source: Vec3,
     pub dest: Vec3,

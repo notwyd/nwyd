@@ -23,14 +23,12 @@ pub const ACCEPTED_STATUS: u16 = 0xC8;
 pub const SLOTS: usize = 15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum State {
     Failed = 3,
     Done = 4,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-
 pub struct Request {
     pub tag: i32,
     pub url: String,
@@ -66,7 +64,6 @@ impl Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Answer {
     pub tag: i32,
     pub state: State,
@@ -74,7 +71,6 @@ pub struct Answer {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Error {
     BadUrl(String),
     Io(String),
@@ -107,13 +103,11 @@ pub fn crack(address: &str) -> Result<(String, u16, String), Error> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn fetch(request: &Request, timeout: Duration) -> Result<String, Error> {
     Transport::new(timeout).fetch(request)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 struct Transport {
     #[cfg(not(any(windows, target_arch = "wasm32")))]
     agent: ureq::Agent,
@@ -122,7 +116,6 @@ struct Transport {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 impl Transport {
     fn new(_timeout: Duration) -> Self {
         #[cfg(not(any(windows, target_arch = "wasm32")))]
@@ -165,7 +158,6 @@ impl Transport {
 }
 
 #[cfg(not(any(windows, target_arch = "wasm32")))]
-
 fn fetch_with_agent(request: &Request, agent: &ureq::Agent) -> Result<String, Error> {
     let mut response = agent
         .post(&request.url)
@@ -203,7 +195,6 @@ pub struct Ring {
 
 impl Ring {
     #[cfg(not(target_arch = "wasm32"))]
-
     pub fn spawn(timeout: Duration) -> Self {
         let (to_worker, work) = channel::<Request>();
 
@@ -287,7 +278,6 @@ impl Ring {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 async fn fetch_async(request: &Request, timeout: Duration) -> Result<String, Error> {
     crack(&request.url)?;
 
@@ -304,7 +294,6 @@ async fn fetch_async(request: &Request, timeout: Duration) -> Result<String, Err
 }
 
 #[cfg(target_arch = "wasm32")]
-
 struct BrowserWorker {
     timeout: Duration,
     done: Sender<Answer>,
@@ -313,7 +302,6 @@ struct BrowserWorker {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 impl BrowserWorker {
     fn push(&self, request: Request) {
         self.pending.borrow_mut().push_back(request);
@@ -366,7 +354,6 @@ impl BrowserWorker {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 impl Ring {
     pub fn spawn(timeout: Duration) -> Self {
         let (done, from_worker) = channel();

@@ -56,7 +56,6 @@ pub mod action {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-
 pub struct Live {
     pub position: (u16, u16),
     pub affect_20: bool,
@@ -67,7 +66,6 @@ pub struct Live {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Action {
     Open {
         content: u32,
@@ -140,7 +138,6 @@ pub fn deposits(player: &Entered, items: &ItemList, at: Coord) -> bool {
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn right_click(
     player: &mut Entered,
     items: &ItemList,
@@ -408,7 +405,6 @@ pub fn right_click(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refused {
     NotTheBackpack,
     EmptyCell,
@@ -417,7 +413,6 @@ pub enum Refused {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Dispatched {
     pub sent: Option<Action>,
     pub refused: Option<Refused>,
@@ -462,7 +457,6 @@ impl Dispatched {
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn dispatch(
     player: &mut Entered,
     items: &ItemList,
@@ -836,7 +830,6 @@ pub fn ctrl_move(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Click {
     Nothing,
     Split { slot: i32 },
@@ -845,7 +838,6 @@ pub enum Click {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Cargo<'a> {
     pub slots: &'a [Item],
     pub tab: i32,
@@ -1208,13 +1200,11 @@ pub fn slow_refine(id: i32) -> bool {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
 
     #[test]
-
     fn dispatched_items_track_use_after_the_send_and_before_inventory_refresh() {
         let at = Coord {
             container: container::INVENTORY,
@@ -1246,7 +1236,6 @@ mod tests {
     }
 
     #[test]
-
     fn refused_and_empty_dispatches_do_not_track_item_use() {
         let at = Coord {
             container: container::INVENTORY,

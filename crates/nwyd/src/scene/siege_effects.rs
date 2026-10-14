@@ -7,7 +7,6 @@ use super::{
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct State {
     pub stamp: u32,
     pub count: u8,

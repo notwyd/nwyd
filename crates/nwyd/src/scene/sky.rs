@@ -1,7 +1,6 @@
 use super::world::{LIGHT0_BY_DAY, SKY_COLOR_BY_DAY};
 
 #[derive(Debug, Clone)]
-
 pub struct Ornaments {
     pub billboards: [super::effects::Billboard; 22],
 }
@@ -83,7 +82,6 @@ impl Ornaments {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     pub fn submit(
         &self,
         sky: Sky,
@@ -135,7 +133,6 @@ pub fn row(day: u32) -> Option<usize> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Blend {
     pub sky_color: u32,
     pub light0: [f32; 4],
@@ -143,7 +140,6 @@ pub struct Blend {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Sky {
     pub day: u32,
     pub from: usize,

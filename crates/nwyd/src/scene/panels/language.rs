@@ -173,7 +173,6 @@ impl Panels {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -229,7 +228,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_preserves_live_panels_and_resets_missing_translated_item_names() {
         let root = Directory::new();
 
@@ -303,7 +301,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_preparation_failure_leaves_live_panels_untouched() {
         let root = Directory::new();
 
@@ -319,7 +316,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_preserves_unhandled_chat_scroll_sentinel_and_history() {
         let mut panels = super::super::language_tests::populated();
 
@@ -365,7 +361,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_updates_coin_prompt_and_combine_cost_without_resetting_draft() {
         let root = Directory::new();
 

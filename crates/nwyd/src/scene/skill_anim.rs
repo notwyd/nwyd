@@ -51,7 +51,6 @@ pub const TARGET_SCALE_MAX: f32 = 2.0;
 pub const GROUND_SCALE: f32 = 0.5;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct AnchorTarget {
     pub position: Vec2,
     pub model: u32,
@@ -61,7 +60,6 @@ pub struct AnchorTarget {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Anchor {
     pub point: Vec2,
     pub scale: f32,
@@ -173,14 +171,12 @@ pub const PULSE_PARTICLE_TEXTURE: i32 = 0xE7;
 pub const PULSE_BLADE_TEXTURE: i32 = 0xE6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PulseSide {
     Main,
     Off,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PulseInput {
     pub entity: u16,
     pub parked: bool,
@@ -209,7 +205,6 @@ pub struct PulseInput {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PulseMesh {
     pub mesh: i32,
     pub argb: u32,
@@ -226,7 +221,6 @@ pub struct PulseMesh {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PulseShade {
     pub grid: i32,
     pub texture: i32,
@@ -239,7 +233,6 @@ pub struct PulseShade {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PulseParticle {
     pub at: Vec3,
     pub axis: Vec3,
@@ -255,7 +248,6 @@ pub struct PulseParticle {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PulseBlade {
     pub texture: i32,
     pub lifetime_ms: u32,
@@ -274,7 +266,6 @@ pub struct PulseBlade {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum PulseStep {
     Mesh(PulseMesh),
     Shade(PulseShade),
@@ -284,7 +275,6 @@ pub enum PulseStep {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct PulsePlan {
     pub side: PulseSide,
     pub selector: i32,
@@ -294,7 +284,6 @@ pub struct PulsePlan {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct DamageSoundRequest {
     pub entity: u16,
     pub token: u64,
@@ -657,7 +646,6 @@ fn off_pulse(anchor: Anchor, input: PulseInput) -> Vec<PulseStep> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Caster {
     pub entity: u16,
     pub model: u32,
@@ -719,7 +707,6 @@ pub fn admits_ground(row: i8) -> Option<usize> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Cast {
     Fallback(Option<usize>),
     Silent(&'static str),
@@ -727,7 +714,6 @@ pub enum Cast {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Chain {
     pub row: usize,
     pub clips: [i32; SLOTS],
@@ -744,7 +730,6 @@ impl Chain {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Advance {
     Inactive,
     Play(usize),
@@ -752,14 +737,12 @@ pub enum Advance {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 struct Sequence {
     cursor: usize,
     clips: [i32; SLOTS],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 struct DamageSoundState {
     last_kind: i16,
     last_play_ms: u32,
@@ -777,7 +760,6 @@ impl Default for DamageSoundState {
 }
 
 #[derive(Debug, Default)]
-
 pub struct State {
     sequences: FxHashMap<u16, Sequence>,
     anchors: FxHashMap<u16, Anchor>,

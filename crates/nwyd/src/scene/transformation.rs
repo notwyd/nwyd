@@ -6,7 +6,6 @@ use super::{
 use glam::Vec3;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-
 pub struct State {
     pub variant: u8,
     pub started: Option<u32>,

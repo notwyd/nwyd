@@ -5,7 +5,6 @@ pub const RECORD_LEN: usize = 16;
 pub const LEN: usize = RECORDS * RECORD_LEN;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Coupon {
     pub id_from: i32,
     pub id_to: i32,

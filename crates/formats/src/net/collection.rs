@@ -13,7 +13,6 @@ pub const READ_INDICES: usize = 113;
 pub const SLOT_BITS: usize = crate::data::collection::NEEDED;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Progress {
     pub flags: [u8; FLAG_BYTES],
 }

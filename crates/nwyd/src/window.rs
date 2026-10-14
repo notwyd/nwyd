@@ -52,7 +52,6 @@ pub use crate::runtime::screens::Screens;
 pub const SURFACE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8Unorm;
 
 #[derive(Debug, Clone)]
-
 pub struct Settings {
     pub title: String,
     pub backbuffer: (u32, u32),
@@ -91,11 +90,9 @@ pub fn upload_scene_renderer(gpu: &Gpu, scene: &Scene, overlay: Option<&Overlay>
 }
 
 #[cfg(target_arch = "wasm32")]
-
 type BrowserDevice = (wgpu::Surface<'static>, Gpu);
 
 #[cfg(target_arch = "wasm32")]
-
 type BrowserRecovery = std::rc::Rc<std::cell::RefCell<Option<Result<BrowserDevice>>>>;
 
 pub struct Client {
@@ -1858,7 +1855,6 @@ impl Client {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-
     pub fn run(mut self, event_loop: EventLoop<()>) -> Result<()> {
         event_loop
             .run_app(&mut self)
@@ -1880,7 +1876,6 @@ impl Client {
     /// Initialize WebGPU without blocking the browser, then attach the shared
     /// game event loop to an existing canvas. The page controls its CSS size.
     #[cfg(target_arch = "wasm32")]
-
     pub async fn run_on_canvas(mut self, canvas: web_sys::HtmlCanvasElement) -> Result<()> {
         use winit::platform::web::EventLoopExtWebSys;
 
@@ -1916,7 +1911,6 @@ impl Client {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-
     fn hold_size(&mut self) {
         let Some(live) = self.live.as_ref() else {
             return;
@@ -1936,7 +1930,6 @@ impl Client {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-
     fn start(&mut self, event_loop: &ActiveEventLoop) -> Result<Live> {
         let attributes = Window::default_attributes()
             .with_title(self.settings.title.clone())
@@ -1967,7 +1960,6 @@ impl Client {
     }
 
     #[cfg(target_arch = "wasm32")]
-
     fn start(&mut self, event_loop: &ActiveEventLoop) -> Result<Live> {
         use winit::platform::web::WindowAttributesExtWebSys;
 
@@ -2072,7 +2064,6 @@ impl Client {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-
     fn recover_device(&mut self) -> Result<()> {
         let Some(live) = self.live.as_mut().filter(|live| live.gpu.is_lost()) else {
             return Ok(());
@@ -2104,7 +2095,6 @@ impl Client {
     }
 
     #[cfg(target_arch = "wasm32")]
-
     fn recover_device(&mut self) -> Result<()> {
         use winit::platform::web::WindowExtWebSys;
 
@@ -2741,7 +2731,6 @@ impl Client {
 
 impl ApplicationHandler for Client {
     #[cfg(target_arch = "wasm32")]
-
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
         let _ = self.runtime.scene.final_guild_offline();
 
@@ -2886,7 +2875,6 @@ pub fn create_event_loop() -> Result<EventLoop<()>> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 fn logical_backbuffer(event_loop: &ActiveEventLoop, backbuffer: (u32, u32)) -> LogicalSize<f64> {
     let scale = event_loop
         .primary_monitor()
@@ -2897,7 +2885,6 @@ fn logical_backbuffer(event_loop: &ActiveEventLoop, backbuffer: (u32, u32)) -> L
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 fn logical(backbuffer: (u32, u32), scale: f64) -> LogicalSize<f64> {
     let scale = if scale.is_finite() && scale > 0.0 {
         scale
@@ -3012,7 +2999,6 @@ fn numpad_vk(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct KeyPlan {
     pub edit: Option<EditKey>,
     pub numpad: Option<u8>,
@@ -3116,7 +3102,6 @@ pub fn inventory_key_tab(logical: &winit::keyboard::Key, repeat: bool) -> Option
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct MousePlan {
     pub mmb: Option<bool>,
     pub rmb: Option<bool>,

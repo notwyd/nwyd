@@ -76,7 +76,6 @@ pub const SWIRL_DETAIL: DetailGate = DetailGate::Full;
 pub const PILLAR_DETAIL: DetailGate = DetailGate::Always;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Haste {
     pub at: Vec3,
     pub mode: i32,
@@ -140,7 +139,6 @@ pub fn texture(mode: i32) -> usize {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub swirl: Vec<Billboard>,
     pub pillar: Billboard,

@@ -13,7 +13,6 @@ pub fn is_extended(kind: u32) -> bool {
 pub const MAX_KIND: u32 = 3025;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ObjectClass {
     StaticMesh,
     Sea,
@@ -131,7 +130,6 @@ impl ObjRecord {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct ObjRecord {
     pub kind: u32,
     pub x: f32,
@@ -171,13 +169,11 @@ fn err(message: impl Into<String>) -> Error {
 }
 
 #[inline]
-
 fn f32_at(b: &[u8], off: usize) -> f32 {
     f32::from_le_bytes(b[off..off + 4].try_into().expect("caller checked bounds"))
 }
 
 #[inline]
-
 fn i32_at(b: &[u8], off: usize) -> i32 {
     i32::from_le_bytes(b[off..off + 4].try_into().expect("caller checked bounds"))
 }

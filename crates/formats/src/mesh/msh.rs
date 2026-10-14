@@ -7,7 +7,6 @@ const HEADER_LEN: usize = 32;
 pub const MAX_BONE_PALETTE: usize = 40;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct MshHeader {
     pub magic: u32,
     pub attach_bone: u32,
@@ -20,7 +19,6 @@ pub struct MshHeader {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct SkinMesh {
     pub header: MshHeader,
     pub bone_offsets: Vec<Matrix4>,

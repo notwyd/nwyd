@@ -9,7 +9,6 @@ use formats::data::quick_slot;
 use formats::text::Codepage;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct QuickBar {
     pub record: Option<usize>,
     pub ids: [u32; quick_slot::SLOTS],

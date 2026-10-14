@@ -4,7 +4,6 @@ use glam::Vec3;
 use render::skin::{SkinFog, SkinParams};
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Ship {
     pub zone: (u8, u8),
     pub record: usize,

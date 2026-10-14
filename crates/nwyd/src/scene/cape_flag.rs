@@ -26,14 +26,12 @@ const TEXTURE_SLOT_MAX: u32 = 0x200;
 const SPECIAL_BODY_APPEARANCES: [u16; 4] = [0x0DAF, 0x0DB0, 0x0DB1, 0x0DB2];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Flag {
     pub texture_slot: Option<u32>,
     pub tooltip: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ExternalImage {
     pub owner: Owner,
     pub texture_slot: u32,
@@ -41,7 +39,6 @@ pub struct ExternalImage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum WidgetState {
     Layer,
     External(ExternalImage),

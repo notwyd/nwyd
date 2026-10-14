@@ -10,7 +10,6 @@ pub fn is_ciphered(path: &str) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Property {
     pub key: String,
     pub value: String,
@@ -58,7 +57,6 @@ impl Property {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Block {
     pub properties: Vec<Property>,
 }
@@ -93,7 +91,6 @@ impl Block {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Element {
     pub type_name: String,
     pub name: String,
@@ -107,7 +104,6 @@ impl Element {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Pane {
     pub panel: Block,
     pub elements: Vec<Element>,
@@ -226,7 +222,6 @@ fn read_block(reader: &mut Reader<'_>, warnings: &mut Vec<String>) -> Block {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u32)]
-
 pub enum ElementType {
     Button = 0,
     Static = 1,
@@ -291,7 +286,6 @@ impl ElementType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum RasterOp {
     Wrap = 0,
     #[default]
@@ -315,7 +309,6 @@ impl RasterOp {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum ShadowType {
     #[default]
     None = 0,
@@ -336,7 +329,6 @@ impl ShadowType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum AlignPanel {
     #[default]
     None = 0,

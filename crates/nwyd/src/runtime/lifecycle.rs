@@ -6,7 +6,6 @@ use crate::{
 use std::time::Duration;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 enum EntryEpoch {
     #[default]
     Running,

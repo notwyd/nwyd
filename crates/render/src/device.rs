@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
-
 pub struct Gpu {
     pub instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
@@ -14,7 +13,6 @@ pub struct Gpu {
 }
 
 #[derive(Debug, Default)]
-
 pub struct Breadcrumb {
     line: Mutex<String>,
     stamps: AtomicU64,

@@ -7,7 +7,6 @@ use assets::GameDir;
 use render::device::Gpu;
 
 #[derive(Debug)]
-
 pub struct ServerSelect {
     pub layout: Layout,
     pub time: SceneTime,
@@ -16,7 +15,6 @@ pub struct ServerSelect {
 }
 
 #[derive(Debug)]
-
 pub struct LanguageUpdate(login_panels::LanguageUpdate);
 
 impl LanguageUpdate {

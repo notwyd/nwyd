@@ -16,7 +16,6 @@ pub const OBJECT_SIZE: u16 = 156;
 pub const BILLBOARD_GATE: DetailGate = DetailGate::Full;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Order {
     pub at: PositionRef,
     pub kind: i32,
@@ -44,7 +43,6 @@ pub fn read(spawn: &Spawn) -> Option<Order> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Placed {
     pub built: timers::Built,
     pub shade_placed: bool,

@@ -41,7 +41,6 @@ pub struct Tip {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Shown {
     pub panel: Panel,
     pub origin: (i32, i32),
@@ -125,7 +124,6 @@ fn parse(game: &GameDir, script: &[u8]) -> Result<Pane> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Cell {
     pub index: i32,
     pub item: formats::net::account::Item,
@@ -146,7 +144,6 @@ impl Tip {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         Self {
             window: Pane::default(),

@@ -129,7 +129,6 @@ pub fn answered(answer: i32) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Body {
     StrDef(usize),
     TwoLines(usize, usize),
@@ -151,7 +150,6 @@ impl Body {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Request {
     pub caption: Option<usize>,
     pub kind: i32,
@@ -201,7 +199,6 @@ impl Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Open {
     pub visible: bool,
     pub kind: i32,
@@ -217,7 +214,6 @@ pub struct Open {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Boxes {
     slots: [Option<Open>; SLOTS],
 }
@@ -400,7 +396,6 @@ impl Boxes {
 }
 
 #[derive(Debug)]
-
 pub struct BoxPanel {
     surfaces: [BoxSurface; SLOTS],
     top: usize,
@@ -434,7 +429,6 @@ impl BoxPanel {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         Self {
             surfaces: std::array::from_fn(|_| BoxSurface {
@@ -670,7 +664,6 @@ pub fn caption_id(base: u32, slot: usize) -> u32 {
 }
 
 #[derive(Debug)]
-
 pub struct BoxSurface {
     pub placed: PlacedPanel,
     pub slot: Option<usize>,

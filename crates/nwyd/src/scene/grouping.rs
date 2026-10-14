@@ -10,7 +10,6 @@ use formats::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Cost {
     pub item: i32,
     pub amount: i32,
@@ -18,7 +17,6 @@ pub struct Cost {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Rule {
     pub materials: Vec<Cost>,
     pub gold: i32,
@@ -146,7 +144,6 @@ pub fn rule(config: &Config, item: u16) -> Option<Rule> {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Pending {
     pub request: Request,
     pub source: Item,

@@ -250,7 +250,6 @@ pub fn trail_width(kind: i32) -> f32 {
 }
 
 #[derive(Debug)]
-
 pub struct Arrow {
     pub source: Vec3,
     pub dest: Vec3,
@@ -279,7 +278,6 @@ pub struct Arrow {
 
 impl Arrow {
     #[allow(clippy::too_many_arguments)]
-
     pub fn new(
         source: Vec3,
         dest: Vec3,

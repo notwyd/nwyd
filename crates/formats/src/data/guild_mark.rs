@@ -9,7 +9,6 @@ pub const FILE_FORMAT: &str = "%c%02d%02d%04d.bmp";
 pub const FILE_PREFIX: char = 'w';
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Mark {
     pub series: u16,
     pub guild: u16,
@@ -45,7 +44,6 @@ pub const fn kind(rank: i16) -> u16 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Frame {
     Gold,
     Silver,

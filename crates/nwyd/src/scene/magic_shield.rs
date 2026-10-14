@@ -13,7 +13,6 @@ pub static CLASS: Class = Class {
 };
 
 #[derive(Debug)]
-
 pub struct MagicShield {
     key: ActorKey,
     epoch: u32,

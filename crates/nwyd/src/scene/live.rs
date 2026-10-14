@@ -22,7 +22,6 @@ pub const ACTION_DEAD: usize = appearance::ACTION_DEAD;
 pub const DEAD_ACTION: usize = ACTION_DEAD;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Vitalised {
     pub entity: u16,
     pub index: Option<usize>,
@@ -112,7 +111,6 @@ pub const DELTA_KIND_REMOTE: u8 = damage::KIND_YELLOW;
 pub const DELTA_KIND_HEAL: u8 = damage::KIND_BLUE;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct HpChanged {
     pub entity: u16,
     pub index: Option<usize>,
@@ -248,7 +246,6 @@ fn restore_alternate_hp(entity: u16, flag: u32, hp: &mut Option<super::actors::A
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct StatusApplied {
     pub entity: u16,
     pub index: Option<usize>,
@@ -408,7 +405,6 @@ pub fn apply_actor_status(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ProgressionApplied {
     pub entity: u16,
     pub local: bool,
@@ -501,7 +497,6 @@ pub fn apply_player_progression(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct PushedBar {
     pub bar: [u8; QUICK_SLOTS],
     pub changed: bool,
@@ -534,7 +529,6 @@ pub fn quick_bar(scene: &mut FieldScene, pushed: &[u8; QUICK_SLOTS]) -> PushedBa
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Golden {
     pub entity: u16,
     pub local: bool,
@@ -560,7 +554,6 @@ pub fn gold(scene: &mut FieldScene, entity: u16, gold: &Gold) -> Golden {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Redressed {
     pub entity: u16,
     pub index: Option<usize>,
@@ -772,7 +765,6 @@ fn settle(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Patched {
     pub entity: u16,
     pub index: Option<usize>,
@@ -958,7 +950,6 @@ pub fn describe_hp_delta(applied: &HpChanged) -> String {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Sparked {
     pub entity: u16,
     pub index: Option<usize>,
@@ -1032,7 +1023,6 @@ pub fn describe_firework(applied: &Sparked) -> String {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct NameMarked {
     pub entity: u16,
     pub index: Option<usize>,

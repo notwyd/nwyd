@@ -96,7 +96,6 @@ fn click(panel: &mut Panel, name: &str) {
 }
 
 #[test]
-
 fn language_selection_requests_apply_without_a_restart_notice() {
     let mut panel = panel(
         Language::Portuguese,
@@ -146,7 +145,6 @@ fn language_selection_requests_apply_without_a_restart_notice() {
 }
 
 #[test]
-
 fn dropdown_only_contains_supplied_languages_and_same_choice_does_not_request_save() {
     let mut panel = panel(
         Language::Portuguese,
@@ -184,7 +182,6 @@ fn dropdown_only_contains_supplied_languages_and_same_choice_does_not_request_sa
 }
 
 #[test]
-
 fn switching_tabs_and_closing_reset_the_language_dropdown() {
     let mut panel = panel(
         Language::English,
@@ -223,7 +220,6 @@ fn switching_tabs_and_closing_reset_the_language_dropdown() {
 }
 
 #[test]
-
 fn all_language_choices_fit_above_the_selector_without_overlapping_visible_controls() {
     let languages = [
         Language::Korean,
@@ -281,7 +277,6 @@ fn all_language_choices_fit_above_the_selector_without_overlapping_visible_contr
 }
 
 #[test]
-
 fn cloned_language_controls_preserve_materials_and_draw_each_label_once() {
     let mut panel = panel(
         Language::English,
@@ -339,7 +334,6 @@ fn cloned_language_controls_preserve_materials_and_draw_each_label_once() {
 }
 
 #[test]
-
 fn custom_labels_use_session_language_and_empty_language_list_disables_selection() {
     for (language, label, evok, cape) in [
         (
@@ -379,7 +373,6 @@ fn custom_labels_use_session_language_and_empty_language_list_disables_selection
 }
 
 #[test]
-
 fn localized_settings_labels_fit_using_the_bundled_font() {
     struct Measure(render::font::Font);
 
@@ -423,7 +416,6 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
 }
 
 #[test]
-
 fn applying_language_keeps_settings_open_on_the_selected_tab_and_preserves_other_preferences() {
     struct Directory(std::path::PathBuf);
 

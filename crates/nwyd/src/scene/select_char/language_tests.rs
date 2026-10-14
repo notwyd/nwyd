@@ -25,7 +25,6 @@ pub(super) fn panels() -> Panels {
 }
 
 #[test]
-
 fn characterization_character_caption_updates_preserve_draft_keypad_and_visibility() {
     let mut panels = panels();
 
@@ -94,7 +93,6 @@ fn characterization_character_caption_updates_preserve_draft_keypad_and_visibili
 }
 
 #[test]
-
 fn characterization_selection_info_caption_updates_preserve_account_data() {
     let mut panels = panels();
 
@@ -145,7 +143,6 @@ fn characterization_selection_info_caption_updates_preserve_account_data() {
 }
 
 #[test]
-
 fn characterization_shared_dialog_text_reflow_preserves_pending_inputs_and_messages() {
     use crate::scene::{character_name, legacy_message_box, message_panel};
 
@@ -210,7 +207,6 @@ fn characterization_shared_dialog_text_reflow_preserves_pending_inputs_and_messa
 }
 
 #[test]
-
 fn runtime_language_preserves_character_draft_and_info_values() {
     use crate::scene::login_panels::language_tests::{LanguageGame, translated};
 
@@ -306,7 +302,6 @@ fn runtime_language_preserves_character_draft_and_info_values() {
 }
 
 #[test]
-
 fn runtime_language_preserves_pending_dialogs_and_historical_messages() {
     use crate::scene::login_panels::language_tests::{LanguageGame, translated};
     use crate::scene::{character_name, legacy_message_box, message_panel};

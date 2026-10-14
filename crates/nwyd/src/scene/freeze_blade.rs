@@ -114,7 +114,6 @@ pub fn scale(kind: i32, t: f32) -> Option<f32> {
 }
 
 #[derive(Debug)]
-
 pub struct FreezeBlade {
     pub position: Vec3,
     pub kind: i32,

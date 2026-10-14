@@ -14,7 +14,6 @@ pub const COLUMN_KIND: i32 = 1;
 pub const COLUMN_LIFT: f32 = 0.05;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct State {
     pub requester: String,
     pub armed: bool,
@@ -24,7 +23,6 @@ pub struct State {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Notice {
     Raise,
     Clear,
@@ -69,7 +67,6 @@ pub fn command(state: &mut State, lock: &mut InputLock, requester: Option<&str>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Step {
     Nothing,
     Expired,

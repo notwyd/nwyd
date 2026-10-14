@@ -22,7 +22,6 @@ pub const CONTEXT: u32 = 0x2C;
 pub const KIND: i32 = 0xD;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Invite {
     pub subject: u32,
     pub guild: String,

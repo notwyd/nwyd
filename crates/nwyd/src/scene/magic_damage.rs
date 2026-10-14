@@ -16,7 +16,6 @@ const SPECIAL_GRADE_2D: i16 = 0x2D;
 const SPECIAL_GRADE_2F: i16 = 0x2F;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Display {
     Invalid,
     Value { shown: i32, colour: u32 },
@@ -45,7 +44,6 @@ pub fn selected_code(bar: &[u8; QUICK_SLOTS], armed: u8) -> Option<u8> {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Input {
     pub level: i16,
     pub class: i8,

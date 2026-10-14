@@ -8,7 +8,6 @@ use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct SeaVertex {
     pub position: [f32; 3],
     pub diffuse: u32,
@@ -61,7 +60,6 @@ impl SeaMaterial {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct SeaUniforms {
     pub world: [f32; 16],
     pub material: [f32; 4],
@@ -77,7 +75,6 @@ impl SeaUniforms {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum SeaPass {
     Outdoor,
     OutdoorOpaque,
@@ -121,7 +118,6 @@ impl SeaPass {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct SeaDraw {
     pub pass: SeaPass,
     pub object: u32,

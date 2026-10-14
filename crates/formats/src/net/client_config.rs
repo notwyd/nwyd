@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Update(pub Vec<(String, String)>);
 
 pub fn parse(bytes: &[u8]) -> Update {
@@ -19,7 +18,6 @@ pub fn parse(bytes: &[u8]) -> Update {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Config(BTreeMap<String, String>);
 
 impl Config {

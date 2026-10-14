@@ -38,7 +38,6 @@ mod at {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Drop {
     pub x: u16,
     pub z: u16,
@@ -106,7 +105,6 @@ pub fn parse(payload: &[u8]) -> Result<Drop> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct PickUp {
     pub kind: u32,
     pub slot: i32,

@@ -1,5 +1,4 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Sample {
     pub raw_ms: u32,
     pub wall_secs: u32,
@@ -19,14 +18,12 @@ impl Sample {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Event {
     Strike { seconds: u32 },
     Report { seconds: u32 },
 }
 
 #[derive(Debug, Default)]
-
 pub struct Detector {
     baseline: Option<Sample>,
     strikes: u8,
@@ -83,7 +80,6 @@ impl Detector {
 }
 
 #[derive(Debug, Default)]
-
 pub struct Monitor {
     detector: Detector,
 }
@@ -105,7 +101,6 @@ impl Monitor {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -115,7 +110,6 @@ mod tests {
     }
 
     #[test]
-
     fn ordinary_progress_and_tolerated_drift_do_not_accumulate_strikes() {
         let mut detector = Detector::default();
 
@@ -136,7 +130,6 @@ mod tests {
     }
 
     #[test]
-
     fn independent_drift_events_are_rebased_and_reported_on_second_strike() {
         let mut detector = Detector::default();
 
@@ -156,7 +149,6 @@ mod tests {
     }
 
     #[test]
-
     fn inactive_observation_resets_the_strike_count() {
         let mut detector = Detector::default();
 
@@ -178,7 +170,6 @@ mod tests {
     }
 
     #[test]
-
     fn reported_drift_is_suppressed_until_cooldown_expires_even_across_tick_wrap() {
         for start in [1_000, u32::MAX - 10_000] {
             let first = sample(start, start / 1_000 + 100);
@@ -222,7 +213,6 @@ mod tests {
     }
 
     #[test]
-
     fn monitor_missing_sample_resets_detection() {
         let mut monitor = Monitor::default();
 

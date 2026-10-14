@@ -5,7 +5,6 @@ use render::billboard::BillboardPass;
 use render::camera::Matrix4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Detail {
     pub effects: bool,
     pub glow: bool,
@@ -21,7 +20,6 @@ impl Default for Detail {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum Arm {
     AuraLow,
     AuraHigh,
@@ -65,7 +63,6 @@ impl Arm {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Emitters {
     pub aura_mode: i32,
     pub glow: bool,
@@ -134,7 +131,6 @@ impl Emitters {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Cascade {
     pub point: Vec3,
 }
@@ -147,13 +143,11 @@ pub const TEXTURE_SLOTS: [usize; 19] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Clock {
     pub stamp_ms: u32,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Frame {
     pub spawned: Vec<Billboard>,
     pub fired: Vec<Arm>,
@@ -174,7 +168,6 @@ pub struct Sink<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Blade {
     pub world: Matrix4,
     pub size: f32,

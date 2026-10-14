@@ -70,7 +70,6 @@ pub fn channel(panels: &mut Panels, sender: &str, body: &str, time: &Calendar) {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Inbox {
     rows: [ColorLine; 100],
 }

@@ -22,7 +22,6 @@ pub const TOAST_MS: u32 = 0xBB8;
 pub const USE_TILE: u16 = 0x290;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Gate {
     pub x: i32,
     pub z: i32,
@@ -260,7 +259,6 @@ pub const GATES: [Gate; 37] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct State {
     pub last_attribute: u8,
     pub last_gate: i32,
@@ -282,7 +280,6 @@ impl State {
 pub const NO_GATE: i32 = -1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Step {
     Nothing,
     Asked {
@@ -297,7 +294,6 @@ pub enum Step {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Accepted {
     Sent,
     OffGate,

@@ -95,7 +95,6 @@ pub(crate) mod serde {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -135,7 +134,6 @@ mod tests {
     }
 
     #[test]
-
     fn empty_language_directories_are_discovered_case_insensitively_in_stable_order() {
         let directory = TestDirectory::new();
 
@@ -151,7 +149,6 @@ mod tests {
     }
 
     #[test]
-
     fn discovery_ignores_files_unknown_codes_and_nested_language_directories() {
         let directory = TestDirectory::new();
 
@@ -170,7 +167,6 @@ mod tests {
     }
 
     #[test]
-
     fn discovery_returns_no_languages_when_lang_is_absent_or_a_file() {
         let directory = TestDirectory::new();
 
@@ -182,7 +178,6 @@ mod tests {
     }
 
     #[test]
-
     fn discovery_uses_browser_file_paths_with_the_same_language_order() {
         let game = GameDir::from_files(
             "selected-game",
@@ -203,7 +198,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_fallback_prefers_saved_choice_then_portuguese_then_english() {
         use Language::{English, Polish, Portuguese, Spanish};
 
@@ -224,14 +218,12 @@ mod tests {
     }
 
     #[derive(Debug, PartialEq, Eq, ::serde::Serialize, ::serde::Deserialize)]
-
     struct SavedLanguage {
         #[serde(default = "default_language", with = "super::serde")]
         language: Language,
     }
 
     #[test]
-
     fn language_settings_emit_uppercase_codes_and_accept_lowercase_codes() {
         for language in LANGUAGES {
             let saved = SavedLanguage { language };

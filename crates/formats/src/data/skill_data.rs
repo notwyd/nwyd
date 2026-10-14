@@ -28,7 +28,6 @@ pub const fn anim_base(model: u32, mounted: bool) -> usize {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Skill {
     pub skill_points: i32,
     pub target_shape: i32,
@@ -191,7 +190,6 @@ fn skill_group_by_eight_raw(id: i32) -> i32 {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct SkillData {
     skills: Vec<Skill>,
 }

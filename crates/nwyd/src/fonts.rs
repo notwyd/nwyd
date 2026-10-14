@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex, OnceLock, Weak};
 pub const FALLBACK: &[u8] = include_bytes!("../assets/LiberationSans-Regular.ttf");
 
 #[derive(Default)]
-
 struct Faces {
     recent: Vec<(Box<[u8]>, Weak<Face>)>,
 }
@@ -67,14 +66,12 @@ pub fn system_font_dir() -> Option<PathBuf> {
 }
 
 #[derive(Debug, Default)]
-
 pub struct Chain {
     pub faces: Vec<Arc<Face>>,
     pub sources: Vec<String>,
 }
 
 #[derive(Debug, Default)]
-
 pub struct Chains {
     pub chains: [Chain; 2],
     pub notes: Vec<String>,

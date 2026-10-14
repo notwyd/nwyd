@@ -13,7 +13,6 @@ pub const ITEMS_OFF: usize = 4;
 pub const COPIED_LEN: usize = 0x56 * 4 - 12;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Kind {
     Shop,
     SkillMaster,
@@ -31,7 +30,6 @@ impl Kind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Stock {
     pub kind: Kind,
     pub items: [Item; STOCK_SLOTS],
@@ -111,7 +109,6 @@ pub const SALE_FRAME_LEN: usize = 0x14;
 pub const SALE_PAYLOAD_LEN: usize = SALE_FRAME_LEN - 0x0C;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Sale {
     pub shop: u16,
     pub container: i16,
@@ -171,7 +168,6 @@ pub const SELL_MODE: u32 = 1;
 pub const SELL_ID_LIMIT: i32 = 0x38A3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct SellRow {
     pub head: u32,
     pub item: Item,
@@ -203,7 +199,6 @@ impl SellRow {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SellList {
     pub rows: [SellRow; SELL_SLOTS],
 }

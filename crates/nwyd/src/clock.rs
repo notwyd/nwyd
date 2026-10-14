@@ -3,7 +3,6 @@ use web_time::Instant;
 
 #[cfg(windows)]
 #[link(name = "winmm")]
-
 unsafe extern "system" {
 
     fn timeGetTime() -> u32;
@@ -15,7 +14,6 @@ mod time;
 pub use time::{ClockSample, GameTime, RawTime, WireTime};
 
 #[derive(Debug)]
-
 enum TimeBase {
     #[cfg(windows)]
     Native,
@@ -25,7 +23,6 @@ enum TimeBase {
 }
 
 #[derive(Debug)]
-
 pub struct Clock {
     epoch: TimeBase,
     server_ms: u32,
@@ -134,7 +131,6 @@ impl Clock {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct TimeSync {
     last_compare_ms: GameTime,
     desync: Option<Desync>,
@@ -143,7 +139,6 @@ pub struct TimeSync {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Desync {
     Behind = 2,
     Ahead = 3,
@@ -217,7 +212,6 @@ impl TimeSync {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Calendar {
     pub day_of_month: u32,
     pub server_day_of_month: u32,
@@ -285,7 +279,6 @@ impl Calendar {
 }
 
 #[cfg(unix)]
-
 fn civil_local(secs: i64) -> (u32, u32, u32, u32) {
     let t = secs as libc::time_t;
 
@@ -306,7 +299,6 @@ fn civil_local(secs: i64) -> (u32, u32, u32, u32) {
 }
 
 #[cfg(all(not(unix), not(target_arch = "wasm32")))]
-
 fn civil_local(secs: i64) -> (u32, u32, u32, u32) {
     civil_utc(secs)
 }
@@ -347,7 +339,6 @@ pub fn game_time(server_ms: u32, local_ms_at_sync: u32, now_ms: u32, offset_ms: 
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -363,7 +354,6 @@ mod tests {
     }
 
     #[test]
-
     fn synchronized_samples_keep_raw_and_wire_time_separate_from_game_offset() {
         let mut clock = Clock::frozen(1_234);
 
@@ -394,7 +384,6 @@ mod tests {
     }
 
     #[test]
-
     fn clock_arithmetic_wraps_at_tick_and_server_boundaries() {
         assert_eq!(game_time(100, u32::MAX - 9, 10, -150), u32::MAX - 29);
 
@@ -417,7 +406,6 @@ mod tests {
     }
 
     #[test]
-
     fn time_sync_waits_for_zone_delay_and_comparison_interval() {
         let mut sync = TimeSync::default();
 
@@ -454,7 +442,6 @@ mod tests {
     }
 
     #[test]
-
     fn time_sync_accepts_exact_tolerance_in_both_directions() {
         for server_ms in [9_501, 10_501] {
             let mut sync = armed_sync();
@@ -473,7 +460,6 @@ mod tests {
     }
 
     #[test]
-
     fn time_sync_corrects_gradually_and_reports_once() {
         for (server_ms, direction, corrected_ms) in [
             (10_502, Desync::Behind, 10_086),
@@ -504,7 +490,6 @@ mod tests {
     }
 
     #[test]
-
     fn leaving_world_disarms_time_correction() {
         let mut sync = armed_sync();
 
@@ -526,7 +511,6 @@ mod tests {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 fn civil_local(secs: i64) -> (u32, u32, u32, u32) {
     let date = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(secs as f64 * 1000.0));
 

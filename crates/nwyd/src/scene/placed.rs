@@ -74,7 +74,6 @@ pub mod state {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Style {
     #[default]
     TwoLeaves,
@@ -83,7 +82,6 @@ pub enum Style {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PickBox {
     pub minus_x: f32,
     pub plus_x: f32,
@@ -103,7 +101,6 @@ impl PickBox {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Table {
     pub mesh_a: i32,
     pub mesh_b: i32,
@@ -273,7 +270,6 @@ pub fn advance(current: i32, elapsed: u32) -> (i32, Option<f32>) {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Gate {
     pub entity: u16,
     pub item_id: i16,
@@ -364,7 +360,6 @@ pub fn leaf_world(at: Vec3, yaw: f32, dx: f32, spin: f32) -> Matrix4 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Pose {
     pub mesh: i32,
     pub world: Matrix4,
@@ -456,13 +451,11 @@ pub fn material(light: [f32; 4], hovered: bool) -> render::world::Material {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Gates {
     pub items: Vec<Gate>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Left {
     pub entity: u16,
     pub item_id: i16,
@@ -618,7 +611,6 @@ impl Gates {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct GateDraw {
     pub mesh_id: u32,
     pub world: Matrix4,
@@ -725,7 +717,6 @@ pub fn hover(
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Placed {
     pub entity: u16,
     pub id: i16,
@@ -738,7 +729,6 @@ pub struct Placed {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Arrival {
     Drop(super::drops::Placed),
     Gate(Placed),
@@ -955,7 +945,6 @@ pub fn restamp(scene: &mut super::field::FieldScene) -> usize {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Commanded {
     pub entity: u16,
     pub id: i16,

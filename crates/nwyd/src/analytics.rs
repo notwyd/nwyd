@@ -15,17 +15,14 @@ pub const DEFAULT_BASE_URL: &str = "https://notwyd.app";
 pub const DEFAULT_ENVIRONMENT_KEY: &str = "nwyd";
 
 #[cfg(not(target_arch = "wasm32"))]
-
 const CAPACITY: usize = 100;
 
 const MAX_BYTES: usize = 2047;
 
 #[cfg(all(not(windows), not(target_arch = "wasm32")))]
-
 const TIMEOUT: Duration = Duration::from_secs(3);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Config {
     pub base_url: String,
     pub environment_key: String,
@@ -109,7 +106,6 @@ impl Config {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
     let Some(url) = config.endpoint()? else {
         return Ok(Analytics::default());
@@ -180,7 +176,6 @@ impl Drop for Delivery {
 }
 
 #[derive(Clone, Default)]
-
 pub struct Analytics {
     delivery: Option<Arc<Delivery>>,
     user_id: Arc<str>,
@@ -189,7 +184,6 @@ pub struct Analytics {
 
 impl Analytics {
     #[cfg(not(target_arch = "wasm32"))]
-
     fn worker(mut send: impl FnMut(&[u8]) + Send + 'static) -> anyhow::Result<Self> {
         let session_id = session_id()?.into();
 
@@ -351,7 +345,6 @@ impl Analytics {
     }
 
     #[cfg(test)]
-
     pub(crate) fn recording() -> (Self, mpsc::Receiver<Value>) {
         let (sender, receiver) = mpsc::channel();
 
@@ -367,7 +360,6 @@ impl Analytics {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 fn session_id() -> anyhow::Result<String> {
     #[cfg(windows)]
     {
@@ -401,7 +393,6 @@ fn session_id() -> anyhow::Result<String> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Message {
     pub kind: &'static str,
     pub recipient: String,
@@ -568,7 +559,6 @@ mod native;
 mod tests;
 
 #[cfg(target_arch = "wasm32")]
-
 pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
     config.endpoint()?;
 

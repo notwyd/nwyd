@@ -40,7 +40,6 @@ pub fn packet(slot: u8, rng: &mut Lcg) -> [u8; LEN] {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Pressed {
     Send(Box<[u8; LEN]>),
     NoSlot,

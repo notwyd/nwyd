@@ -45,7 +45,6 @@ pub fn emitted_at(base: Vec3, t: f32, rx: u32, rz: u32) -> Vec3 {
 }
 
 #[derive(Debug)]
-
 pub struct Bash {
     pub position: Vec3,
     pub birth_ms: u32,
@@ -192,7 +191,6 @@ impl Effect for Bash {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Order {
     pub at: PositionRef,
     pub mode: i32,

@@ -7,7 +7,6 @@ use formats::texture::{PixelFormat, Texture};
 use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-
 pub struct TileUploadStats {
     pub allocations: usize,
     pub uploaded_layers: usize,
@@ -16,7 +15,6 @@ pub struct TileUploadStats {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-
 struct Shape {
     width: u32,
     height: u32,
@@ -73,7 +71,6 @@ impl Shape {
 }
 
 #[derive(Default)]
-
 pub struct TileCache {
     arrays: Vec<ArrayCache>,
     bound: Option<TileArray>,
@@ -235,7 +232,6 @@ impl TileCache {
 }
 
 #[derive(Default)]
-
 struct ArrayCache {
     texture: Option<wgpu::Texture>,
     bound: Option<TileArray>,

@@ -32,7 +32,6 @@ pub const ENCRYPTED_SLOTS: [(usize, &str); 2] = [(13, "Mesh\\ed.dat"), (14, "Mes
 pub use crate::scene::ending::KEY;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct MusicTable {
     slots: Vec<Option<String>>,
 }

@@ -10,7 +10,6 @@ pub const SLOTS: usize = 2560;
 pub const NONE: &str = "NONE";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub name: Vec<u8>,
     pub id: u32,
@@ -23,7 +22,6 @@ impl Entry {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct ResourceTable {
     entries: Vec<Option<Entry>>,
 }

@@ -2,7 +2,6 @@ use super::{actors::Actor, effects::Billboard, shade::Ground};
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct State {
     pub run_ms: u32,
     pub trail_deadline: Option<u32>,

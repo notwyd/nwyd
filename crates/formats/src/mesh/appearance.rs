@@ -110,7 +110,6 @@ pub const MOUNT_KIND_BASE: i32 = 0x938;
 pub const MOUNT_SCALE_OVERRIDE_ITEM: i32 = 0x14D;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-
 pub struct PartRef {
     pub mesh: i16,
     pub tex: i16,
@@ -125,7 +124,6 @@ impl PartRef {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Cape {
     pub item: i32,
     pub mesh: i16,
@@ -160,7 +158,6 @@ impl Cape {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct CapeSeat {
     pub offset: [f32; 2],
     pub scale: f32,
@@ -171,7 +168,6 @@ pub struct CapeSeat {
 pub const CAPE_ANCHOR_BONE: i32 = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub enum AnchorAdjust {
     Copy,
     RotateX(f32),
@@ -205,7 +201,6 @@ impl AnchorAdjust {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct AnchorRule {
     pub bones: &'static [i32],
     pub adjust: AnchorAdjust,
@@ -410,7 +405,6 @@ pub fn cape_rotation(mount_model: u32) -> (f32, f32) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct RiderSeat {
     pub offset: [f32; 2],
     pub scale: f32,
@@ -528,7 +522,6 @@ pub fn rider_seat(mount: Mount, class: i32, body_scale: f32) -> Option<RiderSeat
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Mount {
     pub item: i32,
     pub appearance_item: i32,
@@ -550,7 +543,6 @@ pub fn mount_world_scale(class: i32, body_scale: f32, mount_scale: f32) -> f32 {
 pub const MOUNT_SCALE_IGNORES_RIDER: i32 = 0x28;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Wearer {
     pub rank_word: u16,
     pub flags: u8,
@@ -846,7 +838,6 @@ pub fn mount_for_spawn(
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Look {
     pub class: i32,
     pub helmet_item: i32,
@@ -1020,7 +1011,6 @@ pub const HAND_BONES: [[i32; 2]; 20] = [
 pub const HAND_BONE_MODELS: u32 = 0x13;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Hand {
     Off,
     Main,
@@ -1110,7 +1100,6 @@ pub fn hand_offset(model: u32) -> f32 {
 pub const OFF_HAND_DROP_MESHES: core::ops::RangeInclusive<u32> = 0x6A5..=0x708;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HandGrip {
     pub offset: [f32; 2],
     pub yaw: f32,
@@ -1298,7 +1287,6 @@ const TWO_HANDED: i32 = item_list::equip::TWO_HANDED as i32;
 const TWO_HANDED_ARMOUR: i32 = (item_list::equip::TWO_HANDED | item_list::equip::ARMOR) as i32;
 
 #[allow(clippy::manual_range_patterns)]
-
 pub fn anim_group(
     class: i32,
     model: u32,
@@ -1480,7 +1468,6 @@ fn animation_group_if_one_handed(main_mask: i32, group: usize) -> Option<usize> 
 }
 
 #[allow(clippy::manual_range_patterns)]
-
 fn ch01_animation_group(
     weapon: i32,
     off_class: i32,
@@ -1540,7 +1527,6 @@ fn mounted_ch01_animation_group(weapon: i32, main_mask: i32, off_mask: i32) -> O
 }
 
 #[allow(clippy::manual_range_patterns)]
-
 fn ch02_animation_group(
     weapon: i32,
     off_class: i32,
@@ -1593,7 +1579,6 @@ fn mounted_ch02_animation_group(weapon: i32, main_mask: i32, off_mask: i32) -> O
 }
 
 #[allow(clippy::manual_range_patterns)]
-
 fn or01_animation_group(weapon: i32, off_mask: i32) -> Option<usize> {
     if weapon == 0x65 {
         return Some(1);
@@ -1770,7 +1755,6 @@ fn cape_mesh_override(armour_mesh: i16, side: u8, current: i16) -> Option<i16> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 struct Dressing {
     class: i32,
     body: i32,

@@ -51,7 +51,6 @@ pub const UPDATE_SECTOR_KEYS: usize = 4;
 pub const DRAW_SECTOR_KEYS: usize = 9;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum UvScroll {
     #[default]
     None,
@@ -72,7 +71,6 @@ impl UvScroll {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Visibility {
     Kept,
     Rejected,
@@ -80,7 +78,6 @@ pub enum Visibility {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct CullView {
     pub eye: Vec3,
     pub forward: Vec3,
@@ -88,7 +85,6 @@ pub struct CullView {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct ModeDraw {
     pub scale_xz: f32,
     pub scale_y: f32,
@@ -97,7 +93,6 @@ pub struct ModeDraw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Draw {
     pub mesh_id: i32,
     pub world: Matrix4,
@@ -114,7 +109,6 @@ impl Draw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct EffectMesh {
     pub mesh_id: i32,
     pub position: Vec3,

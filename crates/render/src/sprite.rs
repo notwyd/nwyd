@@ -3,7 +3,6 @@ use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct TlVertex {
     pub x: f32,
     pub y: f32,
@@ -57,7 +56,6 @@ impl TlVertex {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Quad {
     pub normalized_corners: Option<[[f32; 2]; 4]>,
     pub clip: Option<[f32; 4]>,
@@ -74,7 +72,6 @@ pub struct Quad {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum UvRule {
     #[default]
     TexelCentre,
@@ -183,7 +180,6 @@ impl Quad {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Batch<K = u32> {
     pub mode: RenderMode,
     pub clip: Option<[f32; 4]>,
@@ -201,7 +197,6 @@ impl<K> Batch<K> {
 }
 
 #[derive(Debug)]
-
 pub struct SpriteBatcher<K = u32> {
     vertices: Vec<TlVertex>,
     batches: Vec<Batch<K>>,

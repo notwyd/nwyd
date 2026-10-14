@@ -24,7 +24,6 @@ use ui::{
 pub const TEXT_BASE: u32 = 0x0410_0000;
 
 #[derive(Debug)]
-
 pub struct Dialog {
     pub visible: bool,
     pub pending: bool,
@@ -58,7 +57,6 @@ impl Dialog {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         let Widget::Edit(edit) = Widget::new(formats::ui::pane::ElementType::EditBox) else {
             unreachable!()

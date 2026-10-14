@@ -52,7 +52,6 @@ pub const CAMERA_PATHS: [&str; 3] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct WorldSpec<'a> {
     pub variant: u32,
     pub zone: &'a str,
@@ -288,7 +287,6 @@ pub fn is_special_zone(zone_x: u8, zone_y: u8) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Environment {
     pub day_quarter: u32,
     pub env_type: i32,
@@ -444,7 +442,6 @@ impl Environment {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Pose {
     pub eye: glam::Vec3,
     pub yaw: f32,
@@ -458,7 +455,6 @@ impl Pose {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct CameraPath {
     pub action: CamAction,
     pub start_ms: u32,
@@ -493,7 +489,6 @@ impl CameraPath {
 }
 
 #[derive(Debug)]
-
 pub struct Tile {
     pub id: i32,
     pub path: String,
@@ -507,7 +502,6 @@ fn next_world_identity() -> u64 {
 }
 
 #[derive(Debug)]
-
 pub struct World {
     pub identity: u64,
     pub terrain_revision: u64,
@@ -562,7 +556,6 @@ pub struct World {
 }
 
 #[derive(Debug)]
-
 pub struct Streamed {
     pub zone: (u8, u8),
     pub name: String,
@@ -581,7 +574,6 @@ pub const WIDE_MARGIN_X: std::ops::Range<i32> = 0xD00..0xF80;
 pub const WIDE_MARGIN_ROWS: std::ops::Range<i32> = 21..25;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Proximity {
     Load(Direction),
     Cross(Direction),
@@ -641,7 +633,6 @@ pub fn stream_margin(zone: (u8, u8), player: glam::Vec2) -> f32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct WorldFrame {
     pub pose: Pose,
     pub view: View,
@@ -662,7 +653,6 @@ impl WorldFrame {
 pub const NEIGHBOUR_VARIANT: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum Direction {
     MinusX,
     PlusX,

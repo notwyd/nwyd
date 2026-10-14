@@ -36,14 +36,12 @@ pub const OVERLAY_ROW_HEIGHT: f32 = 14.0;
 pub const INITIAL_CAPTION: usize = 58;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct OverlayRow {
     pub text: String,
     pub colour: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Panel {
     pub available: bool,
     pub visible: bool,
@@ -53,7 +51,6 @@ pub struct Panel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Applied {
     pub changed: bool,
     pub chime: bool,
@@ -67,7 +64,6 @@ impl Applied {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Ticked {
     pub panel_hidden: bool,
     pub event_rows: usize,
@@ -80,7 +76,6 @@ impl Ticked {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct State {
     pub panel: Panel,
     overlay: VecDeque<OverlayRow>,

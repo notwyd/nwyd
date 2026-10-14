@@ -75,7 +75,6 @@ pub const CLOCK_SECOND_CAP: i32 = 100;
 pub const ARENA_SEED_SECONDS: i32 = 900;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Label {
     pub x: f32,
     pub y: f32,
@@ -98,7 +97,6 @@ impl Label {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct EventHud {
     pub clock: Label,
     pub counter: Label,
@@ -193,7 +191,6 @@ pub fn packet_placement(layout: &Layout) -> (f32, f32) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Armed {
     pub seconds: i32,
     pub at_ms: u32,
@@ -217,7 +214,6 @@ pub fn armed(hud: &mut EventHud, countdown: &Countdown, now_ms: u32) -> Armed {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Wrote {
     pub text: Option<String>,
     pub visible: bool,
@@ -307,7 +303,6 @@ pub fn clock_text(remaining: i32) -> String {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Ticked {
     pub remaining: Option<i32>,
     pub clock_text: String,

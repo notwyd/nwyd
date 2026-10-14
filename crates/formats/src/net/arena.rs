@@ -124,7 +124,6 @@ pub fn accept_frame(reply: u32) -> [u8; ACCEPT_LEN] {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Round {
     pub state: i32,
     pub scores: [i32; SCORES],
@@ -145,7 +144,6 @@ impl Round {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Kill {
     pub killer: String,
     pub victim: String,
@@ -175,7 +173,6 @@ impl Kill {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct List {
     pub state: [i32; SLOTS],
     pub current: [i32; SLOTS],

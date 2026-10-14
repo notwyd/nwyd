@@ -26,7 +26,6 @@ pub mod at {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Request {
     pub model: i32,
     pub byte_offset: i32,
@@ -52,7 +51,6 @@ impl Request {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Response {
     pub client_id: u16,
     pub model: i32,

@@ -33,7 +33,6 @@ pub const HP_DELTA_FRAME_LEN: usize = 0x14;
 pub const HP_DELTA_PAYLOAD_LEN: usize = HP_DELTA_FRAME_LEN - 0x0C;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Vitals {
     pub hp: i32,
     pub mp: i32,
@@ -62,7 +61,6 @@ impl Vitals {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct HpDelta {
     pub hp: i32,
     pub delta: i16,
@@ -97,7 +95,6 @@ impl HpDelta {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Container {
     Equipment,
     Carry,
@@ -135,7 +132,6 @@ impl Container {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SlotPatch {
     pub container: Container,
     pub slot: i16,
@@ -166,7 +162,6 @@ impl SlotPatch {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ActorStatus {
     pub score: Status,
     pub critical: u8,
@@ -281,7 +276,6 @@ impl ActorStatus {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct PlayerProgression {
     pub cp: u32,
     pub exp: u64,
@@ -313,7 +307,6 @@ impl PlayerProgression {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct EquipChange {
     pub equip: [u16; EQUIP_SLOTS],
     pub refine: [u8; EQUIP_SLOTS],
@@ -427,7 +420,6 @@ pub const EFFECT_OFF: usize = REFINE_OFF + EQUIP_SLOTS;
 pub const FLAGS_OFF: usize = EFFECT_OFF + EQUIP_SLOTS;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Gold {
     pub gold: u32,
 }
@@ -571,7 +563,6 @@ pub fn parse_gold(payload: &[u8]) -> Result<Gold> {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Vanish {
     pub mode: i32,
 }

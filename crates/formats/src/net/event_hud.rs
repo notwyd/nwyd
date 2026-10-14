@@ -46,7 +46,6 @@ pub const PACKED_LOW_MASK: u32 = 0xFF;
 pub const PACKED_HIGH_SHIFT: u32 = 16;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Countdown {
     pub seconds: i32,
 }
@@ -62,7 +61,6 @@ impl Countdown {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Remaining {
     pub count: i32,
 }
@@ -78,7 +76,6 @@ impl Remaining {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Packed {
     pub word: u32,
 }
@@ -106,7 +103,6 @@ impl Packed {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Target {
     pub total: i32,
 }
@@ -126,7 +122,6 @@ impl Target {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Score {
     pub current: i32,
     pub total: i32,

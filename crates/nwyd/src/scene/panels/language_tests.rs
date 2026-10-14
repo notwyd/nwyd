@@ -157,7 +157,6 @@ pub(super) fn assert_preserved(panels: &Panels) {
 }
 
 #[test]
-
 fn language_characterization_ui_visit_preserves_chat_transactions_and_prices() {
     let mut panels = populated();
 
@@ -187,7 +186,6 @@ fn language_characterization_ui_visit_preserves_chat_transactions_and_prices() {
 }
 
 #[test]
-
 fn language_characterization_reposition_preserves_active_drafts_and_queues() {
     let mut panels = populated();
 

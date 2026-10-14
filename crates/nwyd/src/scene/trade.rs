@@ -18,7 +18,6 @@ pub const READY_COOLDOWN_MS: u32 = 2000;
 pub const OPENING_CLOSES: [u32; 9] = [0x14, 0x17, 0x18, 0x15, 0x16, 0x1B, 0x19, 0x1A, 0x36];
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Session {
     pub mine: Offer,
     pub theirs: Offer,
@@ -47,14 +46,12 @@ impl Session {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Arm {
     Request,
     Contents,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raise {
     pub kind: i32,
     pub context: u32,
@@ -94,7 +91,6 @@ pub fn request(strings: &Strings, partner: &str) -> msgbox::Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Offered {
     pub entity: u16,
     pub local: bool,
@@ -240,7 +236,6 @@ fn open_window(scene: &mut FieldScene) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Closed {
     pub entity: u16,
     pub local: bool,
@@ -302,7 +297,6 @@ pub fn closed(scene: &mut FieldScene, entity: u16) -> Closed {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Toggled {
     pub had_control: bool,
     pub mirrored: bool,
@@ -374,7 +368,6 @@ pub fn panel_accepts(scene: &mut FieldScene) -> Option<Vec<u8>> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Ready {
     Cooling,
     Sent { ready: bool, frame: Vec<u8> },
@@ -474,7 +467,6 @@ fn refresh_checks(scene: &mut FieldScene) {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct ItemClick {
     pub source: usize,
     pub owner: ui::element::Instance,
@@ -567,7 +559,6 @@ pub fn panel_items(scene: &mut FieldScene) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Closing {
     pub frame: Option<Vec<u8>>,
     pub was_open: bool,

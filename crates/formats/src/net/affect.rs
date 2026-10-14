@@ -25,7 +25,6 @@ pub const DETAIL_OFF: usize = 0;
 pub const PAYLOAD_LEN: usize = AFFECTS * DETAIL_LEN;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Affect {
     pub time_8s: u8,
     pub kind: u8,
@@ -51,7 +50,6 @@ impl Affect {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Detail {
     pub kind: u8,
     pub level: u8,
@@ -70,7 +68,6 @@ impl Detail {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Affects {
     pub details: [Detail; AFFECTS],
     pub tail: Vec<u8>,
@@ -148,7 +145,6 @@ impl Affects {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Flags {
     raw: [u8; Flags::LEN],
 }
@@ -162,7 +158,6 @@ impl Default for Flags {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Wearer {
     pub class: i32,
     pub part0_mesh: u16,

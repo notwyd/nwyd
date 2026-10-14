@@ -4,7 +4,6 @@ use formats::mesh::appearance;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-
 pub struct Interface {
     #[serde(skip_serializing)]
     pub hide_helmet: bool,

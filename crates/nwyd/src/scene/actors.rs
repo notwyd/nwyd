@@ -116,7 +116,6 @@ pub const HIGHLIGHT_EMISSIVE: [f32; 4] = [0.5, 0.5, 0.5, MATERIAL_EMISSIVE[3]];
 pub const REACH_MARGIN: f32 = 1.5;
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Reach {
     pub eye: Vec3,
     pub far: Option<f32>,
@@ -157,7 +156,6 @@ impl Reach {
 }
 
 #[derive(Debug)]
-
 pub struct Part {
     pub index: usize,
     pub file_name: String,
@@ -169,7 +167,6 @@ pub struct Part {
 }
 
 #[derive(Debug)]
-
 pub struct Model {
     pub model_id: u32,
     pub base_name: String,
@@ -284,7 +281,6 @@ impl Model {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Clip {
     pub slot: usize,
     pub sub_frame_ms: u32,
@@ -292,7 +288,6 @@ pub struct Clip {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Anim {
     pub slot: usize,
     pub sub_frame_ms: u32,
@@ -350,7 +345,6 @@ impl Anim {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AlternateHp {
     pub current: u32,
     pub max: u32,
@@ -376,7 +370,6 @@ impl AlternateHp {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct TargetHud {
     pub eligible: bool,
     pub hp_color: u32,
@@ -394,7 +387,6 @@ impl Default for TargetHud {
 }
 
 #[derive(Debug)]
-
 pub struct Actor {
     pub(crate) incarnation: u64,
     pub skill_anchor: Option<Vec3>,
@@ -503,7 +495,6 @@ pub struct Actor {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-
 pub struct ActionClips {
     pub stand: Option<Clip>,
     pub walk: Option<Clip>,
@@ -535,7 +526,6 @@ pub struct ActionClips {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Extra {
     pub action: usize,
     pub body: Option<Clip>,
@@ -600,7 +590,6 @@ pub fn gait(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Held {
     pub hand: appearance::Hand,
     pub bone: i32,
@@ -626,14 +615,12 @@ pub fn grip_world(grip: &appearance::HandGrip, combined: &Matrix4) -> Matrix4 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ActorMeshPlacement {
     Hand,
     Siege { selected: bool },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HeldDraw {
     pub motion_key: render::skin::MotionKey,
     pub mesh_id: u32,
@@ -653,7 +640,6 @@ pub fn held_silhouette(model: u32, bone: i32, trail: bool) -> bool {
 }
 
 #[derive(Debug)]
-
 pub struct Mount {
     pub model: usize,
     pub parts: [PartRef; appearance::MOUNT_PARTS],
@@ -667,7 +653,6 @@ pub struct Mount {
 }
 
 #[derive(Debug)]
-
 pub struct AirMoveRestore {
     entity: u16,
     action: usize,
@@ -679,7 +664,6 @@ pub struct AirMoveRestore {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 struct AirMoveDisplay {
     entity: u16,
     ground_y: f32,
@@ -690,7 +674,6 @@ struct AirMoveDisplay {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 struct AirMoveMountTemplate {
     model: usize,
     clip: Clip,
@@ -729,7 +712,6 @@ pub fn skin_world(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Chirality {
     AsAuthored,
     Mirrored,
@@ -786,7 +768,6 @@ impl Mount {
 }
 
 #[derive(Debug)]
-
 pub struct Cape {
     pub model: usize,
     pub seat: appearance::CapeSeat,
@@ -1010,7 +991,6 @@ impl Actor {
 pub const UNPUBLISHED_ANCHOR: Matrix4 = Matrix4([0.0; 16]);
 
 #[derive(Debug, Clone, Copy)]
-
 struct Draw<'a> {
     view: &'a Matrix4,
     eye: Vec3,
@@ -1088,7 +1068,6 @@ fn sample_anim(
 const NO_GLOW: [Option<PartGlow>; appearance::PARTS] = [None; appearance::PARTS];
 
 #[derive(Debug, Clone, Copy)]
-
 struct RigGlow {
     refine: [u8; appearance::PARTS],
     tier: [u8; appearance::PARTS],
@@ -1306,14 +1285,12 @@ fn emit_with_glow(
 }
 
 #[derive(Debug, Clone)]
-
 pub(super) struct LoadedAnimation {
     animation: Arc<ModelAnimation>,
     anim_slots: Arc<registry::AnimSlotTable>,
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Doll {
     pub look: Look,
     pub pet_item: u16,
@@ -1353,7 +1330,6 @@ pub(super) fn titan_scale(base: f32, mastery: u16) -> f32 {
 pub const COSTUME_FLAG_MESH: i16 = 0x28;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PartGlow {
     pub glow: glow::Glow,
     pub sheet: usize,
@@ -1445,7 +1421,6 @@ fn apply_pulse_touches(actors: &mut [Actor], plans: &[super::skill_anim::PulsePl
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Unresolved {
     pub record: usize,
     pub face: i32,
@@ -1453,7 +1428,6 @@ pub struct Unresolved {
 }
 
 #[derive(Debug)]
-
 pub struct ActorScene {
     effect_game: Arc<GameDir>,
     pub roster: Roster,
@@ -1573,14 +1547,12 @@ impl ActorScene {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Grass {
     pub field: grass::Field,
     pub model: Option<usize>,
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn build(
     game: &GameDir,
     roster: Option<&[u8]>,
@@ -2207,7 +2179,6 @@ pub fn build(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum ClipChoice {
     Action(usize),
     Mounted(usize),
@@ -2215,7 +2186,6 @@ pub enum ClipChoice {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub struct ModelSpec {
     pub model_id: u32,
     pub clip: ClipChoice,
@@ -3997,7 +3967,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn load_mount(
         &mut self,
         game: &GameDir,
@@ -4061,7 +4030,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn load_cape(
         &mut self,
         game: &GameDir,
@@ -4536,7 +4504,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     pub fn frame(
         &mut self,
         now_ms: u32,
@@ -4560,7 +4527,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     pub(crate) fn frame_reusing(
         &mut self,
         now_ms: u32,
@@ -5318,7 +5284,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn tree_frame(
         &mut self,
         now_ms: u32,
@@ -5506,7 +5471,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn ship_frame(
         &mut self,
         now_ms: u32,
@@ -5581,7 +5545,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn fish_frame(
         &mut self,
         now_ms: u32,
@@ -5664,7 +5627,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn butterfly_frame(
         &mut self,
         now_ms: u32,
@@ -5785,7 +5747,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn float_frame(
         &mut self,
         now_ms: u32,
@@ -5863,7 +5824,6 @@ impl ActorScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn grass_frame(
         &mut self,
         now_ms: u32,
@@ -5950,7 +5910,6 @@ impl ActorScene {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SkinAlpha {
     pub opaque: f32,
     pub blended: f32,
@@ -5982,7 +5941,6 @@ fn tag_skin_motion(
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct Frame {
     pub ground_marks: Vec<super::shade::Shade>,
     pub skin_fires: Vec<Vec3>,

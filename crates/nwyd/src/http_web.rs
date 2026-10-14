@@ -65,7 +65,6 @@ export async function nwyd_http(url, body, timeout, limit) {
 }
 export function nwyd_delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 "#)]
-
 extern "C" {
 
     #[wasm_bindgen(catch)]

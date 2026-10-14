@@ -35,7 +35,6 @@ pub const ANCHOR_CLEARED: (f32, f32) = (0.0, 0.0);
 pub const PAGE_SLOTS: usize = QUICK_PAGE_SLOTS;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Queued {
     pub at: (f32, f32, f32),
     pub approach: bool,
@@ -43,7 +42,6 @@ pub struct Queued {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct State {
     pub target: Option<u16>,
     pub anchor: (f32, f32),
@@ -89,7 +87,6 @@ pub const REFUSED_CLASS: i32 = 0x2C;
 pub const REFUSED_BODY: i32 = 0xDB;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Grade {
     Refused(&'static str),
     Distance(i32),
@@ -243,7 +240,6 @@ pub fn scan_origin(scene: &FieldScene) -> Option<(i32, i32)> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Acquired {
     Nothing,
     Stuck {
@@ -358,7 +354,6 @@ pub const FOCUSED: bool = true;
 pub const CC_MODE_PHYSICAL: i32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Walked {
     Refused(&'static str),
     Inert,
@@ -573,7 +568,6 @@ pub fn walk_home(scene: &mut FieldScene, now_ms: u32) -> Walked {
 pub const MARCH_STEPS: i32 = 0x1F4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Marched {
     pub cell: (i32, i32),
     pub steps: i32,
@@ -644,7 +638,6 @@ pub const CHASE_STEPS_GUARD: i32 = 0x1F4;
 pub const CHASE_PLAN_BUDGET: usize = path::STEP_BUDGET;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Swung {
     Refused(&'static str),
     Swung {
@@ -1035,7 +1028,6 @@ pub fn feed_threshold(scene: &FieldScene, mount_max: i32) -> i32 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Consumed {
     Fed {
         gauge: bool,
@@ -1048,7 +1040,6 @@ pub enum Consumed {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-
 pub enum Stopped {
     #[default]
     Off,
@@ -1078,7 +1069,6 @@ pub enum Stopped {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-
 pub struct Hunted {
     pub consumed: Vec<Consumed>,
     pub swung: Option<Swung>,

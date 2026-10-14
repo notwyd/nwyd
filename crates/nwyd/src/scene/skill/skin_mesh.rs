@@ -41,14 +41,12 @@ pub mod field {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Unmodelled {
     Appearance { offset: u16, bytes: u32 },
     Patch { offset: u16, bytes: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Order {
     pub mesh_id: i32,
     pub source: PositionRef,

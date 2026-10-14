@@ -93,7 +93,6 @@ pub fn community_url(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn open(url: &str) -> io::Result<()> {
     if !valid_web_url(url) {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "not a web URL"));
@@ -112,7 +111,6 @@ pub fn open(url: &str) -> io::Result<()> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-
 fn platform_open(url: &str) -> io::Result<()> {
     use std::process::{Command, Stdio};
 
@@ -139,12 +137,10 @@ fn platform_open(url: &str) -> io::Result<()> {
 }
 
 #[cfg(target_os = "windows")]
-
 fn platform_open(url: &str) -> io::Result<()> {
     use std::ffi::c_void;
 
     #[link(name = "ole32")]
-
     unsafe extern "system" {
 
         fn CoInitializeEx(reserved: *mut c_void, flags: u32) -> i32;
@@ -154,7 +150,6 @@ fn platform_open(url: &str) -> io::Result<()> {
     }
 
     #[link(name = "shell32")]
-
     unsafe extern "system" {
 
         fn ShellExecuteW(
@@ -204,7 +199,6 @@ fn platform_open(url: &str) -> io::Result<()> {
     not(target_arch = "wasm32"),
     not(any(target_os = "windows", target_os = "macos", target_os = "linux"))
 ))]
-
 fn platform_open(_: &str) -> io::Result<()> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
@@ -213,7 +207,6 @@ fn platform_open(_: &str) -> io::Result<()> {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 pub fn open(url: &str) -> io::Result<()> {
     if !valid_web_url(url) {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "not a web URL"));

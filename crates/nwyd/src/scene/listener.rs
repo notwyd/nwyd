@@ -68,7 +68,6 @@ pub const ACCOUNT_MAX: usize = 14;
 pub const PASSWORD_MIN: usize = 4;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Session {
     pub server: Option<usize>,
     pub channel: Option<usize>,
@@ -76,7 +75,6 @@ pub struct Session {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Picked {
     pub server: usize,
     pub channel: usize,
@@ -84,7 +82,6 @@ pub struct Picked {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Refusal {
     NoChannel,
     NoServer,
@@ -96,7 +93,6 @@ pub enum Refusal {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Channel {
     pub index: usize,
     pub address: String,
@@ -109,7 +105,6 @@ pub struct Channel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Bounds {
     pub slot: i32,
     pub last_record: i32,
@@ -153,7 +148,6 @@ pub fn aggregate_record(table: &serverlist::ServerList) -> usize {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Tables {
     pub table: serverlist::ServerList,
     pub names: sn::ServerNames,
@@ -524,7 +518,6 @@ pub fn populate_channels(scene: &mut LoginPanels, record: usize) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum CrownRule {
     Rotated,
     Hidden,
@@ -838,7 +831,6 @@ fn clear_channel_view(scene: &mut LoginPanels) {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -922,7 +914,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_row_is_localized_and_remains_last_when_repopulated() {
         let (mut panel, names, table) = server_panel();
 
@@ -964,7 +955,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_row_draws_one_template_label_in_each_language() {
         for (language, label) in [
             (Language::English, "Settings"),
@@ -1054,7 +1044,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_row_exists_without_configured_servers() {
         let (mut panel, mut names, _) = server_panel();
 
@@ -1078,7 +1067,6 @@ mod tests {
     }
 
     #[test]
-
     fn settings_row_pointer_and_confirm_events_request_settings() {
         let (mut panel, names, table) = server_panel();
 

@@ -83,7 +83,6 @@ pub const SOUND: i64 = 0x9F;
 pub const SOUND_MODE_1: i64 = 0x9E;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ModeTail {
     pub quad_two: Option<u32>,
     pub shade: Option<u32>,
@@ -123,7 +122,6 @@ impl ModeTail {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HolyTouch {
     pub at: Vec3,
     pub mode: i32,
@@ -169,7 +167,6 @@ impl Effect for HolyTouch {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub billboards: Vec<Billboard>,
     pub quads: Vec<TimedQuad>,
@@ -321,7 +318,6 @@ const CHILD_FRAMES: u32 = 1;
 const CHILD_FRAME_MS: u32 = 0x50;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raised {
     pub mode: i32,
     pub nodes: usize,

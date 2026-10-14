@@ -22,7 +22,6 @@ pub mod flags {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct AttributeMap {
     data: Vec<u8>,
 }

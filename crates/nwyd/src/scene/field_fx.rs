@@ -5,7 +5,6 @@ use glam::Vec3;
 pub const CARPET_MODE: i32 = 0;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Carried {
     Carpet {
         cells: Vec<Vec3>,

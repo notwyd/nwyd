@@ -14,7 +14,6 @@ pub const FORCE_AFTER_MS: u32 = 100;
 pub const FORCED_SLOT: u32 = 12;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Emitters {
     pub rain: bool,
     pub snow: bool,
@@ -48,7 +47,6 @@ impl Emitters {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Anchor {
     pub x: f32,
     pub z: f32,
@@ -102,7 +100,6 @@ pub fn billboard_axes(view: &render::camera::Matrix4) -> ([f32; 3], [f32; 3]) {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Fall<'a> {
     pub emitters: Emitters,
     pub rain: &'a super::rain::Rain,
@@ -117,7 +114,6 @@ pub fn login_snow(day_quarter: u32) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Weather {
     pub code: u32,
     pub emitters: Emitters,
@@ -207,7 +203,6 @@ pub fn changed(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Commanded {
     pub was: u32,
     pub code: u32,

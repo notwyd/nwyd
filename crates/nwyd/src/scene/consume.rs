@@ -22,7 +22,6 @@ pub const HUD_COMMAND_INERT: u32 = 0x417;
 pub const MENU_COMMAND_FEED: u32 = 0x9CA4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Which {
     Hp,
     Mp,
@@ -133,7 +132,6 @@ pub const FEED_DST_SLOT: i32 = 0x0E;
 pub const POTION_SOUND: i64 = 0x29;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Stop {
     #[default]
     Exhausted,
@@ -142,7 +140,6 @@ pub enum Stop {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Drunk {
     pub sent: Vec<(i32, Request)>,
     pub emptied: usize,
@@ -248,7 +245,6 @@ pub fn potion(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct FeedSend {
     pub slot: i32,
     pub at: (u16, u16),
@@ -271,7 +267,6 @@ impl FeedSend {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Fed {
     pub sent: Option<FeedSend>,
     pub emptied: bool,

@@ -7,7 +7,6 @@ pub const ENTRY_LEN: usize = 8;
 pub const LEN: usize = ENTRIES * ENTRY_LEN;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PriceOverride {
     pub item_id: i32,
     pub price: i32,

@@ -460,7 +460,6 @@ fn half(bits: u16) -> f32 {
 }
 
 #[derive(Clone, Copy)]
-
 pub(super) enum Packed {
     Rgbg,
     Grgb,

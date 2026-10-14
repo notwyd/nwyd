@@ -11,7 +11,6 @@ pub const FROM_MOVE: u32 = 0;
 pub const FROM_ATTACK: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 struct Slot {
     id: u16,
     asked_ms: u32,
@@ -19,7 +18,6 @@ struct Slot {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Ask {
     WhoIs(u16),
     RerequestEntity(u16, u32),
@@ -48,7 +46,6 @@ impl Ask {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Roster {
     slots: [Slot; SLOTS],
 }

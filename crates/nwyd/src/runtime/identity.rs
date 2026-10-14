@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-
 pub struct EntityId(u16);
 
 impl EntityId {
@@ -21,7 +20,6 @@ impl std::fmt::Display for EntityId {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(transparent)]
-
 pub struct AccountSlot(u8);
 
 impl AccountSlot {

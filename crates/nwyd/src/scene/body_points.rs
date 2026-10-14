@@ -2,7 +2,6 @@ use glam::Vec3;
 use render::camera::Matrix4;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-
 pub struct State {
     pub points: [Option<Vec3>; 11],
     pub last_ms: u32,

@@ -29,14 +29,12 @@ pub mod field {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Unmodelled {
     pub offset: u32,
     pub bytes: u32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Order {
     pub at: PositionRef,
     pub mesh_id: i32,

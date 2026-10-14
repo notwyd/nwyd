@@ -37,7 +37,6 @@ pub const SCENE_SELECT_CHAR: u32 = 5;
 pub const SCENE_SELECT_SERVER: u32 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Kickout {
     Characters { code: i16 },
     Death { code: i16 },

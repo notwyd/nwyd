@@ -24,14 +24,12 @@ pub const TEXT_LEN: usize = 0x80;
 pub const REQUIRED_ITEMS: usize = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Need {
     pub kind: i32,
     pub value: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Recipe {
     pub index: i32,
     pub npc: i32,
@@ -61,7 +59,6 @@ impl Recipe {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Requirement {
     pub field_00: i32,
     pub id: i32,
@@ -79,7 +76,6 @@ impl Requirement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct MixList {
     pub recipes: Vec<Recipe>,
     pub requirements: Vec<Requirement>,

@@ -36,7 +36,6 @@ pub const SOUND_SLOT: i32 = 0x25;
 pub const EFFECT_KIND: i32 = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Command {
     None,
     Refresh,
@@ -45,7 +44,6 @@ pub enum Command {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Membership {
     pub command: i32,
     pub guild: u16,

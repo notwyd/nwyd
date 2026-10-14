@@ -3,7 +3,6 @@ use std::{collections::BTreeSet, sync::mpsc};
 use web_time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-
 enum Key {
     Mesh(u32),
     Effect(usize),
@@ -80,7 +79,6 @@ fn wanted(scene: &ObjectScene, actor: &super::super::actors::Actor) -> BTreeSet<
 type Reply = (Key, Result<resources::Bundle>);
 
 #[derive(Debug)]
-
 struct Worker {
     requests: mpsc::SyncSender<Key>,
     replies: mpsc::Receiver<Reply>,
@@ -111,7 +109,6 @@ impl Worker {
 }
 
 #[derive(Debug)]
-
 pub(super) struct Loader {
     game: GameDir,
     worker: Option<Worker>,

@@ -7,7 +7,6 @@ pub const SLOTS_PER_MODEL: usize = 186;
 pub const VALID_INDEX_LEN: usize = MAX_MODELS * SLOTS_PER_MODEL * 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ModelEntry {
     pub model_id: u32,
     pub num_anims: u32,
@@ -261,7 +260,6 @@ pub fn parse_bone_ani(text: &[u8]) -> Vec<ModelEntry> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ValidIndex {
     table: Vec<i32>,
 }
@@ -308,7 +306,6 @@ pub const ANIM_ACTIONS: usize = 56;
 pub const ANIM_SLOT_MODELS: [u32; 6] = [0, 1, 2, 3, 4, 5];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct AnimSlotTable {
     rows: Vec<u16>,
 }

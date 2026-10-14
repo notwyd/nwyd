@@ -7,14 +7,12 @@ type Key = ((u8, u8), Scale);
 type Image = (Vec<Tile>, Texture);
 
 #[derive(Debug)]
-
 struct Worker {
     requests: mpsc::SyncSender<Key>,
     replies: mpsc::Receiver<(Key, Image)>,
 }
 
 #[derive(Debug)]
-
 pub(super) struct Loader {
     game: GameDir,
     worker: Option<Worker>,

@@ -6,7 +6,6 @@ use super::{
 use glam::Vec3;
 
 #[derive(Debug, Clone, Default)]
-
 pub struct State {
     epoch: Option<u32>,
     pub mark: Option<Shade>,

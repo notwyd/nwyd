@@ -9,7 +9,6 @@ pub const NAME_TAIL: usize = 14;
 pub const WEARER_FLAGS_OFF: usize = 0x546 - 0x478;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Entered {
     pub client_id: u16,
     pub weather: u16,
@@ -41,7 +40,6 @@ pub struct Entered {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Derived {
     pub stat_points: i16,
     pub mastery_points: i16,
@@ -75,7 +73,6 @@ impl Derived {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Warehouse {
     pub cargo: [Item; account::CARGO_SLOTS],
     pub gold: u32,

@@ -12,7 +12,6 @@ pub const OBJECT_SIZE: u16 = 168;
 pub const Y: f32 = 0.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Order {
     pub mode: i32,
     pub scale: f32,

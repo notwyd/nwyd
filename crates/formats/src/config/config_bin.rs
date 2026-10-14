@@ -42,7 +42,6 @@ pub mod slot {
 pub const DEFAULTS: [i16; SLOTS] = [7000, 7, 2, 100, 100, -1, 57, 2, 1, 1, 1, 0, 0, 0, 1, 0];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Preset {
     pub width: u32,
     pub height: u32,
@@ -105,7 +104,6 @@ pub const PRESETS: [Preset; 10] = [
 pub const FALLBACK: Preset = PRESETS[0];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Language {
     Korean,
     #[default]
@@ -147,14 +145,12 @@ impl Language {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum CursorMode {
     Engine,
     System,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Config {
     pub raw: [i16; SLOTS],
 }

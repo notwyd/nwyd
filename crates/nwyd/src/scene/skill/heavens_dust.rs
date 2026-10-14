@@ -56,7 +56,6 @@ pub const SOUND: i64 = 0x99;
 pub const SPAWN_ARGUMENT_COUNT: usize = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HeavensDust {
     pub at: Vec3,
     pub birth_ms: u32,
@@ -100,7 +99,6 @@ impl Effect for HeavensDust {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub token: HeavensDust,
     pub billboards: Vec<Billboard>,

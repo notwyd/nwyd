@@ -61,7 +61,6 @@ pub const NOT_ENOUGH_GOLD: usize = 155;
 pub const TRADE_EXCLUSION: [i32; 4] = [0xA29, 0x6A6, 0xA5C, 0x6D6];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PartyGate {
     Missing,
     Refused,
@@ -90,7 +89,6 @@ pub fn party_gate(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum TradeGate {
     TooFar,
     Dead,
@@ -148,7 +146,6 @@ pub const INVITE_RANK: std::ops::Range<i16> = 2..5;
 pub const CHIEF_REFUSED_RANK: std::ops::Range<i16> = 3..9;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Party {
     pub entity: u16,
     pub guild: u16,
@@ -161,7 +158,6 @@ pub struct Party {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Action {
     Page(usize),
     GuildOptions([bool; 4]),
@@ -224,7 +220,6 @@ pub fn command_with_ally(
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Context {
     pub player_present: bool,
     pub player_model: u8,

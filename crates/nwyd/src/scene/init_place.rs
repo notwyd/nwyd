@@ -28,7 +28,6 @@ pub const STAMP_FILL: u8 = 0x10;
 pub const IN_BOX: bool = false;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PlacementKind {
     Gate,
     Cannon,

@@ -67,14 +67,12 @@ const EXP_OFF: usize = 0x488;
 const UNKNOWN_4A8_OFF: usize = 0x4A8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Effect {
     pub id: u8,
     pub value: u8,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Item {
     pub index: u16,
     pub appearance: u16,
@@ -129,7 +127,6 @@ pub(crate) fn item_at(buf: &[u8], off: usize) -> Result<Item> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Status {
     pub level: u16,
     pub unset_02: u16,
@@ -215,7 +212,6 @@ pub(crate) fn status_at(buf: &[u8], off: usize) -> Result<Status> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Equipment {
     pub items: [Item; EQUIP_SLOTS],
 }
@@ -316,7 +312,6 @@ pub(crate) fn equipment_at(buf: &[u8], off: usize) -> Result<Equipment> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Slot {
     pub x: u16,
     pub z: u16,
@@ -346,7 +341,6 @@ fn decode_name(raw: &[u8; NAME_LEN]) -> String {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Block {
     pub slots: [Slot; SLOTS],
 }
@@ -402,7 +396,6 @@ impl Block {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Accept {
     pub key: [u8; KEY_LEN],
     pub pad: [u8; 4],
@@ -456,7 +449,6 @@ pub fn parse_slot_effect(payload: &[u8]) -> Result<u32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct DeleteHold {
     pub deadline: i32,
     pub current: i32,
@@ -478,7 +470,6 @@ impl DeleteHold {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SelectionMetadata {
     pub index: u32,
     pub words: [u32; 3],
@@ -496,7 +487,6 @@ pub fn parse_selection_metadata(payload: &[u8]) -> Result<SelectionMetadata> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct NameResult {
     pub result: i32,
     pub slot: i32,

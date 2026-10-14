@@ -20,7 +20,6 @@ pub const ACCESSORY_BASE: usize = 100;
 pub const GRID_COLS: usize = 10;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct MountData {
     pub index: u32,
     pub c02: i32,
@@ -61,7 +60,6 @@ impl MountData {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct MountVisual {
     pub kind: i16,
     pub grid: [[i16; 3]; 3],

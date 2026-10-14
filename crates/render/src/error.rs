@@ -1,5 +1,4 @@
 #[derive(Debug, thiserror::Error)]
-
 pub enum Error {
     #[error("no GPU adapter available: {0}")]
     NoAdapter(String),

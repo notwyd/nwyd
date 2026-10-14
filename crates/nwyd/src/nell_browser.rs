@@ -12,7 +12,6 @@ pub const USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Trident/7.0; rv:11.0) like Gecko";
 
 #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
-
 pub fn open(
     parent: &winit::window::Window,
     url: &str,
@@ -42,7 +41,6 @@ pub fn open(
 }
 
 #[derive(Debug)]
-
 pub struct State {
     pub supported: bool,
     pub visible: bool,

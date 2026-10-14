@@ -173,7 +173,6 @@ impl Tables<'_> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Content {
     pub title: Row,
     pub rows: Vec<Row>,
@@ -182,7 +181,6 @@ pub struct Content {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Context {
     pub price: Price,
     pub zone_clock: Option<i64>,
@@ -195,7 +193,6 @@ pub struct Context {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Learner {
     pub class: i32,
     pub level: i32,
@@ -206,7 +203,6 @@ pub struct Learner {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub enum Currency {
     #[default]
     Gold,
@@ -1133,7 +1129,6 @@ fn help_color(help: &Help, index: usize) -> u32 {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub enum Price {
     #[default]
     None,
@@ -1153,7 +1148,6 @@ pub enum Price {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Shop {
     pub open: bool,
     pub owner: Option<i32>,

@@ -15,7 +15,6 @@ fn key(t: &BoundTexture, skin: bool) -> Key {
 }
 
 #[derive(Default)]
-
 pub(super) struct WorldTextures {
     pub meshes: Vec<MeshTexture>,
     pub skins: Vec<SkinTexture>,

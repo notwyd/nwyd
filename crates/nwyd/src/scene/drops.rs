@@ -39,7 +39,6 @@ pub const BIAS_OVERRIDE_ITEM: i16 = 0xA9;
 pub const BIAS_OVERRIDE: i32 = -4;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Pose {
     pub pitch: f32,
     pub lift: f32,
@@ -55,7 +54,6 @@ impl Default for Pose {
 }
 
 #[allow(clippy::if_same_then_else)]
-
 pub fn pose(id: i16, items: &ItemList, use_kind: i32, drawn_mesh: i32) -> Pose {
     let mut out = Pose::default();
 
@@ -243,7 +241,6 @@ pub fn flag_colour(mesh: i16) -> Option<u32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct RefineOverlay {
     pub texture: usize,
     pub blend: render::mesh::Stage1Blend,
@@ -321,7 +318,6 @@ pub fn sound(id: i16, use_kind: i32) -> u32 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Drop {
     pub entity: u16,
     pub item: Item,
@@ -346,7 +342,6 @@ impl Drop {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Drops {
     pub items: Vec<Drop>,
 }
@@ -531,7 +526,6 @@ impl Drops {
 pub const REFINE_CLAMP: i32 = 0xC;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct DropDraw {
     pub mesh_id: u32,
     pub world: render::camera::Matrix4,
@@ -619,7 +613,6 @@ pub fn hover(drops: &mut Drops, ray: &Ray, player_present: bool) -> Option<u16> 
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Placed {
     pub entity: u16,
     pub id: i16,

@@ -100,7 +100,6 @@ pub const MOVEMENT_DEFAULT: i32 = hud::MOVE_DEFAULT;
 pub const ANCHOR_KEEP_RANGE: i32 = 0x11;
 
 #[derive(Debug)]
-
 pub struct AirMove {
     pub row: u32,
     pub flight: AirMoveFlight,
@@ -108,7 +107,6 @@ pub struct AirMove {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct GroundWave {
     pub centre: Vec3,
     pub birth_ms: u32,
@@ -269,7 +267,6 @@ mod language;
 pub(crate) use language::LanguageUpdate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Drag {
     pub ground: bool,
     pub suspended: bool,
@@ -279,7 +276,6 @@ pub struct Drag {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct ClickMarker {
     pub at: Vec3,
     pub tile: (i32, i32),
@@ -309,7 +305,6 @@ impl ClickMarker {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct MarkerDraws {
     pub rings: Vec<super::lights::Glow>,
     pub quads: Vec<super::quads::GroundQuad>,
@@ -454,7 +449,6 @@ pub const TOAST_QUIT: usize = 224;
 pub const TOAST_LOGOUT: usize = 225;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ExitKind {
     Characters,
     Quit,
@@ -462,7 +456,6 @@ pub enum ExitKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Exit {
     pub kind: ExitKind,
     pub at_ms: u32,
@@ -487,14 +480,12 @@ impl Exit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Transition {
     ServerSelect,
     Quit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Chrome {
     pub hud: bool,
     pub captions: bool,
@@ -1328,7 +1319,6 @@ pub fn adopt_session(scene: &mut FieldScene, picked: &super::listener::Picked) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct RedirectFollow {
     pub ticket: protocol::server::Redirect,
     pub channel: i32,
@@ -6108,7 +6098,6 @@ pub fn start_exit(scene: &mut FieldScene, kind: ExitKind) {
 pub const WINDOW_CLOSE_REPEAT_MS: u32 = 3_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum WindowClose {
     Started,
     Waiting,

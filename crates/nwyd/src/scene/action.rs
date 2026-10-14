@@ -83,7 +83,6 @@ pub const ARRIVAL_SOUND: i64 = 0x97;
 pub const STAND_SOUND: i64 = 0xAF;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Raised {
     pub class: &'static str,
     pub at: glam::Vec3,
@@ -91,7 +90,6 @@ pub struct Raised {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Applied {
     pub entity: u16,
     pub index: Option<usize>,
@@ -628,7 +626,6 @@ pub fn remove(scene: &mut FieldScene, entity: u16) -> Removed {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Removed {
     pub entity: u16,
     pub index: Option<usize>,

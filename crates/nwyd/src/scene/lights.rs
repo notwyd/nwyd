@@ -106,7 +106,6 @@ pub const REMAP: &[(u32, i32)] = &[
 pub const LOAD_CLOCK_MS: u32 = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Arm {
     Particle,
     Glow,
@@ -207,7 +206,6 @@ pub const LAMP_RANGE_LONG: f32 = 7.0;
 pub const LAMP_ATTENUATION: f32 = 0.001;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Lamp {
     pub index: u32,
     pub position: Vec3,
@@ -314,7 +312,6 @@ pub fn sample<T: std::ops::Deref<Target = Terrain>>(zones: &[T], x: f32, z: f32)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Registration {
     pub kind: u32,
     pub at: (i32, i32),
@@ -323,7 +320,6 @@ pub struct Registration {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct DustSeed {
     pub kind: u32,
     pub position: Vec3,
@@ -332,7 +328,6 @@ pub struct DustSeed {
 }
 
 #[derive(Debug, Default, Clone)]
-
 pub struct Lights {
     pub registrations: Vec<Registration>,
     pub shades: Vec<Shade>,
@@ -416,7 +411,6 @@ pub fn glow_of(mesh: &EffectMesh) -> Option<Glow> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Glow {
     pub mesh_id: i32,
     pub position: Vec3,
@@ -704,7 +698,6 @@ pub fn build(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Lamps {
     scene: u32,
     index: u32,

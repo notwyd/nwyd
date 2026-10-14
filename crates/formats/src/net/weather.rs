@@ -26,7 +26,6 @@ pub const HEAVY_SNOW: u32 = 3;
 pub const ARMS: [u32; 3] = [RAIN, SNOW, HEAVY_SNOW];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Forecast {
     pub code: u32,
 }

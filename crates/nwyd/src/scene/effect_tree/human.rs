@@ -3,7 +3,6 @@ use crate::scene::effect_context::ActorKey;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy)]
-
 pub(crate) enum Control {
     OwnerHidden,
     QualityHidden,
@@ -11,7 +10,6 @@ pub(crate) enum Control {
 }
 
 #[derive(Debug, Default)]
-
 pub(super) struct Controls {
     actors: HashMap<ActorKey, Control>,
     rotors: HashMap<u16, Control>,

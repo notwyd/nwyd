@@ -2,7 +2,6 @@ macro_rules! timestamp {
     ($name:ident, $doc:literal) => {
         #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
         #[repr(transparent)]
-
         pub struct $name(u32);
 
         impl $name {
@@ -37,7 +36,6 @@ timestamp!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ClockSample {
     pub raw: RawTime,
     pub game: GameTime,

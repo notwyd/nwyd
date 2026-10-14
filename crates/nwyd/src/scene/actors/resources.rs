@@ -1,7 +1,6 @@
 use super::*;
 
 #[derive(Debug, Default)]
-
 pub(super) struct PartCache {
     meshes: BTreeMap<String, Arc<SkinMesh>>,
     allocations: BTreeMap<String, usize>,
@@ -71,7 +70,6 @@ impl PartCache {
 }
 
 #[derive(Debug)]
-
 pub(crate) struct Snapshot {
     known: std::collections::BTreeSet<ModelSpec>,
     animations: BTreeMap<u32, Option<LoadedAnimation>>,
@@ -79,7 +77,6 @@ pub(crate) struct Snapshot {
 }
 
 #[derive(Debug, Default)]
-
 pub(crate) struct Bundle {
     pub textures: Vec<BoundTexture>,
     pub models: Vec<Model>,

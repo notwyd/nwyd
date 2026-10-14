@@ -1,14 +1,12 @@
 pub mod dispatch;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Chain {
     Impact,
     Caster,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Axis {
     X,
     Y,
@@ -16,7 +14,6 @@ pub enum Axis {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Body {
     Caster,
     Target,
@@ -24,7 +21,6 @@ pub enum Body {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-
 pub enum PositionRef {
     Caster,
     Target,
@@ -43,14 +39,12 @@ pub enum PositionRef {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-
 pub enum AxisRef {
     From(Anchor, f32),
     Computed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-
 pub enum Anchor {
     Caster,
     Target,
@@ -59,7 +53,6 @@ pub enum Anchor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub enum SpawnArgument {
     Int(i32),
     Bits(u32),
@@ -74,7 +67,6 @@ pub enum SpawnArgument {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PropertyOverride {
     pub offset: u16,
     pub bytes: u32,
@@ -82,7 +74,6 @@ pub struct PropertyOverride {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct EffectCommand {
     pub slot: u16,
     pub args: &'static [SpawnArgument],
@@ -90,7 +81,6 @@ pub struct EffectCommand {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Spawn {
     pub class: dispatch::Class,
     pub at: PositionRef,
@@ -126,7 +116,6 @@ impl Spawn {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct RowFlags(pub u8);
 
 impl RowFlags {
@@ -165,7 +154,6 @@ pub mod state {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct DispatchRow {
     pub chain: Chain,
     pub skill: u8,

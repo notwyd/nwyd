@@ -31,7 +31,6 @@ fn event(receiver: &mpsc::Receiver<Value>) -> Value {
 }
 
 #[test]
-
 fn default_config_uses_the_application_collector() {
     let config = Config::default();
 
@@ -46,7 +45,6 @@ fn default_config_uses_the_application_collector() {
 }
 
 #[test]
-
 fn overrides_preserve_defaults_when_absent_and_allow_disabling() {
     let defaults = Config::from_overrides(None, None);
 
@@ -74,7 +72,6 @@ fn overrides_preserve_defaults_when_absent_and_allow_disabling() {
 }
 
 #[test]
-
 fn endpoint_construction_preserves_base_paths_and_uses_one_separator() {
     for (base, expected) in [
         (
@@ -112,7 +109,6 @@ fn endpoint_construction_preserves_base_paths_and_uses_one_separator() {
 }
 
 #[test]
-
 fn invalid_bases_are_rejected_before_delivery_starts() {
     for base in [
         "not a URL",
@@ -139,7 +135,6 @@ fn invalid_bases_are_rejected_before_delivery_starts() {
 }
 
 #[test]
-
 fn environment_keys_cannot_modify_the_url_structure() {
     for key in ["", ".", "..", "a/b", "a?b", "a#b", "%2F", "a b", "café"] {
         let config = Config {
@@ -152,7 +147,6 @@ fn environment_keys_cannot_modify_the_url_structure() {
 }
 
 #[test]
-
 fn login_queues_started_then_device_with_the_same_session_across_accounts() {
     let (mut analytics, receiver) = Analytics::recording();
 
@@ -212,7 +206,6 @@ fn login_queues_started_then_device_with_the_same_session_across_accounts() {
 }
 
 #[test]
-
 fn cloned_handles_keep_their_account_identity_and_share_the_session() {
     let (mut analytics, receiver) = Analytics::recording();
 
@@ -238,7 +231,6 @@ fn cloned_handles_keep_their_account_identity_and_share_the_session() {
 }
 
 #[test]
-
 fn separate_delivery_services_have_distinct_session_ids() {
     let (first, _) = Analytics::recording();
 
@@ -248,7 +240,6 @@ fn separate_delivery_services_have_distinct_session_ids() {
 }
 
 #[test]
-
 fn unidentified_sessions_suppress_events_until_an_account_is_identified() {
     let (mut analytics, receiver) = Analytics::recording();
 
@@ -280,7 +271,6 @@ fn unidentified_sessions_suppress_events_until_an_account_is_identified() {
 }
 
 #[test]
-
 fn character_events_preserve_field_types_and_payload_shapes() {
     let (analytics, receiver) = Analytics::recording();
 
@@ -354,7 +344,6 @@ fn character_events_preserve_field_types_and_payload_shapes() {
 }
 
 #[test]
-
 fn empty_recipients_or_messages_do_not_generate_events() {
     let (analytics, receiver) = Analytics::recording();
 
@@ -384,7 +373,6 @@ fn empty_recipients_or_messages_do_not_generate_events() {
 }
 
 #[test]
-
 fn character_class_fallback_and_signed_body_transformation_are_preserved() {
     let mut character = character();
 
@@ -407,7 +395,6 @@ fn character_class_fallback_and_signed_body_transformation_are_preserved() {
 }
 
 #[test]
-
 fn serialization_keeps_styled_spaces_sorted_keys_and_escaped_newlines() {
     assert_eq!(
         styled(&json!({"text":"a\u{0b}\u{1f}\0ignored"})),
@@ -424,7 +411,6 @@ fn serialization_keeps_styled_spaces_sorted_keys_and_escaped_newlines() {
 }
 
 #[test]
-
 fn oversized_payloads_keep_the_truncation_boundary() {
     let (sender, receiver) = mpsc::channel();
 
@@ -445,7 +431,6 @@ fn oversized_payloads_keep_the_truncation_boundary() {
 }
 
 #[test]
-
 fn a_full_queue_drops_new_events_without_waiting_for_network_progress() {
     let (entered, wait_entered) = mpsc::channel();
 
@@ -515,7 +500,6 @@ fn a_full_queue_drops_new_events_without_waiting_for_network_progress() {
 }
 
 #[test]
-
 fn loopback_delivery_posts_the_configured_path_headers_and_event_body_once() {
     use std::io::{Read, Write};
 

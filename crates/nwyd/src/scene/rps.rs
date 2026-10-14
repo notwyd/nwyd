@@ -16,7 +16,6 @@ pub const CLOSE_BUTTON: &str = "Close";
 pub use formats::net::arena::{ACCEPT, ACCEPT_BOX, ACCEPT_LEN, ACCEPT_REPLY};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Played {
     Threw(&'static str),
     Closed,

@@ -13,7 +13,6 @@ const OFF_KIND: usize = 0x1FE;
 const OFF_IS_DDS: usize = 0x20C;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum TextureKind {
     Alpha4,
     Alpha1,
@@ -37,7 +36,6 @@ impl TextureKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct EnvTexture {
     pub id: usize,
     pub path: String,
@@ -46,7 +44,6 @@ pub struct EnvTexture {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct EnvTextureList {
     entries: Vec<Option<EnvTexture>>,
 }

@@ -127,7 +127,6 @@ pub mod item_type {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct TemplateEffect {
     pub id: i16,
     pub value: i16,
@@ -140,7 +139,6 @@ impl TemplateEffect {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub name: String,
     pub mesh: i16,
@@ -190,7 +188,6 @@ impl Entry {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct ItemList {
     raw: Vec<u8>,
     codepage: Codepage,
@@ -463,7 +460,6 @@ impl ItemList {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -482,7 +478,6 @@ mod tests {
     }
 
     #[test]
-
     fn localized_names_keep_independent_encodings_and_leave_base_names_intact() {
         let mut table = table();
 
@@ -543,7 +538,6 @@ mod tests {
     }
 
     #[test]
-
     fn replacing_localized_names_restores_the_base_encoding_only_for_replaced_records() {
         let mut table = table();
 
@@ -594,7 +588,6 @@ mod tests {
     }
 
     #[test]
-
     fn invalid_localized_record_ids_do_not_change_bytes_or_name_encodings() {
         let mut table = table();
 
@@ -633,7 +626,6 @@ mod tests {
     }
 
     #[test]
-
     fn resetting_names_keeps_server_prices_and_every_other_record_field() {
         let mut source = table();
 

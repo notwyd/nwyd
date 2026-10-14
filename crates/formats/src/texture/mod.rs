@@ -12,7 +12,6 @@ pub use texture_list::{TextureList, djb2_lower};
 pub use texture_set_list::TextureSetList;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PixelFormat {
     Bc1RgbaUnorm,
     Bc2RgbaUnorm,
@@ -34,7 +33,6 @@ impl PixelFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct MipLevel {
     pub width: u32,
     pub height: u32,
@@ -43,7 +41,6 @@ pub struct MipLevel {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Texture {
     pub width: u32,
     pub height: u32,
@@ -54,14 +51,12 @@ pub struct Texture {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct CubeTexture {
     pub faces: [Texture; 6],
     pub source_len: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum TextureResource {
     Image(Texture),
     Cube(Box<CubeTexture>),
@@ -195,7 +190,6 @@ impl Texture {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Container {
     Wys,
     Wyt,

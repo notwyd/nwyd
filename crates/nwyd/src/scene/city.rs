@@ -35,7 +35,6 @@ pub fn music_slot(cell: (i32, i32)) -> i32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct State {
     pub music_slot: i32,
     pub castle_town: i32,
@@ -59,7 +58,6 @@ impl Default for State {
 pub const NO_TOWN: i32 = -1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Saved {
     Nothing,
     Refused {

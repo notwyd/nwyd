@@ -9,7 +9,6 @@ pub const RECORD_LEN: usize = 10;
 pub const ENTITY_ID_BASE: i32 = 0x3A99;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Entry {
     pub x: i16,
     pub y: i16,

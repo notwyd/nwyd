@@ -5,7 +5,6 @@ use formats::data::{item_list, item_name};
 use formats::text::{Codepage, codepage};
 
 #[test]
-
 fn runtime_language_notice_item_names_preserve_metadata_and_queued_messages() {
     let fixture = LanguageGame::new();
 
@@ -116,7 +115,6 @@ fn runtime_language_notice_item_names_preserve_metadata_and_queued_messages() {
 }
 
 #[test]
-
 fn runtime_language_notice_resets_to_root_names_without_localized_resources() {
     let fixture = LanguageGame::new();
 

@@ -6,7 +6,6 @@ use super::{
 use formats::net::account::Item;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Prompt {
     pub slot: usize,
     pub item: Item,

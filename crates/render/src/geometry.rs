@@ -1,7 +1,6 @@
 use crate::device::Gpu;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-
 pub struct GeometryUploadStats {
     pub uploaded_bytes: u64,
     pub copied_bytes: u64,

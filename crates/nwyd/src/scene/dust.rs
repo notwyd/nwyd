@@ -121,7 +121,6 @@ pub const DUST_RECORD_KINDS: [(u32, i32, usize); 4] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Resolution {
     Present,
     RowWithoutFile,
@@ -143,7 +142,6 @@ pub fn resolve(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Lane {
     pub at: Vec3,
     pub mesh_id: u32,
@@ -151,7 +149,6 @@ pub struct Lane {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Footing {
     Water,
     Ground,
@@ -177,13 +174,11 @@ impl Footing {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Unbuilt {
     SplashSound,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SplashEvent {
     pub slot: i64,
     pub at: Vec3,
@@ -208,7 +203,6 @@ fn water_quad(at: Vec3) -> super::timers::TimedQuad {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Dust {
     pub at: Vec3,
     pub mode: i32,
@@ -226,7 +220,6 @@ pub struct Dust {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub dust: Dust,
     pub children: Vec<Billboard>,
@@ -639,7 +632,6 @@ pub const BUBBLE_ARGB: u32 = 0xAAAA_AAAA;
 pub const BUBBLE_TEXTURE: usize = 0x78;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Source {
     pub at: Vec3,
     pub mode: i32,
@@ -648,7 +640,6 @@ pub struct Source {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Spawned {
     pub dust: Vec<Dust>,
     pub bubbles: Vec<super::burst::Particle>,

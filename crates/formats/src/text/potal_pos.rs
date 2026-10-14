@@ -9,7 +9,6 @@ pub const COORD_WIDTH: usize = 9;
 pub const GUARD_BYTE: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Row {
     pub colour: u32,
     pub zone: String,

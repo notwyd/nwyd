@@ -11,7 +11,6 @@ use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct WorldVertex {
     pub pos: [f32; 3],
     pub normal: [f32; 3],
@@ -57,7 +56,6 @@ impl WorldVertex {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct TerrainBatch {
     pub base_texture_id: i32,
     pub detail_texture_id: i32,
@@ -68,7 +66,6 @@ pub struct TerrainBatch {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum TerrainMaterial {
     Base,
     Detail,
@@ -132,7 +129,6 @@ impl TerrainBatch {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct TerrainMesh {
     pub vertices: Vec<WorldVertex>,
     pub batches: Vec<TerrainBatch>,
@@ -361,7 +357,6 @@ pub const LIGHT1_DIRECTION: [f32; 3] = [0.0, 0.0, 1.0];
 pub const GLOBAL_AMBIENT: u32 = 0x33FF_FFFF;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Material {
     pub diffuse: [f32; 4],
     pub ambient: [f32; 4],
@@ -384,7 +379,6 @@ pub const MAX_POINT_LIGHTS: usize = 8;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct PointLight {
     pub position: [f32; 4],
     pub diffuse: [f32; 4],
@@ -400,7 +394,6 @@ impl PointLight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PointLights {
     pub slots: [PointLight; MAX_POINT_LIGHTS],
     pub dropped: usize,
@@ -434,7 +427,6 @@ impl PointLights {
 pub const FIRST_POINT_LIGHT_INDEX: usize = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Lighting {
     pub light0: [f32; 4],
     pub light1: [f32; 4],
@@ -444,7 +436,6 @@ pub struct Lighting {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Fog {
     pub enabled: bool,
     pub color: u32,
@@ -465,7 +456,6 @@ impl Fog {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct FrameUniforms {
     pub world: [f32; 16],
     pub view: [f32; 16],
@@ -537,7 +527,6 @@ pub fn argb_to_rgba_f32(argb: u32) -> [f32; 4] {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct DrawUniforms {
     pub base_layer: u32,
     pub detail_layer: u32,

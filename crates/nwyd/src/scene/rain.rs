@@ -59,7 +59,6 @@ pub const RAIN_CLASS: &super::effect_tree::Class = &super::effect_tree::Class {
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Drop {
     pub x: f32,
     pub y: f32,
@@ -74,7 +73,6 @@ impl Drop {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Rain {
     pub drops: Vec<Drop>,
     pub last_ms: u32,

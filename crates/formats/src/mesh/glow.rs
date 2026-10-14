@@ -56,14 +56,12 @@ pub const TINT_WINDOW: core::ops::RangeInclusive<u8> = 0x73..=0x7E;
 pub const TINT_FACTOR: u32 = 0xFFFF_8C78;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Uv {
     Sphere,
     Mesh,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Blend {
     Modulate,
     AddSmooth,
@@ -73,7 +71,6 @@ pub enum Blend {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Glow {
     pub texture: u32,
     pub uv: Uv,
@@ -85,7 +82,6 @@ pub struct Glow {
 pub const EMISSIVE_MATERIAL: (f32, f32, f32) = (0.1, 0.55, 0.9);
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-
 pub struct Part {
     pub texture: i32,
     pub color_key: bool,

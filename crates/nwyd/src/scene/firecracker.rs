@@ -35,7 +35,6 @@ const PRESETS: [&[u8; 100]; 5] = [
 ];
 
 #[derive(Debug)]
-
 pub struct State {
     pub visible: bool,
     pub source: Option<Coord>,

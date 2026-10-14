@@ -8,7 +8,6 @@ use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct BillboardVertex {
     pub position: [f32; 3],
     pub diffuse: u32,
@@ -46,7 +45,6 @@ pub const QUAD_INDICES: [u16; 6] = [0, 1, 2, 0, 2, 3];
 pub const QUAD_VERTICES: u32 = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-
 pub enum BillboardPass {
     Blended,
     Additive,
@@ -95,7 +93,6 @@ impl BillboardPass {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct BillboardUniforms {
     pub world: [f32; 16],
     pub flags: [f32; 4],
@@ -141,7 +138,6 @@ impl BillboardUniforms {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct BillboardDraw {
     pub pass: BillboardPass,
     pub object: u32,

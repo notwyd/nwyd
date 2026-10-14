@@ -2,7 +2,6 @@ use super::field::FieldScene;
 use formats::net::affect::{Affects, Wearer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Applied {
     pub entity: u16,
     pub index: Option<usize>,

@@ -6,7 +6,6 @@ use glam::Vec3;
 use render::billboard::BillboardPass;
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct State {
     pub armed: bool,
     last_ms: u32,

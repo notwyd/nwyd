@@ -34,7 +34,6 @@ pub const SPARK_KIND: i32 = 5;
 pub const ARM_FUSE_MS: u32 = 500;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Body {
     pub entity: u16,
     pub position: Vec3,
@@ -60,7 +59,6 @@ impl Body {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Spark {
     pub at: Vec3,
     pub owner: u16,
@@ -68,14 +66,12 @@ pub struct Spark {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Bolt {
     pub at: Vec3,
     pub mode: i32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Armed {
     pub body: u16,
     pub fire_at_ms: u32,
@@ -103,7 +99,6 @@ impl Armed {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub enum Entry {
     Unvisited,
     Unresolved(u16),
@@ -115,7 +110,6 @@ pub enum Entry {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Plan {
     pub entries: [Entry; CEILING],
     pub visited: usize,
@@ -305,7 +299,6 @@ fn arm(attack: &Attack, caster: &Body, body: &Body, now_ms: u32) -> Armed {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Raised {
     pub plan: Plan,
     pub bolts: usize,

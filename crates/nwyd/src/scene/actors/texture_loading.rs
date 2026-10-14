@@ -22,7 +22,6 @@ pub(crate) fn placeholder() -> Texture {
 type Reply = (usize, Result<Texture>);
 
 #[derive(Debug)]
-
 struct Worker {
     requests: mpsc::SyncSender<(usize, String)>,
     replies: mpsc::Receiver<Reply>,
@@ -55,7 +54,6 @@ impl Worker {
 }
 
 #[derive(Debug)]
-
 pub(crate) struct Loader {
     game: GameDir,
     worker: Option<Worker>,

@@ -9,7 +9,6 @@ use render::preset::RenderMode;
 use render::sprite::{Quad, UvRule};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Display {
     pub shown: bool,
     pub blocked: bool,
@@ -114,7 +113,6 @@ pub const GAUGE_HOSTILE: u32 = 0xFFFF_0000;
 pub const GAUGE_FRIENDLY: u32 = 0xFF1E_821E;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct GaugeLocal {
     pub same_body: bool,
     pub kingdom: u8,
@@ -320,7 +318,6 @@ pub const NPC_GRADED_BODY: i32 = 0x10F;
 pub use formats::net::spawn::PLAYER_ID_LIMIT;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Plate {
     pub name: (f32, f32),
     pub hp: [f32; 4],
@@ -808,13 +805,11 @@ pub fn consumes_gauge_mouse(scene: &FieldScene, event: ui::input::Mouse, x: i32,
 }
 
 #[derive(Debug, Default)]
-
 pub(crate) struct NameHover {
     controls: std::collections::BTreeMap<u64, NameInput>,
 }
 
 #[derive(Debug, Default)]
-
 struct NameInput {
     rect: [f32; 4],
     shown: bool,

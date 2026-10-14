@@ -146,7 +146,6 @@ impl<'a> Ground<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Shade {
     pub grid: i32,
     pub texture: usize,

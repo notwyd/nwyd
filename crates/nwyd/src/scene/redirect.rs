@@ -4,28 +4,24 @@ use protocol::server::Redirect;
 pub const GRACE_MS: u32 = 15_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Cached {
     WrongClient { expected: u16, got: u16 },
     Stored { channel: i32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Closed {
     Lost,
     Follow(Redirect),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Destination {
     pub channel: i32,
     pub address: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct State {
     grace_at_ms: u32,
     cached: Option<Redirect>,

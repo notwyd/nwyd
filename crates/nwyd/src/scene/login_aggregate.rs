@@ -2,7 +2,6 @@ use super::super::status;
 use formats::config::serverlist::{self, ServerList};
 
 #[derive(Debug)]
-
 struct Pending {
     record: usize,
     selectors: [i32; 10],
@@ -10,7 +9,6 @@ struct Pending {
 }
 
 #[derive(Debug)]
-
 pub struct State {
     selectors: [i32; 10],
     pending: Option<Pending>,

@@ -10,7 +10,6 @@ mod owners;
 pub(crate) use owners::OwnerIndex;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-
 pub struct ActorKey {
     pub entity: u16,
     incarnation: u64,
@@ -35,7 +34,6 @@ impl ActorKey {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Appearance {
     pub model_id: u32,
     pub parts: [PartRef; appearance::PARTS],
@@ -48,7 +46,6 @@ pub struct Appearance {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Snapshot {
     pub key: ActorKey,
     pub position: Vec3,
@@ -113,7 +110,6 @@ pub fn snapshot(actor: &Actor, models: &[Model]) -> Snapshot {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Construction {
     pub caster: Snapshot,
     pub target: Option<Snapshot>,
@@ -130,7 +126,6 @@ pub struct Construction {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct PosedBody {
     pub key: ActorKey,
     pub body: super::skinfx::BodySnapshot,
@@ -143,7 +138,6 @@ pub struct PosedBody {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HeldInput {
     pub hand: appearance::Hand,
     pub mesh_id: u32,
@@ -201,7 +195,6 @@ impl PosedBody {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Cannon {
     pub entity: u16,
     pub position: Vec3,

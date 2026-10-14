@@ -94,7 +94,6 @@ pub fn placement(spawn: &Spawn) -> Option<PositionRef> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Decal {
     pub grid: i32,
     pub texture: usize,
@@ -106,7 +105,6 @@ pub struct Decal {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Unmodelled {
     Patch { offset: u16, bytes: u32 },
     Call { slot: u16, args: usize },
@@ -169,7 +167,6 @@ pub fn read(spawn: &Spawn) -> Option<(Decal, Vec<Unmodelled>)> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub shade: Shade,
     pub placed: bool,

@@ -4,7 +4,6 @@ use std::{collections::HashMap, io};
 /// error leaves an older persisted value behind. Cache successful reads too, so
 /// losing storage access later does not discard already loaded preferences.
 #[derive(Default)]
-
 pub(super) struct SessionPreferences {
     values: HashMap<String, Vec<u8>>,
 }
@@ -52,7 +51,6 @@ impl SessionPreferences {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -65,7 +63,6 @@ mod tests {
     }
 
     #[test]
-
     fn blocked_storage_allows_default_seeding_and_subsequent_changes() {
         let mut session = SessionPreferences::default();
 
@@ -89,7 +86,6 @@ mod tests {
     }
 
     #[test]
-
     fn quota_failure_never_restores_the_old_persisted_value() {
         let mut session = SessionPreferences::default();
 
@@ -115,7 +111,6 @@ mod tests {
     }
 
     #[test]
-
     fn existing_preferences_survive_storage_becoming_unavailable() {
         let mut session = SessionPreferences::default();
 
@@ -130,7 +125,6 @@ mod tests {
     }
 
     #[test]
-
     fn missing_and_corrupt_values_allow_game_defaults() {
         for value in [None, Some("invalid".into()), Some("[256]".into())] {
             let mut session = SessionPreferences::default();
@@ -147,7 +141,6 @@ mod tests {
     }
 
     #[test]
-
     fn working_storage_round_trips_binary_values_across_sessions() {
         let mut session = SessionPreferences::default();
 

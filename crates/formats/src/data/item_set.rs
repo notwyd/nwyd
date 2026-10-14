@@ -13,7 +13,6 @@ pub const CHECKSUM: i32 = 0x03BE_2B3E;
 pub const EFFECT_OFFSET: usize = 0x3C;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct SetBonus {
     pub effect: i32,
 }

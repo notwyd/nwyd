@@ -29,7 +29,6 @@ pub const fn key(mark: Mark) -> u32 {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Slot {
     pub key: u32,
     pub pixels: Option<Vec<u8>>,
@@ -37,7 +36,6 @@ pub struct Slot {
 }
 
 #[derive(Debug)]
-
 pub struct Bank {
     identity: u64,
     slots: Vec<Slot>,
@@ -111,7 +109,6 @@ impl Bank {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Want {
     pub slot: usize,
     pub key: u32,
@@ -119,7 +116,6 @@ pub struct Want {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Got {
     pub slot: usize,
     pub key: u32,
@@ -127,7 +123,6 @@ pub struct Got {
 }
 
 #[derive(Default)]
-
 pub struct Marks {
     pub bank: Bank,
     pub prefix: String,
@@ -310,7 +305,6 @@ impl Marks {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn fetch(url: &str, timeout: Duration) -> Result<Vec<u8>, Error> {
     #[cfg(windows)]
     {
@@ -324,7 +318,6 @@ pub fn fetch(url: &str, timeout: Duration) -> Result<Vec<u8>, Error> {
 }
 
 #[cfg(windows)]
-
 fn fetch_native(url: &str) -> Result<Vec<u8>, Error> {
     badge_url(url)?;
 
@@ -332,7 +325,6 @@ fn fetch_native(url: &str) -> Result<Vec<u8>, Error> {
 }
 
 #[cfg(not(any(windows, target_arch = "wasm32")))]
-
 fn badge_agent(tls: ureq::tls::TlsConfig) -> ureq::Agent {
     let config = ureq::Agent::config_builder()
         .tls_config(tls)
@@ -364,7 +356,6 @@ fn badge_url(value: &str) -> Result<url::Url, Error> {
 }
 
 #[cfg(not(any(windows, target_arch = "wasm32")))]
-
 fn fetch_with_agent(value: &str, timeout: Duration, agent: &ureq::Agent) -> Result<Vec<u8>, Error> {
     let started = Instant::now();
 
@@ -438,7 +429,6 @@ fn fetch_with_agent(value: &str, timeout: Duration, agent: &ureq::Agent) -> Resu
 }
 
 #[cfg(target_arch = "wasm32")]
-
 async fn fetch_async(value: &str, timeout: Duration) -> Result<Vec<u8>, Error> {
     let url = badge_url(value)?;
 

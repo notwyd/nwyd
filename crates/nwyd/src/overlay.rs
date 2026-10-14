@@ -14,7 +14,6 @@ const COLUMNS: u32 = 16;
 pub const SIZE_PX: f32 = 13.0;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-
 pub struct Cell {
     pub x: u32,
     pub y: u32,
@@ -26,7 +25,6 @@ pub struct Cell {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Atlas {
     pub texture: Texture,
     pub cells: Vec<Cell>,
@@ -133,7 +131,6 @@ impl Atlas {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Line {
     pub text: String,
     pub color: u32,
@@ -149,7 +146,6 @@ impl Line {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Draw {
     pub quad: Quad,
     pub glyph: bool,
@@ -164,7 +160,6 @@ pub const PANEL_COLOR: u32 = 0xCC00_0000;
 const PADDING: f32 = 5.0;
 
 #[derive(Debug)]
-
 pub struct Overlay {
     atlas: Atlas,
     samples: VecDeque<f32>,

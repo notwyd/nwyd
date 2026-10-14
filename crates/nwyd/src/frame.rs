@@ -20,7 +20,6 @@ mod world_textures;
 mod zone_upload;
 
 #[must_use = "a prepared frame must be submitted or explicitly discarded"]
-
 pub struct PreparedFrame<'a> {
     renderer: &'a mut SceneRenderer,
     gpu: &'a Gpu,
@@ -37,14 +36,12 @@ pub const CLEAR: wgpu::Color = wgpu::Color::TRANSPARENT;
 pub type PanelId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-
 pub enum AmulSheet {
     Plain,
     On,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-
 pub enum MiniPopupPhase {
     Lit,
     Dark,
@@ -61,7 +58,6 @@ impl AmulSheet {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-
 pub enum TextureKey {
     Scene(u32),
     EngineCursor(u32),
@@ -81,7 +77,6 @@ pub enum TextureKey {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PlannedQuad {
     pub mode: RenderMode,
     pub texture: TextureKey,
@@ -90,7 +85,6 @@ pub struct PlannedQuad {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-
 struct WorldResidency {
     identity: u64,
     terrain_vertices: usize,

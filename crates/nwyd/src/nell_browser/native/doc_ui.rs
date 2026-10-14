@@ -5,7 +5,6 @@ use windows::Win32::{Foundation::*, UI::WindowsAndMessaging::MSG};
 use windows::core::{GUID, HRESULT, IUnknown, IUnknown_Vtbl, interface};
 
 #[repr(C)]
-
 pub struct HostInfo {
     size: u32,
     flags: u32,
@@ -15,7 +14,6 @@ pub struct HostInfo {
 }
 
 #[interface("bd3f23c0-d43e-11cf-893b-00aa00bdce1a")]
-
 pub unsafe trait IDocHostUIHandler: IUnknown {
     fn ShowContextMenu(
         &self,

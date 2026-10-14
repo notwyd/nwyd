@@ -15,7 +15,6 @@ use ui::input::Mouse;
 pub const TEXT_BASE: u32 = 0x0440_0000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Owner {
     Question,
     Acknowledgement,
@@ -38,7 +37,6 @@ fn button_index(owner: Owner, no: bool) -> usize {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct State {
     pub visible: bool,
     pub context: u32,
@@ -56,7 +54,6 @@ impl Default for State {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Answer {
     pub owner: Owner,
     pub context: u32,
@@ -64,7 +61,6 @@ pub struct Answer {
 }
 
 #[derive(Debug)]
-
 pub struct Dialogs {
     pub states: [State; 2],
     background: (u32, texture_set_list::Item, LoadedTexture),
@@ -91,7 +87,6 @@ impl Dialogs {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         Self {
             states: Default::default(),

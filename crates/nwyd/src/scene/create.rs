@@ -46,7 +46,6 @@ pub const HUNTER_SOUND: i64 = 0x86;
 pub const HUNTER_DOLL: usize = 3;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Pane {
     pub class: String,
     pub desc: String,
@@ -59,7 +58,6 @@ pub struct Pane {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct GaugeHeight(pub i32);
 
 pub fn fill(
@@ -156,7 +154,6 @@ pub fn apply(pane: &Pane, ui: &mut PanelUi) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum NameReject {
     TooShort,
     TooLong,
@@ -243,7 +240,6 @@ pub const RESERVED_STRIDE: usize = 0x20;
 pub const RESERVED_REPLACEMENT: usize = 0x10;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Reserved {
     pub rows: Vec<(Vec<u8>, Vec<u8>)>,
 }
@@ -377,7 +373,6 @@ pub fn check_name(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Pressed {
     Send(Box<[u8; CREATE_LEN]>),
     BadName(NameReject),
@@ -433,13 +428,11 @@ pub fn create_packet(slot: u32, name: &[u8], doll: u32) -> [u8; CREATE_LEN] {
 }
 
 #[cfg(test)]
-
 mod language_tests {
 
     use super::*;
 
     #[test]
-
     fn multibyte_name_boundaries_do_not_split_encoded_characters() {
         for (cp, name) in [
             (Codepage::Windows949, "한국"),

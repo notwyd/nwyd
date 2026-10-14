@@ -29,7 +29,6 @@ pub const REPLY_LEN: usize = 0x14;
 pub const FORMAT_BOUND: usize = 0x80;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Challenge {
     pub subject: u32,
     pub stake: i32,

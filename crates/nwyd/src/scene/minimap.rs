@@ -27,7 +27,6 @@ pub const WINDOW_HALF_FRACTION: f32 = 0.125;
 pub const WINDOW_Y_NUDGE: i32 = -4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Scale {
     Full,
     Half,
@@ -54,7 +53,6 @@ impl Scale {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Tile {
     pub zone: (i32, i32),
     pub path: String,
@@ -82,7 +80,6 @@ pub fn tiles(zone: (u8, u8)) -> Vec<Tile> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Window {
     pub x: i32,
     pub y: i32,
@@ -114,7 +111,6 @@ pub fn window(scale: Scale, zoom: f32, zone: (u8, u8), player: glam::Vec3) -> Wi
 }
 
 #[derive(Debug)]
-
 pub struct Minimap {
     background: Option<loading::Loader>,
     pub scale: Scale,
@@ -289,7 +285,6 @@ fn blit(composite: &mut [u8], stride: u32, source: &Texture, dst: (u32, u32), si
 }
 
 #[cfg(test)]
-
 mod language_tests {
 
     use super::*;
@@ -345,7 +340,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn minimap_retains_the_selected_label_encoding() {
         let root = Directory::new();
 
@@ -367,7 +361,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn minimap_english_fallback_retains_windows1252() {
         let root = Directory::new();
 
@@ -384,7 +377,6 @@ mod language_tests {
     }
 
     #[test]
-
     fn hud_main_and_sub_effect_labels_decode_their_individual_resources() {
         use crate::scene::hud::EffectStrings;
 

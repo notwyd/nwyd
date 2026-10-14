@@ -73,7 +73,6 @@ pub const DROP_CLASS: &Class = &Class {
 pub const COLUMN_SEED: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Droplet {
     pub x: f32,
     pub y: f32,
@@ -82,7 +81,6 @@ pub struct Droplet {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Column {
     pub x: f32,
     pub z: f32,
@@ -91,7 +89,6 @@ pub struct Column {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Spawned {
     pub splashes: Vec<TimedQuad>,
     pub sounds: Vec<i64>,

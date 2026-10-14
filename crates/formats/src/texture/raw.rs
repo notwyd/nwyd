@@ -4,7 +4,6 @@ use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, Limits};
 use std::io::Cursor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Format {
     Bmp,
     Jpeg,

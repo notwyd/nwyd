@@ -102,7 +102,6 @@ pub fn blend(mesh: u32, color_key: bool) -> render::mesh::Stage1Blend {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Ordinary {
     pub refine: u8,
     pub class: u8,

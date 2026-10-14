@@ -55,7 +55,6 @@ pub const CHILD_PHASE: f32 = 3.0;
 pub const SOUND_KIND_0: u16 = 0xA7;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Look {
     pub argb: u32,
     pub amp_h: f32,
@@ -102,7 +101,6 @@ pub fn motion_of(r: u32) -> Motion {
 }
 
 #[derive(Debug)]
-
 pub struct SlowSlash {
     pub source: Vec3,
     pub dest: Vec3,

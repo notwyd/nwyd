@@ -5,7 +5,6 @@ pub const SLOTS: usize = 512;
 pub const DEFAULT_VOICES: i32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-
 pub struct Slot(u16);
 
 impl Slot {
@@ -21,7 +20,6 @@ impl Slot {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub raw_path: String,
     pub voices: i32,
@@ -34,7 +32,6 @@ impl Entry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct SoundList {
     entries: Vec<Option<Entry>>,
     duplicates: Vec<Slot>,

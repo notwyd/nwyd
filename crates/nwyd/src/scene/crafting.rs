@@ -9,7 +9,6 @@ use super::screens;
 use super::store;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Closed {
     pub mix: bool,
     pub refined_equipment: bool,

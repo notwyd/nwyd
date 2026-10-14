@@ -53,7 +53,6 @@ pub const COORD_CYCLED: (f32, f32) = (13.0, 120.0);
 pub const COORD_CYCLED_WIDE: (f32, f32) = (10.0, 0.0);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Placed {
     pub slot: usize,
     pub x: f32,
@@ -146,7 +145,6 @@ pub fn title_text(server: &str, channel: i32) -> String {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Session {
     pub server: usize,
     pub channel: i32,

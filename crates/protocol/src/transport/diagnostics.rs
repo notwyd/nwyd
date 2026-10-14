@@ -3,7 +3,6 @@ use std::{collections::VecDeque, io, net::SocketAddr, sync::Mutex};
 use web_time::Instant;
 
 #[derive(Clone, Debug)]
-
 pub struct PacketMetadata {
     pub elapsed_ms: u64,
     pub outgoing: bool,
@@ -13,7 +12,6 @@ pub struct PacketMetadata {
 }
 
 #[derive(Clone, Debug)]
-
 pub struct IoFailure {
     pub kind: io::ErrorKind,
     pub raw_os_error: Option<i32>,
@@ -21,14 +19,12 @@ pub struct IoFailure {
 }
 
 #[derive(Clone, Debug)]
-
 pub struct FailedWrite {
     pub packet: PacketMetadata,
     pub bytes_written: usize,
 }
 
 #[derive(Clone, Debug)]
-
 pub struct DisconnectReport {
     pub connection: u64,
     pub target: String,
@@ -88,7 +84,6 @@ impl std::fmt::Display for DisconnectReport {
 }
 
 #[derive(Default)]
-
 struct State {
     peer: Option<SocketAddr>,
     bytes_received: u64,

@@ -17,7 +17,6 @@ pub const LINES: usize = 5;
 pub const REELS: usize = 3;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ResultMessage {
     pub lines: [i8; LINES],
     pub stops: [i8; REELS],

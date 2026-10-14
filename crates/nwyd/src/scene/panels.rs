@@ -38,7 +38,6 @@ use ui::text_entry::{Key, Local, Mods};
 use ui::widget::cell_group;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Registered {
     pub content: PanelId,
     pub class: &'static str,
@@ -3678,7 +3677,6 @@ pub fn input_slot(index: usize) -> usize {
 pub const HUD_PANELS: usize = 3;
 
 #[derive(Clone, Copy, Debug)]
-
 pub struct FieldInput {
     pub now_ms: u32,
     pub player_present: bool,
@@ -7381,7 +7379,6 @@ pub fn field_draw_order(hud: &Hud, panels: &Panels) -> Vec<usize> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Action {
     Toggle(PanelId),
     SetOpen(PanelId, bool),
@@ -7424,7 +7421,6 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Hotkey {
     pub arm: &'static str,
     pub chars: &'static [char],

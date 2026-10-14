@@ -43,7 +43,6 @@ pub const GOLD_BROADCAST_EVENT: i32 = 0x10;
 pub const SLOT_BROADCAST_EVENT: i32 = 0x0D;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Container {
     Equipment,
     Carry,
@@ -86,7 +85,6 @@ impl Container {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Arrival {
     pub slot: u32,
     pub item: Item,
@@ -109,7 +107,6 @@ impl Arrival {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Clear {
     pub container: Option<Container>,
     pub slot: u32,
@@ -188,7 +185,6 @@ pub fn parse_clear(payload: &[u8]) -> Result<Clear> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Delta {
     Arrived(Arrival),
     Cleared(Clear),

@@ -13,7 +13,6 @@ pub const FILE_LEN: usize = EVENTS * RECORD_LEN;
 pub const READ_LEN: usize = 12_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Command {
     Move,
     Action,
@@ -39,7 +38,6 @@ impl Command {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Event {
     pub time_ms: u32,
     pub command: Command,
@@ -56,7 +54,6 @@ impl Event {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct TimeTable {
     events: Vec<Event>,
 }

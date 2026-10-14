@@ -8,7 +8,6 @@ fn message(error: &anyhow::Error) -> String {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub fn show(error: anyhow::Error, parent: Option<&Window>) -> anyhow::Error {
     present(error, |message| {
         let mut dialog = rfd::MessageDialog::new()
@@ -38,7 +37,6 @@ fn present(error: anyhow::Error, display: impl FnOnce(&str)) -> anyhow::Error {
 }
 
 #[derive(Debug)]
-
 struct Presented(anyhow::Error);
 
 impl fmt::Display for Presented {
@@ -54,7 +52,6 @@ impl std::error::Error for Presented {
 }
 
 #[cfg(target_arch = "wasm32")]
-
 pub fn show(error: anyhow::Error, _parent: Option<&Window>) -> anyhow::Error {
     present(error, crate::web::report_error)
 }

@@ -29,7 +29,6 @@ pub fn killer_memo_line(calendar: &crate::clock::Calendar, killer: &str) -> Stri
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Killed {
     pub victim: u16,
     pub victim_index: Option<usize>,

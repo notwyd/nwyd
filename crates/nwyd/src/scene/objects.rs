@@ -41,7 +41,6 @@ pub const SKY_VERTEX_COLOR: u32 = 0x0080_8080;
 pub const DEVICE_WORLD: Matrix4 = Matrix4::IDENTITY;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct RotateLitDraw {
     pub mesh_id: i32,
     pub world: Matrix4,
@@ -68,7 +67,6 @@ impl RotateLitDraw {
 }
 
 #[derive(Debug)]
-
 pub struct BoundTexture {
     pub pending: bool,
     pub effect_table: bool,
@@ -85,7 +83,6 @@ impl BoundTexture {
 }
 
 #[derive(Debug)]
-
 pub struct MeshResource {
     pub id: u32,
     pub path: String,
@@ -109,7 +106,6 @@ impl MeshResource {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Instance {
     pub kind: u32,
     pub mesh: usize,
@@ -118,7 +114,6 @@ pub struct Instance {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Placement {
     pub position: Vec3,
     pub world: Matrix4,
@@ -190,7 +185,6 @@ pub fn world_at_quaternion(position: Vec3, rotation: [f32; 4], scale: (f32, f32)
 pub mod ui_mesh;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct HousePart {
     pub kind: u32,
     pub mesh: usize,
@@ -213,7 +207,6 @@ impl HousePart {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Sky {
     pub mesh: usize,
     pub scale: f32,
@@ -239,7 +232,6 @@ impl Sky {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct ClassCounts(pub BTreeMap<&'static str, usize>);
 
 impl ClassCounts {
@@ -270,7 +262,6 @@ fn class_name(class: ObjectClass) -> &'static str {
 }
 
 #[derive(Debug)]
-
 pub struct ObjectScene {
     pub records: Vec<ObjRecord>,
     pub neighbour_records: Vec<ObjRecord>,
@@ -1081,7 +1072,6 @@ impl ObjectScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     pub fn frame(
         &self,
         eye: Vec3,
@@ -1886,7 +1876,6 @@ impl ObjectScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn push_instance(
         &self,
         objects: &mut Vec<ObjectUniforms>,
@@ -1901,7 +1890,6 @@ impl ObjectScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn push_instance_biased(
         &self,
         objects: &mut Vec<ObjectUniforms>,
@@ -1986,7 +1974,6 @@ impl ObjectScene {
     }
 
     #[allow(clippy::too_many_arguments)]
-
     fn push_instance_as(
         &self,
         objects: &mut Vec<ObjectUniforms>,
@@ -2084,7 +2071,6 @@ impl ObjectScene {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Frame {
     pub objects: Vec<ObjectUniforms>,
     pub draws: Vec<MeshDraw>,

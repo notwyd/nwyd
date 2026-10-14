@@ -31,7 +31,6 @@ pub const SUMMON_RECT: [i32; 4] = [0x140, 0x40, 0x15F, 0x5F];
 pub const MEMO_RECT: [i32; 4] = [0x1C0, 0xE0, 0x1DF, 0xFF];
 
 #[derive(Debug)]
-
 struct IconTexture {
     phase: MiniPopupPhase,
     path: &'static str,
@@ -39,7 +38,6 @@ struct IconTexture {
 }
 
 #[derive(Debug, Default)]
-
 pub struct IconTextures {
     loaded: Vec<IconTexture>,
 }
@@ -103,7 +101,6 @@ pub const SUMMON_CAPTION: usize = 237;
 pub const SUMMON_BOX: (i32, u32) = (0x0D, 0x25);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Notice {
     Memo,
     Quest,
@@ -136,7 +133,6 @@ impl Notice {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Blink {
     pub deadline_ms: u32,
     pub lit: bool,
@@ -159,7 +155,6 @@ impl Blink {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Notices {
     pub memo: bool,
     pub quest: bool,

@@ -92,7 +92,6 @@ pub fn class_of(body: i16) -> (usize, Option<i16>) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct SelInfo {
     pub name: String,
     pub class: String,

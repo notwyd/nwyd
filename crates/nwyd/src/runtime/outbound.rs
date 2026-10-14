@@ -70,10 +70,8 @@ fn apply_window_state(body: &mut [u8], iconic: bool) {
 }
 
 #[cfg(windows)]
-
 fn active_window_iconic() -> bool {
     #[link(name = "user32")]
-
     unsafe extern "system" {
 
         fn GetActiveWindow() -> *mut std::ffi::c_void;
@@ -86,7 +84,6 @@ fn active_window_iconic() -> bool {
 }
 
 #[cfg(not(windows))]
-
 fn active_window_iconic() -> bool {
     false
 }

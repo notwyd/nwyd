@@ -83,7 +83,6 @@ pub const SHADE_MS: u32 = 3000;
 pub const SOUND: i64 = 0x04;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Cure {
     pub at: Vec3,
     pub reserved_parameter: i32,
@@ -129,7 +128,6 @@ impl Effect for Cure {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub particle: Option<Particle>,
     pub motes: Vec<Billboard>,
@@ -316,7 +314,6 @@ fn read_spawn_parameter(spawn: &Spawn) -> Option<i32> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raised {
     pub nodes: usize,
     pub motes: usize,

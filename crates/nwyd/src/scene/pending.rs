@@ -76,19 +76,16 @@ pub fn resurrect_slot(quick: &[u8; 20]) -> Option<u8> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct DeathPending {
     pub armed: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct ResurrectPending {
     pub armed: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct RevivePending {
     pub death: DeathPending,
     pub resurrect: ResurrectPending,
@@ -96,7 +93,6 @@ pub struct RevivePending {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum DeathStep {
     Nothing,
     Expired,
@@ -105,7 +101,6 @@ pub enum DeathStep {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct ResurrectSource {
     pub client_id: u16,
     pub position: (f32, f32),
@@ -113,7 +108,6 @@ pub struct ResurrectSource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum ResurrectStep {
     Nothing,
     Expired,
@@ -270,7 +264,6 @@ fn truncate_coordinate_to_u16(value: f32) -> u16 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Pending {
     pub armed: bool,
     pub frame: Option<item_move::Request>,
@@ -279,7 +272,6 @@ pub struct Pending {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Step {
     Nothing,
     Expired,
@@ -366,7 +358,6 @@ pub const COMMAND_MESSAGE_RECORD: usize = 223;
 pub const COMMAND_MESSAGE_LIFE_MS: u32 = 2_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct CommandPending {
     pub armed: bool,
     frame: [u8; COMMAND_FRAME_LEN],
@@ -384,7 +375,6 @@ impl Default for CommandPending {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum CommandStep {
     Nothing,
     Expired,

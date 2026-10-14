@@ -1,5 +1,4 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Update {
     pub prices: [i32; 2],
 }

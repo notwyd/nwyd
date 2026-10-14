@@ -9,7 +9,6 @@ use render::{
 };
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Recipe {
     pub mesh: u32,
     pub position: (i32, i32),
@@ -22,7 +21,6 @@ pub struct Recipe {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Refinement {
     pub texture: usize,
     pub blend: Stage1Blend,
@@ -31,7 +29,6 @@ pub struct Refinement {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct DrawState {
     pub pass: MeshPass,
     pub lighting: bool,

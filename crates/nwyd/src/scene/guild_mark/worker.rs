@@ -5,7 +5,6 @@ use std::{
 };
 
 #[derive(Default)]
-
 struct Transport {
     #[cfg(not(windows))]
     agent: Option<ureq::Agent>,

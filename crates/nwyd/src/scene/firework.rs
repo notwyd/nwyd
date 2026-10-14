@@ -120,7 +120,6 @@ pub fn signed(rng: &mut Lcg) -> f32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Particle {
     pub position: Vec3,
     pub rise: Vec3,
@@ -159,7 +158,6 @@ impl Particle {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Firework {
     pub pattern: i32,
     pub ramp: Option<i32>,

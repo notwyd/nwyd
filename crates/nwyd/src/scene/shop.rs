@@ -21,7 +21,6 @@ use formats::net::shop::{Kind, Sale, SellList, Stock};
 use ui::Strings;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Click {
     Page,
     Buy { cell: i32, item_id: i32 },
@@ -157,7 +156,6 @@ pub fn sell_list(scene: &mut FieldScene, list: &SellList) -> Stocked {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Stocked {
     pub rows: usize,
     pub drawn: usize,
@@ -183,7 +181,6 @@ pub fn describe_sell_list(applied: &Stocked) -> String {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Opened {
     Shop { npc: Option<u16>, filled: usize },
     SkillMaster { npc: u16, filled: usize },
@@ -364,7 +361,6 @@ fn buy_at(panels: &mut Panels, entered: &Entered, cell: i32, item_id: i32, shop:
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Bought {
     Sent(item_move::Request),
     Refused,
@@ -453,7 +449,6 @@ pub fn sell(panels: &mut Panels, entered: &Entered, ctrl: bool, carried: Carry) 
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Sold {
     Sent(item_move::Request),
     Asks {
@@ -466,7 +461,6 @@ pub enum Sold {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Carry {
     pub kind: i32,
     pub group: i32,
@@ -542,7 +536,6 @@ pub fn confirm(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Cleared {
     pub shop: u16,
     pub container: i16,

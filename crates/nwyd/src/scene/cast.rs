@@ -132,7 +132,6 @@ pub const TALK_REEL_A: i16 = super::reel::TALK_A;
 pub const TALK_REEL_B: i16 = super::reel::TALK_B;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Cast {
     Refused(&'static str),
     Talked(&'static str),
@@ -160,7 +159,6 @@ pub enum Cast {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Sent {
     pub opcode: u16,
     pub code: u8,
@@ -510,27 +508,23 @@ pub fn send_gate(code: u8, hits: &[Hit]) -> bool {
 }
 
 #[derive(Debug)]
-
 struct Sweep {
     hits: Vec<Hit>,
     to: (u16, u16),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 struct Cannon {
     entity: u16,
 }
 
 #[derive(Debug)]
-
 enum AreaExit {
     Answer(Cast),
     Approach(Approach),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 enum Approach {
     Order { entity: u16, tile: (i32, i32) },
     Refused(&'static str),
@@ -544,7 +538,6 @@ impl From<Cast> for AreaExit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 enum SweepCaller {
     Cast,
     SkillAttack,
@@ -748,7 +741,6 @@ fn war_admits(scene: &FieldScene, actor: &Actor, offensive: bool, area: bool) ->
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn war_admits_values(
     duel: bool,
     offensive: bool,
@@ -1470,7 +1462,6 @@ fn targeted_neighbour(scene: &FieldScene, player: usize, target: usize) -> Optio
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn targeted(
     scene: &mut FieldScene,
     player: usize,
@@ -2404,7 +2395,6 @@ fn talk(scene: &mut FieldScene, now_ms: u32, why: &'static str) -> Cast {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 enum Pickup {
     Pending(&'static str),
     Walking {
@@ -3133,7 +3123,6 @@ fn send_single_target_at_origin(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn send_inner(
     scene: &mut FieldScene,
     player: usize,

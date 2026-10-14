@@ -25,7 +25,6 @@ pub fn form_value(text: &str) -> String {
 }
 
 #[derive(Clone, PartialEq)]
-
 pub struct Queued {
     pub action: super::guild_panel::Action,
     pub request: super::guild_http::Request,
@@ -47,7 +46,6 @@ impl PartialEq<super::guild_panel::Action> for Queued {
 }
 
 #[derive(Clone, Default, PartialEq, Eq)]
-
 pub struct Identity {
     pub account: String,
     pub character: String,
@@ -123,7 +121,6 @@ pub fn packed(value: i32, rng: &mut Lcg) -> i32 {
 }
 
 #[derive(Default)]
-
 pub struct RetailState {
     suffix: String,
     last_name_fallback: u32,

@@ -10,7 +10,6 @@ use formats::scene::rc::{self, ResourceTable};
 use formats::texture::texture_list::{self, TextureList};
 
 #[derive(Debug)]
-
 pub struct Registries {
     pub resource_names: ResourceTable,
     pub entries: Vec<ModelEntry>,

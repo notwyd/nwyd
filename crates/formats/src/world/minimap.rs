@@ -11,7 +11,6 @@ pub const NAME_LEN: usize = 0x20;
 pub const COLORS: [u32; 4] = [0xFFFF_FFFF, 0xFF44_AA44, 0xFF55_55FF, 0xFFAA_00FF];
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Label {
     pub x: i32,
     pub y: i32,
@@ -47,7 +46,6 @@ impl Label {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Minimap {
     slots: Vec<Label>,
     written: usize,

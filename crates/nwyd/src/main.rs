@@ -1,17 +1,14 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 #[cfg(target_arch = "wasm32")]
-
 fn main() {}
 
 #[cfg(not(target_arch = "wasm32"))]
-
 fn main() -> std::process::ExitCode {
     native::main()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-
 mod native {
 
     use anyhow::{Context, Result};

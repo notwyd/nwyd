@@ -26,7 +26,6 @@ pub const INNER_TERRAIN_MIX: f32 = 0.5;
 pub const OUTER_LIGHT_MIX: f32 = 0.8;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Blade {
     pub zone: (u8, u8),
     pub record: usize,
@@ -62,7 +61,6 @@ impl Blade {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Field {
     pub model: Option<usize>,
     pub blades: Vec<Blade>,

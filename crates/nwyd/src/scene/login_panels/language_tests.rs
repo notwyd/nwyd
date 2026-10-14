@@ -170,7 +170,6 @@ pub(crate) fn login() -> LoginPanels {
 }
 
 #[test]
-
 fn characterization_login_resize_preserves_selection_status_credentials_and_dialogs() {
     let mut scene = login();
 
@@ -334,7 +333,6 @@ pub(crate) fn translated(records: &[(usize, &str)], ui: &str) -> Strings {
 }
 
 #[test]
-
 fn runtime_language_preserves_login_network_rows_edits_and_dialogs() {
     let mut fixture = LanguageGame::new();
 

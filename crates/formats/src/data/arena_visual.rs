@@ -37,7 +37,6 @@ pub const EQUIP_TYPE_CODES: [i32; EQUIP_SLOTS] = [
 pub const HEAD_MODELS: usize = 4;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Record {
     pub id: u32,
     pub raw_names: Vec<Vec<u8>>,
@@ -49,7 +48,6 @@ pub struct Record {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PacketPatch {
     pub hands: [Option<(u16, u8)>; 2],
     pub costume: Option<u16>,

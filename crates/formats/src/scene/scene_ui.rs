@@ -3,7 +3,6 @@ use crate::text::{Codepage, codepage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u32)]
-
 pub enum ControlType {
     Panel = 1,
     Button = 2,
@@ -63,7 +62,6 @@ impl ControlType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Header {
     pub name_id: u32,
     pub parent_id: u32,
@@ -78,7 +76,6 @@ impl Header {
 pub const TEXT_INDEX_LIMIT: i32 = 500;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Record {
     pub control: ControlType,
     pub header: Header,
@@ -119,7 +116,6 @@ impl Record {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct SceneUi {
     pub records: Vec<Record>,
 }

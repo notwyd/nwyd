@@ -23,7 +23,6 @@ pub const POSITION: [u16; 3] = [0x74, 0x78, 0x7C];
 pub const ORIGIN: [u16; 3] = [0x158, 0x15C, 0x160];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Store {
     Pass,
     Position(Axis),
@@ -78,7 +77,6 @@ pub fn field_float(bytes: u32) -> Option<f32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Args {
     pub kind: usize,
     pub lifetime_ms: u32,
@@ -137,7 +135,6 @@ pub fn colour(call: &EffectCommand) -> Option<u32> {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Unread {
     pub invalid_float: u32,
     pub unmodelled: u32,
@@ -155,7 +152,6 @@ impl Unread {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub billboard: Billboard,
     pub unread: Unread,
@@ -358,7 +354,6 @@ pub fn describe(built: &Built) -> String {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Census {
     pub spawns: usize,
     pub references: usize,

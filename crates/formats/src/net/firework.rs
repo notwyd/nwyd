@@ -21,7 +21,6 @@ pub mod at {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Glyph {
     pub cells: [bool; CELLS],
 }

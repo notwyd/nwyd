@@ -36,7 +36,6 @@ pub fn encrypt(buf: &mut [u8]) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Ending {
     lines: Vec<Option<Vec<u8>>>,
 }

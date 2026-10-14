@@ -46,7 +46,6 @@ pub fn build(game: &GameDir, chains: &Chains, scale: f32) -> Result<Tip> {
 
 impl Tip {
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         let resource = Resource::default();
 

@@ -94,7 +94,6 @@ pub const JITTER_SPAN: u32 = 5;
 pub const JITTER_BIAS: i32 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct LevelUp {
     pub at: Vec3,
     pub kind: i32,
@@ -151,7 +150,6 @@ impl Effect for LevelUp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub emitter: LevelUp,
     pub billboards: Vec<Billboard>,
@@ -342,7 +340,6 @@ const CHILD_FRAMES: u32 = 1;
 const CHILD_FRAME_MS: u32 = 0x50;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raised {
     pub kind: i32,
     pub nodes: usize,
@@ -414,7 +411,6 @@ pub fn describe(raised: &Raised) -> String {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct TimedQuad {
     pub quad: GroundQuad,
     pub lifetime_ms: u32,
@@ -511,7 +507,6 @@ pub const FIRE_TEXTURE_BASE: usize = 0x2A;
 pub const FIRE_TEXTURE_SPAN: i32 = 2;
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Fire {
     pub at: Vec3,
     pub target: Vec3,

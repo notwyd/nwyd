@@ -59,7 +59,6 @@ pub const MISS: [i32; 2] = [-3, -4];
 pub const SKILL_NONE: i16 = -1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Hit {
     pub entity: u16,
     pub damage: i32,
@@ -72,7 +71,6 @@ impl Hit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Attack {
     pub from: (u16, u16),
     pub to: (u16, u16),
@@ -124,7 +122,6 @@ pub fn frame_len(opcode: u16) -> usize {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Emission {
     Ordinary,
     Automatic { area_branch: bool },

@@ -11,7 +11,6 @@ pub const DIGITS: [char; PAGE_SLOTS] = ['1', '2', '3', '4', '5', '6', '7', '8', 
 pub const SYMBOLS: [char; PAGE_SLOTS] = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct State {
     pub auto_count: i32,
 }
@@ -25,7 +24,6 @@ impl Default for State {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Select {
     Ignored,
     Swallowed,
@@ -40,7 +38,6 @@ impl Select {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Flip {
     pub page: Option<i32>,
     pub select: Select,

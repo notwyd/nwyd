@@ -44,7 +44,6 @@ pub const OPTION_STONE_ITEM: u16 = 0x1911;
 pub const OPTION_STONE_EQUIP_MASKS: [u32; 7] = [4, 8, 0x10, 0x20, 0x40, 0x80, 0xC0];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Kind {
     Mix,
     RefinedEquipment,
@@ -111,7 +110,6 @@ impl Kind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Staged {
     pub kind: Kind,
     bytes: Vec<u8>,
@@ -216,7 +214,6 @@ pub fn confirm(kind: Kind) -> msgbox::Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Staging {
     mix: Staged,
     refined_equipment: Staged,
@@ -299,7 +296,6 @@ pub fn stage(staged: &mut Staged, item: Item, at: Coord) -> Option<usize> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum RefinedEquipmentRefused {
     Full,
     WrongRestriction,
@@ -401,7 +397,6 @@ pub fn stage_refined_equipment(
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct OptionStoneState {
     blank: bool,
     written: bool,
@@ -426,20 +421,17 @@ impl OptionStoneState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum OptionStoneRefused {
     Incompatible,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct OptionStoneReplacement {
     pub cell: usize,
     pub replaced: Option<u8>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct OptionStonePreview {
     pub piece: Item,
     pub stone: Item,

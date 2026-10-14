@@ -3,7 +3,6 @@ use super::panels::{CONTENT_CARGO, CONTENT_INVENTORY};
 use formats::net::warehouse::{Balances, Change, Move};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Moved {
     pub change: Change,
     pub amount: u32,

@@ -30,7 +30,6 @@ const INITIAL_QUESTION: &str = "Question";
 const INITIAL_ANSWERS: [&str; 4] = ["Answer1", "Answer2", "Answer3", "Answer4"];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Rect {
     pub left: f32,
     pub top: f32,
@@ -62,7 +61,6 @@ impl Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Geometry {
     pub panel: Rect,
     pub question: Rect,
@@ -106,7 +104,6 @@ impl Geometry {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct TextSeed {
     pub control: Option<u16>,
     pub rect: Rect,
@@ -115,7 +112,6 @@ pub struct TextSeed {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct DrawSeed {
     pub visible: bool,
     pub panel: Rect,
@@ -125,7 +121,6 @@ pub struct DrawSeed {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Press {
     pub enabled: bool,
     pub armed: bool,
@@ -143,21 +138,18 @@ impl Default for Press {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Mouse {
     Down,
     Up,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Choice {
     pub index: u32,
     pub control: u16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Input {
     pub consumed: bool,
     pub choice: Option<Choice>,
@@ -186,7 +178,6 @@ impl Input {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct State {
     pub visible: bool,
     pub question: String,

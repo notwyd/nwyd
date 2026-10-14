@@ -19,7 +19,6 @@ pub const CONTENT: u32 = 0x10068;
 pub const SCRIPT: &[u8] = b"ui/Panel/game/MergeItem.pane";
 
 #[derive(Debug, Clone, Default)]
-
 pub struct State {
     pub pieces: [Option<usize>; 2],
     pub jewel: Option<usize>,
@@ -28,7 +27,6 @@ pub struct State {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 struct Snapshot {
     carry: [Item; 60],
     gold: u32,

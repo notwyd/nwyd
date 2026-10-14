@@ -17,7 +17,6 @@ fn is_khepra(actor: &super::actors::Actor) -> bool {
 }
 
 #[derive(Debug)]
-
 pub struct Statics {
     pub items: ItemList,
     pub mounts: Vec<MountData>,
@@ -126,7 +125,6 @@ pub fn facing_of(spawn: &Spawn) -> f32 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Spawned {
     pub id: u16,
     pub index: Option<usize>,

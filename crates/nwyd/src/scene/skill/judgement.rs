@@ -51,7 +51,6 @@ pub const SIX_COLOURS: [u32; 2] = [0x4433_FF33, 0xFFAA_FFAA];
 pub const MESH_KIND: i32 = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Mode {
     pub scale: f32,
     pub period_ms: i32,
@@ -186,7 +185,6 @@ pub fn spin_period(mode: i32, period_ms: i32, scale_multiplier: f32) -> i32 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Judgement {
     pub at: Vec3,
     pub mode: i32,
@@ -252,7 +250,6 @@ impl Effect for Judgement {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub token: Judgement,
     pub orphans: Vec<TimedQuad>,
@@ -368,7 +365,6 @@ pub fn build_at(at: Vec3, mode: i32, scale_multiplier: f32, now_ms: u32) -> Buil
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn disc(
     at: Vec3,
     lift: f32,

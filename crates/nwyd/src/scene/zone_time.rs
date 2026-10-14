@@ -1,7 +1,6 @@
 pub type Shared = std::rc::Rc<std::cell::Cell<Clock>>;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Clock {
     pub hours: u16,
     pub minutes: u16,

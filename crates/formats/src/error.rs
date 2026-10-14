@@ -3,7 +3,6 @@ use std::fmt;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Kind {
     Wys,
     Wyt,
@@ -199,7 +198,6 @@ impl fmt::Display for Kind {
 }
 
 #[derive(Debug, thiserror::Error)]
-
 pub enum Error {
     #[error("{kind} file is truncated: needed {needed} bytes at offset {offset}, file is {len}")]
     Truncated {

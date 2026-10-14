@@ -30,7 +30,6 @@ pub const PHASE_STEP_MS: u32 = 300;
 pub const PHASE_STEPS: u32 = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Float {
     pub zone: (u8, u8),
     pub record: usize,
@@ -174,7 +173,6 @@ pub fn diffuse(terrain: [f32; 4]) -> [f32; 4] {
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
-
 pub struct Raft {
     pub floats: Vec<Float>,
 }

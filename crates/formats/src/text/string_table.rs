@@ -1,7 +1,6 @@
 use super::codepage::{self, Codepage};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct StringTable {
     entries: Vec<String>,
 }

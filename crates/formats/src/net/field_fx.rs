@@ -47,7 +47,6 @@ pub const CARPET_LEN: usize = 0x0A;
 pub const SOUND_LEN: usize = 0x04;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Carpet {
     pub x0: i16,
     pub z0: i16,
@@ -84,7 +83,6 @@ impl Carpet {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Sound {
     pub slot: u32,
 }

@@ -23,7 +23,6 @@ pub const ANIMATION_NAMES: [&str; ANIMATIONS] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Binding {
     pub frame: i32,
     pub speed: i32,
@@ -31,7 +30,6 @@ pub struct Binding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ClassTable {
     pub speed: [i32; ANIMATIONS],
     pub frame: [i32; ANIMATIONS],
@@ -49,7 +47,6 @@ impl Default for ClassTable {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct VariantBlock {
     pub speed: [i32; ANIMATIONS],
     pub frame: [i32; ANIMATIONS],
@@ -65,7 +62,6 @@ impl Default for VariantBlock {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct AniSound {
     classes: Vec<ClassTable>,
     variants: Vec<VariantBlock>,

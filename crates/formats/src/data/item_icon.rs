@@ -13,7 +13,6 @@ pub const CELLS_PER_SHEET: i32 = 100;
 pub const OVERRIDE_ITEM: usize = 0x1911;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Icon {
     pub sheet: i32,
     pub u0: u32,
@@ -37,7 +36,6 @@ impl Icon {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct IconTable {
     entries: Vec<i32>,
 }

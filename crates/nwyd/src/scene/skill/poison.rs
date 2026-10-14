@@ -53,7 +53,6 @@ const CHILD_FRAMES: u32 = 1;
 const CHILD_FRAME_MS: u32 = 0x50;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Recipe {
     pub at: Vec3,
     pub argb: u32,
@@ -73,7 +72,6 @@ impl Recipe {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Poison {
     pub at: Vec3,
     pub birth_ms: u32,
@@ -117,7 +115,6 @@ impl Effect for Poison {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub billboards: Vec<Billboard>,
     pub token: Poison,
@@ -254,7 +251,6 @@ pub fn recipe_of(spawn: &Spawn) -> Result<Recipe, Declined> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raised {
     pub nodes: usize,
     pub billboards: usize,

@@ -19,7 +19,6 @@ pub const CHAT_LOG: &[u8] = b"ui/Panel/game/chat2.pane";
 pub const CHAT_MENU: &[u8] = b"ui/Panel/game/ChatMenu.pane";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Mode {
     pub button: &'static str,
     pub prefix: &'static str,
@@ -136,7 +135,6 @@ pub fn is_relocate_command(strings: &Strings, word: &str) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum PendingCommand {
     Kingdom,
     King,
@@ -188,7 +186,6 @@ pub const FOLLOW_MARGIN: i32 = 5;
 pub const RECALL: usize = 5;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Line {
     pub text: String,
     pub color: u32,
@@ -196,7 +193,6 @@ pub struct Line {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Enter {
     Nothing,
     Sent(Sent),
@@ -207,7 +203,6 @@ pub enum Enter {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Sent {
     pub analytics: Option<crate::analytics::Message>,
     pub mode: usize,
@@ -306,7 +301,6 @@ pub fn channel_packet(client_id: u16, mode: usize, target: &str, text: &str) -> 
 }
 
 #[derive(Debug, Clone, Default)]
-
 pub struct SavedTab {
     request: Option<(String, String)>,
 }
@@ -326,7 +320,6 @@ impl SavedTab {
 }
 
 #[derive(Debug, Clone, Default)]
-
 pub struct Chat {
     input_bottom_offsets: Vec<(&'static str, ElementType, i32)>,
     pub mode: usize,
@@ -1105,14 +1098,12 @@ pub const BALLOON_LONG_PREFIX: char = '*';
 pub const SILENT_PREFIXES: [char; 3] = ['=', '-', '@'];
 
 #[derive(Debug, Clone, Default)]
-
 pub struct Speakers {
     pub mobs: Vec<(u16, String)>,
     pub party: Vec<(u16, String)>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Voice {
     Mob,
     Party,
@@ -1142,7 +1133,6 @@ impl Speakers {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Heard {
     Modal,
     Memo,
@@ -1341,7 +1331,6 @@ fn shout(panels: &mut Panels, text: &str) -> Heard {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Echo {
     pub sentence: &'static str,
     pub tab: Option<usize>,
@@ -1576,7 +1565,6 @@ pub fn refine_broadcast(panels: &Panels, record: usize, argument: &str) -> Strin
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct RefineFields {
     pub item_id: i32,
     pub player: String,
@@ -1896,7 +1884,6 @@ pub fn log_colors(record: usize, kind: u8, has_argument: bool, text: &str) -> Ve
 pub const EXIT_RECORD: usize = 0x40C;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-
 pub struct Announced {
     pub world_changed: bool,
     pub record: usize,
@@ -2282,7 +2269,6 @@ pub fn route_with_move_alpha(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum LocalWhat {
     Help,
     Effects { toggle_grass: bool },
@@ -2295,7 +2281,6 @@ pub enum LocalWhat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Local {
     pub word: &'static str,
     pub what: LocalWhat,

@@ -2,7 +2,6 @@ use super::{Actor, ActorKey, Model, Snapshot};
 use std::collections::HashMap;
 
 #[derive(Debug, Default)]
-
 pub(crate) struct OwnerIndex {
     keyed: HashMap<ActorKey, usize>,
     entities: HashMap<u16, usize>,

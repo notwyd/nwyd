@@ -94,7 +94,6 @@ pub fn rotate_lit_world(position: Vec3, yaw: f32, scale: f32) -> Matrix4 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct RotateChild {
     pub kind: usize,
     pub size: Vec3,
@@ -133,7 +132,6 @@ pub const ROTATE_CHILD_ADDITIVE: bool = true;
 pub const ROTATE_CHILD_LIFT: f32 = 0.2;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct RotateSpark {
     pub kind: usize,
     pub lifetime_ms: u32,
@@ -254,7 +252,6 @@ fn byte_of(v: f32) -> u32 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Start {
     pub style: i32,
     pub position: Vec3,
@@ -415,7 +412,6 @@ impl Effect for Start {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Charge {
     pub mode: i32,
     pub position: Vec3,
@@ -586,7 +582,6 @@ impl Effect for Charge {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct MeshRotate {
     pub mode: i32,
     pub mesh_id: i32,
@@ -615,7 +610,6 @@ pub struct MeshRotate {
 }
 
 #[derive(Debug)]
-
 struct HumanRotorChild {
     owner: u16,
     billboard: Billboard,

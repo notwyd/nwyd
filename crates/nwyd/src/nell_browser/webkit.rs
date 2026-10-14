@@ -21,11 +21,9 @@ pub struct Browser {
 }
 
 #[cfg(target_os = "linux")]
-
 struct GtkHost(gtk::Window);
 
 #[cfg(target_os = "linux")]
-
 impl Drop for GtkHost {
     fn drop(&mut self) {
         use gtk::prelude::*;
@@ -214,7 +212,6 @@ impl Browser {
 }
 
 #[cfg(target_os = "macos")]
-
 fn bounds(parent: &Window) -> (wry::Rect, wry::Rect) {
     use wry::dpi::{LogicalPosition, LogicalSize};
 

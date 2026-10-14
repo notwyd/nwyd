@@ -22,14 +22,12 @@ pub const FOLLOW_LIFT: f32 = 1.0;
 pub const OWNER_LIFT: f32 = 0.5;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Owner {
     pub position: Vec3,
     pub seat: Option<Vec3>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Fields {
     pub age: f32,
     pub origin: Vec3,

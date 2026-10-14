@@ -8,7 +8,6 @@ thread_local! { static STARTED: Cell<bool> = const { Cell::new(false) }; }
 const MAX_ASSET_BYTES: usize = 1024 * 1024 * 1024;
 
 #[wasm_bindgen]
-
 pub struct GameFiles {
     root: String,
     files: Vec<(String, Vec<u8>)>,
@@ -16,10 +15,8 @@ pub struct GameFiles {
 }
 
 #[wasm_bindgen]
-
 impl GameFiles {
     #[wasm_bindgen(constructor)]
-
     pub fn new(root: String) -> GameFiles {
         static PANIC_HOOK: std::sync::Once = std::sync::Once::new();
 
@@ -127,7 +124,6 @@ fn dispatch_message(event_name: &str, message: &str) {
 }
 
 #[wasm_bindgen]
-
 pub fn requires_reload() -> bool {
     STARTED.with(|started| started.get())
 }

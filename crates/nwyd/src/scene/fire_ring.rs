@@ -35,7 +35,6 @@ pub const RING_Z: [f32; RING] = [0.0, 1.0, 1.0, 1.0, 0.0, -1.0, -1.0, -1.0];
 pub const ZONE_MANHATTAN_RADIUS: f32 = 18.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Zone {
     pub manhattan: bool,
     pub low: (f32, f32),
@@ -53,7 +52,6 @@ impl Zone {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Child {
     pub fire_mode: i32,
     pub spark_colour: Option<i32>,
@@ -79,7 +77,6 @@ pub const CHILDREN: [Child; 3] = [
 ];
 
 #[derive(Debug)]
-
 pub struct FireRing {
     pub position: Vec3,
     pub mode: i32,

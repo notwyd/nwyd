@@ -59,7 +59,6 @@ pub fn bind(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Glow {
     pub colour: u32,
     pub scale: f32,
@@ -68,7 +67,6 @@ pub struct Glow {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Style {
     pub label: u32,
     pub guild: u16,
@@ -417,7 +415,6 @@ pub fn frame_draws(scene: &mut FieldScene) -> Vec<PlannedQuad> {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct GroundGlow {
     pub quad: GroundQuad,
     pub wide: bool,

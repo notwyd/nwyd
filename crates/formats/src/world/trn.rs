@@ -18,7 +18,6 @@ pub const NEIGHBOUR_CLAMP: usize = 62;
 pub const NORMAL_UP: [f32; 3] = [0.0, 1.0, 0.0];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct TrnCell {
     pub height: i8,
     pub uv_mode: u8,
@@ -55,7 +54,6 @@ pub const BASE_UV_MODES: u8 = 8;
 pub const DETAIL_UV_MODES: u8 = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Terrain {
     pub name: String,
     pub zone_x: u8,

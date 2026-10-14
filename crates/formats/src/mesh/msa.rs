@@ -15,7 +15,6 @@ const FVF_XYZ_DIFFUSE_TEX1: u32 = 0x142;
 const FVF_XYZ_NORMAL: u32 = 0x12;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Subset {
     pub material_id: u32,
     pub start_triangle: u32,
@@ -31,7 +30,6 @@ impl Subset {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct StaticMesh {
     pub fvf: u32,
     pub subsets: Vec<Subset>,

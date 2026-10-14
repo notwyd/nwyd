@@ -13,7 +13,6 @@ pub fn load(game: &GameDir) -> Vec<Entry> {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Book {
     pub table: Vec<Entry>,
     pub progress: Option<Progress>,
@@ -27,7 +26,6 @@ fn costume_item(scene: &FieldScene) -> u16 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Filter {
     #[default]
     All,
@@ -36,7 +34,6 @@ pub enum Filter {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Row {
     pub index: usize,
     pub payload: i32,
@@ -80,7 +77,6 @@ pub fn rows(table: &[Entry], progress: Option<&Progress>, split: i32, filter: Fi
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Restated {
     pub entity: u16,
     pub completed: usize,
@@ -177,7 +173,6 @@ pub const RESULT_IMAGE: &str = "Result";
 pub const COMPLETE_ARGB: u32 = 0xFFE6_C54D;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Count {
     pub registered: i32,
     pub required: i32,
@@ -219,7 +214,6 @@ pub fn refresh_count(entry: &Entry, progress: Option<&Progress>) -> Count {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Cell {
     Missing = 1,
     Have = 2,
@@ -284,7 +278,6 @@ fn matching_slot(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Command {
     Filter(Filter),
     Nothing,

@@ -57,7 +57,6 @@ impl Budget {
 }
 
 #[derive(Default)]
-
 pub(super) struct Staging {
     key: Option<(u64, u64)>,
     cursor: usize,

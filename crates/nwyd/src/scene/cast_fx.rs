@@ -8,7 +8,6 @@ use formats::world::path::HeightField;
 use glam::Vec3;
 
 #[derive(Debug, Default, PartialEq)]
-
 pub struct Raised {
     pub casts: usize,
     pub objects: usize,

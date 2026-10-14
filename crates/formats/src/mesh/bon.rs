@@ -5,14 +5,12 @@ pub const RECORD_LEN: usize = 8;
 pub const MAX_BONES: usize = 100;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct BoneRecord {
     pub parent: i32,
     pub bone: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Skeleton {
     pub records: Vec<BoneRecord>,
     parent_of: Vec<Option<i32>>,

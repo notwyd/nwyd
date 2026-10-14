@@ -104,7 +104,6 @@ pub const NO_SCALE_TOTAL: [u8; 19] = [
 pub const SCALE_MIN_ID: i32 = 0x29;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct EffectRow {
     pub id: u8,
     pub strdef: u16,
@@ -352,7 +351,6 @@ pub const ROWS: [EffectRow; 59] = [
 pub const REQUIREMENT_ROWS: std::ops::Range<usize> = 0..6;
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Effects<'a> {
     pub items: &'a ItemList,
     pub mounts: &'a [MountData],
@@ -606,7 +604,6 @@ impl<'a> Effects<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PetState {
     pub progress: u16,
     pub maturity: u8,
@@ -915,7 +912,6 @@ impl Effects<'_> {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Wearer {
     pub body: i32,
     pub level: i32,
@@ -927,7 +923,6 @@ pub struct Wearer {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Requirements {
     pub class: bool,
     pub level: bool,
@@ -1061,7 +1056,6 @@ impl Effects<'_> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Trade {
     Free,
     Never,
@@ -1179,7 +1173,6 @@ pub fn is_extended_bound_family(item_id: i32) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct TierBonus {
     pub piercing: i32,
     pub absorb: i32,

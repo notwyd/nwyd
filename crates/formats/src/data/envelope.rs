@@ -39,7 +39,6 @@ pub fn seven_step_checksum(buf: &[u8]) -> i32 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Integrity {
     ConstantA(i32),
     TrailerB,
@@ -48,7 +47,6 @@ pub enum Integrity {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Split<'a> {
     pub body: &'a [u8],
     pub trailer: Option<i32>,

@@ -59,14 +59,12 @@ pub fn button_name(index: usize) -> String {
 pub const CLEARED: i32 = -1;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Master {
     pub npc: u16,
     pub pending: Option<Pending>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Pending {
     pub item: i32,
     pub npc: u16,

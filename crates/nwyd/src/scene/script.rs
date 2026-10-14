@@ -9,7 +9,6 @@ pub const SLOTS: usize = 50;
 pub const CULLED: [std::ops::Range<usize>; 2] = [0..18, 26..40];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Cue {
     Order(usize),
     Play(usize, usize),
@@ -18,7 +17,6 @@ pub enum Cue {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct DemoScript {
     pub variant: u32,
     pub stage: u8,

@@ -51,7 +51,6 @@ pub const GATE_AT: usize = 0x0099_976C;
 pub const TENTHS_DIVISOR: i16 = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Line {
     pub slot: usize,
     pub text: String,
@@ -59,7 +58,6 @@ pub struct Line {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Record {
     pub bytes: [u8; RECORD_LEN],
 }
@@ -107,7 +105,6 @@ impl Record {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct SealedCharacter {
     pub body: i32,
     pub level: i32,

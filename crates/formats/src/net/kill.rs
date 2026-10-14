@@ -12,7 +12,6 @@ pub const HEADER_LEN: usize = 0x0C;
 pub const KILL_PAYLOAD_LEN: usize = KILL_FRAME_LEN - HEADER_LEN;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Kill {
     pub cp: i32,
     pub victim: u16,

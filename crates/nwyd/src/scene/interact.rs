@@ -22,7 +22,6 @@ pub const MOB_GRADES_HIGH: [u8; 2] = [6, 7];
 pub const ANY_GRADES: std::ops::RangeInclusive<u8> = 8..=0xF;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Where {
     pub zone_x: i32,
     pub row: i32,
@@ -179,7 +178,6 @@ pub fn guild_application_box() -> super::msgbox::Request {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct GuildApplicationRaised {
     pub slot: Option<usize>,
 }
@@ -257,7 +255,6 @@ pub fn guild_application_reply(entity: u32) -> Vec<u8> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Release {
     Nothing,
     Sent {
@@ -778,7 +775,6 @@ pub fn describe_release(release: &Release) -> Option<String> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Latched {
     pub entity: Option<u16>,
     pub menu: bool,

@@ -14,7 +14,6 @@ pub const SOUND_LIST: &[u8] = b"sound\\soundlist.txt";
 pub const MUSIC_TABLE: &[u8] = b"Music.txt";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct UnconditionalSound {
     slot: i64,
 }
@@ -30,7 +29,6 @@ impl UnconditionalSound {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Assets(GameDir);
 
 impl Assets {
@@ -46,7 +44,6 @@ impl Loader for Assets {
 }
 
 #[derive(Debug)]
-
 pub struct SceneAudio {
     engine: Engine,
     assets: Assets,

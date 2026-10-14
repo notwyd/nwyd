@@ -39,7 +39,6 @@ pub const BAHAMUT_GLOW_SLOTS: std::ops::RangeInclusive<usize> = 464..=511;
 pub const SKY_SLOTS: std::ops::RangeInclusive<usize> = 0x43..=0x46;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Skipped {
     BahamutGlow,
     Sky,
@@ -81,7 +80,6 @@ pub const UNIT_QUAD: [BillboardVertex; 4] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Motion {
     Still,
     Rise,
@@ -131,7 +129,6 @@ impl Motion {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Billboard {
     pub kind: usize,
     pub texture_frame: usize,
@@ -524,7 +521,6 @@ impl Effect for Billboard {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ArrayKey {
     pub width: u32,
     pub height: u32,
@@ -544,14 +540,12 @@ impl ArrayKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct TextureArray {
     pub key: ArrayKey,
     pub layers: Vec<usize>,
 }
 
 #[derive(Debug)]
-
 pub struct BillboardScene {
     pub list: TextureList,
     pub textures: Vec<BoundTexture>,
@@ -1259,7 +1253,6 @@ pub fn bucket_bounds(billboards: &[Billboard], eye: Vec3) -> (usize, usize) {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-
 pub struct Frame {
     pub objects: Vec<BillboardUniforms>,
     pub vertices: Vec<BillboardVertex>,

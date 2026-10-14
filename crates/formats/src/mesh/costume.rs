@@ -7,7 +7,6 @@ pub const ID_WINDOWS: [(i32, i32); 2] = [(0x1036, 0x105D), (0x10CC, 0x1193)];
 pub const EXTRA_ID_WINDOW: (i32, i32) = (0x189D, 0x1900);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Costume {
     pub body: i32,
     pub model: u32,
@@ -34,7 +33,6 @@ pub fn body_substitution(body: i32, parts: usize) -> Vec<Option<PartNames>> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PartNames {
     pub texture: Option<&'static str>,
     pub mesh: Option<&'static str>,

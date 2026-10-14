@@ -3,7 +3,6 @@ use formats::texture::texture_list::FormatFlag;
 use formats::texture::{PixelFormat, Texture};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum AlphaPolicy {
     Stored,
     Opaque,
@@ -30,7 +29,6 @@ impl AlphaPolicy {
 pub const COLOR_KEY: [u8; 4] = [0, 0, 0, 255];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ColorKey {
     Fires,
     CannotFire,
@@ -110,7 +108,6 @@ pub fn copy_extent(format: PixelFormat, width: u32, height: u32) -> (u32, u32) {
 }
 
 #[derive(Debug)]
-
 pub struct GpuTexture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,

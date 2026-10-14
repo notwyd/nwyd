@@ -22,7 +22,6 @@ pub const BUILT_BOX: [f32; 4] = [0.0, 650.0, 256.0, 64.0];
 pub const BALLOON_KEY: u32 = 0x4000_0000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Balloon {
     pub text: String,
     pub start_ms: u32,

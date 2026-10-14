@@ -9,7 +9,6 @@ use std::time::Duration;
 pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub(crate) enum LoginStage {
     Credentials,
     Connect,
@@ -17,7 +16,6 @@ pub(crate) enum LoginStage {
 }
 
 #[derive(Debug)]
-
 pub(crate) struct LoginFailure {
     pub stage: LoginStage,
     message: String,
@@ -45,7 +43,6 @@ impl std::fmt::Display for LoginFailure {
 impl std::error::Error for LoginFailure {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Verbosity {
     #[default]
     Quiet,
@@ -53,7 +50,6 @@ pub enum Verbosity {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Phase {
     #[default]
     Offline,
@@ -65,7 +61,6 @@ pub enum Phase {
 }
 
 #[derive(Debug)]
-
 pub enum Transition {
     QuestFlags([u8; 11]),
     ClientConfig(formats::net::client_config::Update),
@@ -261,7 +256,6 @@ pub enum Transition {
 }
 
 #[derive(Default)]
-
 pub struct Session {
     pub guild_proxy: std::sync::Arc<std::sync::Mutex<crate::scene::guild_request::RetailState>>,
     retail_sender: protocol::retail::SharedSender,
@@ -290,7 +284,6 @@ pub struct Session {
 
 impl Session {
     #[cfg(test)]
-
     pub(crate) fn connected_for_test(connection: Connection) -> Self {
         Self {
             connection: Some(connection),
@@ -1398,7 +1391,6 @@ fn field_send_allowed(previous: u16, next: u16, elapsed_ms: u32) -> bool {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -1421,7 +1413,6 @@ mod tests {
     }
 
     #[test]
-
     fn analytics_starts_on_accepted_login_and_preserves_the_login_identity() {
         let (analytics, events) = crate::analytics::Analytics::recording();
 
@@ -1467,7 +1458,6 @@ mod tests {
     }
 
     #[test]
-
     fn a_disabled_analytics_session_accepts_login_without_a_delivery_worker() {
         let mut session = Session::default();
 

@@ -4,7 +4,6 @@ use formats::ui::pane::ElementType;
 use std::collections::VecDeque;
 
 #[derive(Debug)]
-
 pub struct Overlay {
     items: formats::data::item_list::ItemList,
     base_items: formats::data::item_list::ItemList,
@@ -14,7 +13,6 @@ pub struct Overlay {
 }
 
 #[derive(Debug)]
-
 pub struct LanguageUpdate {
     items: formats::data::item_list::ItemList,
 }
@@ -57,7 +55,6 @@ impl Overlay {
     }
 
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         use formats::data::item_list::{BODY_LEN, ItemList};
 
@@ -242,14 +239,12 @@ pub const CUT_MS: u32 = 0x15E;
 pub const SOUND_SLOT: i64 = 0x21;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Queued {
     pub text: String,
     pub sound: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Notice {
     pub showing: bool,
     pub deadline_ms: u32,

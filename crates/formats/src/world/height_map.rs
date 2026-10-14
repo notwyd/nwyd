@@ -6,7 +6,6 @@ pub const DIM: usize = WORLD_CELLS;
 pub const LEN: usize = DIM * DIM;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct HeightMap<'a> {
     data: &'a [u8],
 }

@@ -2,7 +2,6 @@ use super::field::FieldScene;
 use formats::net::siege::{self, Siege, WarFlag};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct State {
     pub war_guild: u16,
     pub ally: u16,
@@ -38,7 +37,6 @@ impl Default for State {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Applied {
     Set {
         size: u16,
@@ -53,7 +51,6 @@ pub enum Applied {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct WarApplied {
     pub war_flag: u32,
     pub at_war: bool,
@@ -118,7 +115,6 @@ pub fn war(scene: &mut FieldScene, flag: WarFlag, in_castle_zone: bool) -> WarAp
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum ZoneStep {
     Nothing,
     Raised,

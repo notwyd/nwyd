@@ -34,7 +34,6 @@ pub const TAB_RECT_FROM: &str = "Align";
 pub const TAB_CAPTIONS: [&str; 2] = ["Info", "Member"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Page {
     #[default]
     Info,
@@ -168,7 +167,6 @@ pub mod ask {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Session {
     pub guild: u32,
     pub rank: i32,
@@ -187,7 +185,6 @@ impl Session {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Guild {
     pub session: Session,
     pub page: Page,
@@ -198,7 +195,6 @@ pub struct Guild {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Picked {
     pub char_uid: u32,
     pub name: String,
@@ -219,7 +215,6 @@ impl Guild {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Label {
     pub name: &'static str,
     pub text: String,
@@ -297,7 +292,6 @@ pub fn info_visibility(guild: &Guild) -> Vec<(String, bool)> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Row {
     pub user_name: String,
     pub guild_level: Option<&'static str>,
@@ -308,7 +302,6 @@ pub struct Row {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum ConnDate {
     Today,
     Ago { days: i32, word: &'static str },
@@ -379,7 +372,6 @@ pub fn member_rows(guild: &Guild) -> Vec<Row> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
-
 pub enum Entry {
     PromoteChief = 1,
     Expel = 2,
@@ -485,7 +477,6 @@ pub fn entries(guild: &Guild) -> Vec<Entry> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub enum Action {
     Send(Vec<u8>),
     Ask(msgbox::Request),
@@ -509,7 +500,6 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ConnectionReport {
     pub charidx: u32,
     pub report_channel: bool,
@@ -525,7 +515,6 @@ impl ConnectionReport {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Fetch {
     Info,
     Members,
@@ -604,7 +593,6 @@ pub mod rank_flag {
 }
 
 #[allow(clippy::too_many_arguments)]
-
 pub fn guild_member_command_frame(
     client: u16,
     command: u32,
@@ -995,7 +983,6 @@ pub fn answered(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Post {
     Notice(String),
     MemberNotice(String),

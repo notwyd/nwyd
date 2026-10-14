@@ -25,7 +25,6 @@ pub fn build(game: &GameDir, strings: &Strings, chains: &Chains, scale: f32) -> 
 
 impl Carry {
     #[cfg(test)]
-
     pub(crate) fn for_test() -> Self {
         Self {
             ui: PanelUi::from_resource(

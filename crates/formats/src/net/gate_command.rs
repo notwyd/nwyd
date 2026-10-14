@@ -24,7 +24,6 @@ pub mod at {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Command {
     pub entity: u32,
     pub state: i16,

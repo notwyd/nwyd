@@ -9,7 +9,6 @@ pub const FIELD_LEN: usize = 16;
 pub const LEN: usize = RECORDS * RECORD_LEN;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub bad: Vec<u8>,
     pub replacement: Vec<u8>,

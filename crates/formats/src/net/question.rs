@@ -20,7 +20,6 @@ pub const HEADER_LEN: usize = 0x0C;
 pub const CHOICE_FRAME_LEN: usize = 0x10;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Question {
     pub text: String,
     pub answers: [String; ANSWERS],
@@ -62,7 +61,6 @@ pub fn parse(payload: &[u8]) -> Result<Question> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct ChoiceResponse {
     pub client_id: u16,
     pub command: u32,

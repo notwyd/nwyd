@@ -33,14 +33,12 @@ pub const NO_GUILD: u16 = 0xFFFF;
 pub const KINGDOM_UNSET: u8 = 0xFF;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Siege {
     Set(State),
     Ignored { size: u16 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct State {
     pub size: u16,
     pub war_guild: u16,
@@ -55,7 +53,6 @@ impl State {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct WarFlag {
     pub flag: u32,
 }

@@ -9,7 +9,6 @@ pub const FIELD_2_RECT: (i32, i32, i32, i32) = (1920, 1408, 2688, 2048);
 pub const KINGDOM_RECT: (i32, i32, i32, i32) = (1665, 1537, 1792, 1920);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Switched {
     Nothing,
     Field { slot: usize },

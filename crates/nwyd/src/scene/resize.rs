@@ -65,7 +65,6 @@ fn cancel_manager_pointer(manager: &mut ui::input::Manager) {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -73,7 +72,6 @@ mod tests {
     use ui::input::{DragMode, Manager, PanelDrag, Target};
 
     #[test]
-
     fn pointer_cancellation_preserves_keyboard_focus_and_modifier_state() {
         let target = Target {
             panel: 1,

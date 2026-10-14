@@ -101,7 +101,6 @@ pub fn money_text(money: i32) -> String {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Mode {
     Idle,
     Spin,
@@ -109,7 +108,6 @@ pub enum Mode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Controller {
     pub mode: Mode,
     pub scroll: [i32; 3],
@@ -375,7 +373,6 @@ impl Controller {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Banner {
     pub payout: i32,
     pub wager: i32,
@@ -390,7 +387,6 @@ impl Banner {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-
 pub struct ControllerTick {
     pub auto_start: bool,
     pub settled: bool,
@@ -400,7 +396,6 @@ pub struct ControllerTick {
 }
 
 #[must_use]
-
 pub(crate) struct PendingTick {
     selected: usize,
     now_ms: u32,
@@ -409,7 +404,6 @@ pub(crate) struct PendingTick {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Game {
     pub visible: bool,
     pub hovered: Option<u16>,
@@ -722,28 +716,24 @@ fn button_index(command: u16) -> Option<usize> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 struct Button {
     armed: bool,
     last_ms: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct PostedBanner {
     pub text: String,
     pub shown_at_ms: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Mouse {
     Down,
     Up,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Input {
     pub consumed: bool,
     pub command: Option<u16>,
@@ -762,14 +752,12 @@ impl Input {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct AppliedResult {
     pub jackpot_gold: Option<u32>,
     pub sound: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Start {
     Busy,
     NoRoom,
@@ -778,7 +766,6 @@ pub enum Start {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-
 pub struct Ticked {
     pub selected: usize,
     pub controller: ControllerTick,

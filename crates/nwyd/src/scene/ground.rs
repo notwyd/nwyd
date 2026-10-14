@@ -26,7 +26,6 @@ pub const EXACT_ENOUGH: f32 = 2.0;
 pub const NO_TARGET_Y: f32 = -9_000.0;
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct Block<'a> {
     pub zone: (u8, u8),
     pub heights: &'a [i8],
@@ -258,7 +257,6 @@ fn barycentric(ray: &Ray, v0: Vec3, v1: Vec3, v2: Vec3) -> Option<(f32, f32)> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Picker {
     pub hit: Vec3,
     pub fresh: bool,
@@ -290,7 +288,6 @@ impl Picker {
         clippy::too_many_arguments,
         reason = "retains the fine-picker inputs plus optional coarse-pass resources"
     )]
-
     pub fn pick_with_coarse(
         &mut self,
         current: Block<'_>,

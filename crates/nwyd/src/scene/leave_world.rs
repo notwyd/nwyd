@@ -2,7 +2,6 @@ use super::{field::FieldScene, guild, guild_panel};
 use formats::net::account::{Block, Equipment, Status};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Applied {
     pub slot: usize,
     pub status: Status,

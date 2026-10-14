@@ -330,13 +330,11 @@ fn copy_list_text(
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
 
     #[test]
-
     fn language_refresh_preserves_list_selection_scroll_and_existing_row_identity() {
         let resource = ui::Resource::default();
 
@@ -406,7 +404,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_reconciles_payloads_and_clears_removed_action_selection() {
         let resource = ui::Resource::default();
 
@@ -511,7 +508,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_never_discards_unexpected_list_editor_drafts() {
         let resource = ui::Resource::default();
 
@@ -561,7 +557,6 @@ mod tests {
     }
 
     #[test]
-
     fn language_refresh_copies_labels_without_changing_editor_or_button_state() {
         let resource = ui::Resource::default();
 

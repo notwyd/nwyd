@@ -34,7 +34,6 @@ pub const UI_SCALE_FLOOR: f32 = 1e-5;
 pub const SPLASH_DURATION_MS: u32 = 2_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct SceneTime {
     pub now_ms: u32,
     pub raw_ms: u32,
@@ -68,14 +67,12 @@ impl SceneTime {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum DrawPath {
     TlQuad,
     Sprite,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Control {
     ScenePanel(u32),
     Splash,
@@ -83,7 +80,6 @@ pub enum Control {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Draw {
     pub control: Control,
     pub bucket: u8,
@@ -93,7 +89,6 @@ pub struct Draw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Rect {
     pub x: f32,
     pub y: f32,
@@ -102,7 +97,6 @@ pub struct Rect {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Layout {
     pub width: u32,
     pub height: u32,
@@ -196,7 +190,6 @@ impl Layout {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct LoginPresentation {
     pub splash: bool,
     pub cursor: CursorMode,
@@ -234,7 +227,6 @@ impl LoginPresentation {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct LoadedTexture {
     pub slot: u32,
     pub stored_path: String,
@@ -246,7 +238,6 @@ pub struct LoadedTexture {
 }
 
 #[derive(Debug)]
-
 pub struct LoginScene {
     pub layout: Layout,
     pub time: SceneTime,
@@ -447,7 +438,6 @@ fn set_index(control_id: i32) -> Result<usize> {
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn quad_draw(
     control: Control,
     bucket: u8,
@@ -648,7 +638,6 @@ pub fn load_texture(
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -677,7 +666,6 @@ mod tests {
     }
 
     #[test]
-
     fn resizing_login_controls_updates_viewport_and_preserves_texture_coordinates() {
         let mut scene = crate::scene::Scene::LoginStatic(LoginScene {
             layout: Layout::new(800, 600),
@@ -714,7 +702,6 @@ mod tests {
     }
 
     #[test]
-
     fn resizing_logos_obeys_resolution_offsets_without_restoring_expired_splash() {
         let mut scene = LoginScene {
             layout: Layout::new(800, 600),

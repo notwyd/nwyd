@@ -147,7 +147,6 @@ pub fn siege_radius(weapon: u16) -> Option<f32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Body {
     pub position: Vec3,
     pub model: u32,
@@ -169,7 +168,6 @@ impl Body {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,

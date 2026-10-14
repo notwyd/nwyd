@@ -1,7 +1,6 @@
 use crate::text::Codepage;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub item: u32,
     pub slot: u32,
@@ -144,7 +143,6 @@ pub fn overlay_with_codepage(
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
@@ -152,7 +150,6 @@ mod tests {
     use std::collections::BTreeMap;
 
     #[test]
-
     fn existing_entrypoints_keep_windows_1252_and_raw_text() {
         let bytes = b"M-ITEM 12 0 21 Pre\xE7o \x80\r\n";
 
@@ -174,7 +171,6 @@ mod tests {
     }
 
     #[test]
-
     fn mixed_overlays_preserve_each_entry_source_codepage() {
         let mut table = BTreeMap::new();
 

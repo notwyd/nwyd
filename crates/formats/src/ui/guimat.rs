@@ -3,7 +3,6 @@ use super::script::{self, Reader};
 use crate::error::{Kind, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct FontDef {
     pub index: i32,
     pub face: i32,
@@ -33,7 +32,6 @@ impl FontDef {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct TextureDef {
     pub index: i32,
     pub color_key: i32,
@@ -41,7 +39,6 @@ pub struct TextureDef {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Alias {
     pub name: String,
     pub texture_index: i32,
@@ -49,7 +46,6 @@ pub struct Alias {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Colors {
     pub default: Option<u32>,
     pub normal: Option<u32>,
@@ -76,7 +72,6 @@ impl Colors {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct TextureLayer {
     pub index: Option<i32>,
     pub uv: Option<[i32; 4]>,
@@ -86,7 +81,6 @@ pub struct TextureLayer {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum HAlign {
     #[default]
     Left,
@@ -95,7 +89,6 @@ pub enum HAlign {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum VAlign {
     #[default]
     Top,
@@ -104,7 +97,6 @@ pub enum VAlign {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct FontLayer {
     pub index: Option<i32>,
     pub halign: Option<HAlign>,
@@ -115,14 +107,12 @@ pub struct FontLayer {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Binding {
     Panel(u32),
     Element { element: ElementType, layer: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Section {
     pub name: String,
     pub binding: Option<Binding>,
@@ -133,7 +123,6 @@ pub struct Section {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct GuiMat {
     pub fonts: Vec<FontDef>,
     pub textures: Vec<TextureDef>,

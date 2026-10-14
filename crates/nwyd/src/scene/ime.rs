@@ -244,7 +244,6 @@ fn clear_retained_preedit(scene: &mut Scene, owner: Option<usize>) {
 }
 
 #[derive(Debug)]
-
 pub struct Bridge {
     owner: Option<usize>,
     enabled: bool,

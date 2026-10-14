@@ -5,7 +5,6 @@ pub const MAX_SETS: usize = 600;
 pub const FIELDS_PER_ITEM: usize = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Item {
     pub texture_index: i32,
     pub x: i32,
@@ -26,7 +25,6 @@ impl Item {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Set {
     pub name: String,
     pub index: usize,
@@ -43,7 +41,6 @@ impl Set {
 }
 
 #[derive(Debug, Clone, Default)]
-
 pub struct TextureSetList {
     sets: Vec<Option<Set>>,
     pub warnings: Vec<String>,

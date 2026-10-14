@@ -1,7 +1,6 @@
 use web_time::{Duration, Instant};
 
 #[derive(Default)]
-
 pub(super) struct Pacing {
     last_redraw: Option<Instant>,
     rendered_this_turn: bool,

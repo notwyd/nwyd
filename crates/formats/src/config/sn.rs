@@ -33,7 +33,6 @@ pub fn unmask_first_byte(stored: u8) -> u8 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct ServerNames {
     pub labels: [String; LABELS],
     pub slots: [i32; SLOTS],

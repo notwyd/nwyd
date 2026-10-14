@@ -154,7 +154,6 @@ pub(crate) fn completion_burst(actor: &mut Actor) -> Option<super::burst::Recipe
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Reaped {
     pub entity: u16,
     pub lay_ms: u32,

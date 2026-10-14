@@ -2,7 +2,6 @@ use super::{actors::Actor, effects::Billboard};
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
-
 pub struct State {
     pub last_ms: u32,
     pub points: [Option<Vec3>; 7],

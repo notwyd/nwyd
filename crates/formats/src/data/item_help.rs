@@ -22,7 +22,6 @@ pub const TEXT_COLUMN: usize = 9;
 pub const COLOR_DIGITS: usize = 6;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Help {
     pub color: [u16; LINES],
     pub color_full: [u32; LINES],

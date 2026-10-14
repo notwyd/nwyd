@@ -7,7 +7,6 @@ const PERM20: [u32; 20] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Update {
     Value(u32),
     Experience { normal: u32, transcendent: u32 },

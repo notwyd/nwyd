@@ -3,7 +3,6 @@ use crate::error::{Error, Kind, Result};
 pub const MIN_PAYLOAD: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct NpcLine {
     pub kind: u8,
     pub index: i16,

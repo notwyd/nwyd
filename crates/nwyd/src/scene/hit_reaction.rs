@@ -3,7 +3,6 @@ use formats::net::attack::Attack;
 use glam::Vec3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Pending {
     pub stamp: u32,
     pub damage: i32,

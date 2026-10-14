@@ -1,7 +1,6 @@
 use super::*;
 
 #[derive(Debug)]
-
 pub(crate) struct Bundle {
     pub meshes: Vec<MeshResource>,
     pub textures: Vec<BoundTexture>,

@@ -21,7 +21,6 @@ pub const INVENTORY_SLOTS: usize = 0x3C;
 pub const CARGO_SLOTS: usize = formats::net::account::CARGO_SLOTS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Coord {
     pub container: i32,
     pub slot: i32,
@@ -37,7 +36,6 @@ impl Coord {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Request {
     Move { src: Coord, dst: Coord },
     Combine { src: Coord, dst: Coord },
@@ -191,7 +189,6 @@ fn write_use_frame(out: &mut [u8], src_slot: i32, dst_container: i32, dst_slot: 
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Outcome {
     Nothing,
     Sent(Request),
@@ -199,7 +196,6 @@ pub enum Outcome {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct CombinePrompt {
     pub message: usize,
     pub src: Coord,
@@ -244,7 +240,6 @@ pub fn confirm_combine(player: &mut Entered, items: &ItemList, prompt: CombinePr
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Cooldowns {
     pub last: [u32; COOLDOWN_BUCKETS],
 }
@@ -418,7 +413,6 @@ pub fn first_free_carry_slot(player: &Entered) -> Option<i32> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Swapped {
     Moved { a: Coord, b: Coord },
     Refused,
@@ -589,7 +583,6 @@ pub const PREMIUM_BAGS: [i32; 2] = [2, 3];
 pub const BAG_TABS: i32 = 4;
 
 #[allow(clippy::too_many_arguments)]
-
 fn combine(
     player: &mut Entered,
     items: &ItemList,

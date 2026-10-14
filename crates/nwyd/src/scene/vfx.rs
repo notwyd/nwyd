@@ -19,7 +19,6 @@ pub const CONSTRUCT_AND_FORGET: [Class; 10] = [
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Anchors {
     pub caster: Vec3,
     pub target: Option<Vec3>,
@@ -111,7 +110,6 @@ impl Anchors {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Cx<'a> {
     pub at: &'a Anchors,
     pub rate: f32,
@@ -150,7 +148,6 @@ impl<'a> Ambient<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Declined {
     MissingAssets,
     MissingContext,
@@ -305,7 +302,6 @@ pub fn recipe_for(class: Class) -> Option<&'static Recipe> {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Skips {
     entries: Vec<(Class, Declined)>,
 }
@@ -363,7 +359,6 @@ impl Skips {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Built {
     pub objects: usize,
     pub sounds: &'static [u16],
@@ -411,7 +406,6 @@ pub fn interpret_with(
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Census {
     pub spawns: usize,
     pub built: usize,

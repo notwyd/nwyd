@@ -1,7 +1,6 @@
 use crate::camera::Matrix4;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Aabb {
     pub min: [f32; 3],
     pub max: [f32; 3],
@@ -78,7 +77,6 @@ pub fn clip_matrix(uniforms: &crate::world::FrameUniforms) -> Matrix4 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Frustum {
     planes: [[f32; 4]; 6],
 }
@@ -128,14 +126,12 @@ impl Frustum {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
     use glam::Vec3;
 
     #[test]
-
     fn growing_empty_bounds_includes_extrema_and_translates_them() {
         let mut bounds = Aabb::EMPTY;
 
@@ -173,7 +169,6 @@ mod tests {
     }
 
     #[test]
-
     fn rotated_bounds_enclose_all_corners_after_translation() {
         let bounds = Aabb {
             min: [-2.0, -1.0, -3.0],
@@ -193,7 +188,6 @@ mod tests {
     }
 
     #[test]
-
     fn frustum_clips_all_six_planes_but_retains_touching_bounds() {
         let frustum = Frustum::from_clip(&Matrix4::IDENTITY);
 
@@ -238,7 +232,6 @@ mod tests {
     }
 
     #[test]
-
     fn clip_matrix_decodes_shader_constants_in_world_view_projection_order() {
         use bytemuck::Zeroable;
 

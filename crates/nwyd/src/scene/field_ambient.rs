@@ -6,14 +6,12 @@ use super::{
 use glam::Vec3;
 
 #[derive(Debug, Default)]
-
 pub struct Batch {
     pub ambient: bool,
     pub seeds: Vec<MagicArrow>,
 }
 
 #[derive(Debug, Clone, Default)]
-
 pub struct State {
     ambient_ms: u32,
     seeds_ms: u32,

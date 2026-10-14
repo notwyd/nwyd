@@ -160,7 +160,6 @@ pub fn attribute_at(map: Option<&AttributeMap>, cell: (i32, i32)) -> Option<u8> 
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub struct Retaliation {
     pub attacker: Option<u16>,
     pub stamp_ms: u32,
@@ -176,7 +175,6 @@ impl Retaliation {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct State {
     pub last_attack_ms: u32,
     pub cycle: usize,
@@ -777,7 +775,6 @@ pub fn cell_of(actor: &Actor) -> (i32, i32) {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Dispatched {
     Nothing,
     Declined {
@@ -1415,7 +1412,6 @@ pub fn chase_cell(
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Applied {
     pub effect_context: Option<super::effect_context::Construction>,
     pub attacker: u16,
@@ -1872,7 +1868,6 @@ fn missing_caster_area(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn entries(
     scene: &mut FieldScene,
     attack: &Attack,
@@ -1985,7 +1980,6 @@ fn healed(
 }
 
 #[allow(clippy::too_many_arguments)]
-
 fn damaged(
     scene: &mut FieldScene,
     attack: &Attack,
@@ -2604,7 +2598,6 @@ pub(crate) fn advance_volley(
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-
 pub(crate) struct Spin {
     end: u32,
     sample: u32,

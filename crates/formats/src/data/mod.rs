@@ -30,14 +30,12 @@ pub const ITEM_SLOTS: usize = 14_500;
 pub const ITEM_RECORD_LEN: usize = 172;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct ItemEffect {
     pub id: u8,
     pub value: u8,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct Item {
     pub index: u16,
     pub ex1: u16,

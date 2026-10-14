@@ -7,7 +7,6 @@ use glam::Vec3;
 use render::billboard::BillboardPass;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 enum Batch {
     None,
     CloudSix,
@@ -30,7 +29,6 @@ enum Batch {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-
 pub struct LightLatch {
     pending: bool,
     active: bool,

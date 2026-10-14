@@ -64,7 +64,6 @@ pub fn widen_flipbook_uv(child: &mut Billboard) {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SpeedUp {
     pub at: Vec3,
     pub mode: i32,
@@ -117,7 +116,6 @@ impl Effect for SpeedUp {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub quad: TimedQuad,
     pub flipbook: Billboard,

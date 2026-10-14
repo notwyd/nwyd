@@ -28,7 +28,6 @@ pub const UNDERSCORE: u8 = b'_';
 pub const UNDERSCORE_BECOMES: u8 = b' ';
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-
 pub struct LevelChange {
     pub entity: u16,
     pub name_level: u8,
@@ -63,7 +62,6 @@ impl LevelChange {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-
 pub struct GuildLine {
     pub entity: u16,
     pub name: String,

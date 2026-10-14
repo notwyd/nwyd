@@ -25,7 +25,6 @@ pub mod at {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct LongMessage {
     pub mode: u16,
     pub parm2: u16,

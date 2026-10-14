@@ -77,7 +77,6 @@ fn key(client: &mut Client, text: &str, state: ElementState, repeat: bool) {
 }
 
 #[test]
-
 fn shortcut_opens_settings_before_login_without_a_window_or_connection() {
     let mut client = client();
 
@@ -103,7 +102,6 @@ fn shortcut_opens_settings_before_login_without_a_window_or_connection() {
 }
 
 #[test]
-
 fn shortcut_uses_the_logical_character_for_keyboard_layouts() {
     let mut client = client();
 
@@ -121,7 +119,6 @@ fn shortcut_uses_the_logical_character_for_keyboard_layouts() {
 }
 
 #[test]
-
 fn plain_s_and_incomplete_or_alt_modified_shortcuts_do_not_open_settings() {
     let mut client = client();
 
@@ -146,7 +143,6 @@ fn plain_s_and_incomplete_or_alt_modified_shortcuts_do_not_open_settings() {
 }
 
 #[test]
-
 fn shortcut_repeats_and_releases_do_not_open_or_cancel_input() {
     let mut client = client();
 
@@ -180,7 +176,6 @@ fn shortcut_repeats_and_releases_do_not_open_or_cancel_input() {
 }
 
 #[test]
-
 fn opening_settings_cancels_active_composition_and_pending_camera_input() {
     let mut client = client();
 
@@ -207,7 +202,6 @@ fn opening_settings_cancels_active_composition_and_pending_camera_input() {
 }
 
 #[test]
-
 fn invoking_the_shortcut_again_preserves_unsaved_settings() {
     let mut client = client();
 
@@ -247,7 +241,6 @@ fn invoking_the_shortcut_again_preserves_unsaved_settings() {
 }
 
 #[test]
-
 fn escape_closes_settings_and_held_shortcut_repeats_do_not_reopen_them() {
     let mut client = client();
 
@@ -293,7 +286,6 @@ fn escape_closes_settings_and_held_shortcut_repeats_do_not_reopen_them() {
 }
 
 #[test]
-
 fn prelogin_settings_use_retained_effect_preferences() {
     let mut client = client();
 
@@ -327,7 +319,6 @@ fn prelogin_settings_use_retained_effect_preferences() {
 }
 
 #[test]
-
 fn prelogin_resolution_changes_resize_the_scene_and_keep_settings_open() {
     let mut client = client();
 
@@ -345,7 +336,6 @@ fn prelogin_resolution_changes_resize_the_scene_and_keep_settings_open() {
 }
 
 #[test]
-
 fn shortcut_is_safe_when_the_settings_panel_is_unavailable() {
     let mut client = client();
 
@@ -395,7 +385,6 @@ impl Drop for SettingsDirectory {
 }
 
 #[test]
-
 fn saving_settings_preserves_session_identity_and_runtime_state() {
     let directory = SettingsDirectory::new();
 
@@ -480,7 +469,6 @@ fn saving_settings_preserves_session_identity_and_runtime_state() {
 }
 
 #[test]
-
 fn failed_settings_save_rolls_back_draft_and_keeps_previous_file() {
     let directory = SettingsDirectory::new();
 
@@ -613,7 +601,6 @@ fn request_language(client: &mut Client, language: formats::config::Language) {
 }
 
 #[test]
-
 fn live_language_changes_keep_the_existing_socket_and_session_without_sending_packets() {
     use formats::config::Language::{English, Portuguese};
     use std::io::Read;
@@ -702,7 +689,6 @@ fn live_language_changes_keep_the_existing_socket_and_session_without_sending_pa
 }
 
 #[test]
-
 fn unreadable_language_files_roll_back_settings_without_mutating_active_resources() {
     let directory = SettingsDirectory::new();
 
@@ -739,7 +725,6 @@ fn unreadable_language_files_roll_back_settings_without_mutating_active_resource
 }
 
 #[test]
-
 fn settings_write_failure_after_language_preparation_keeps_the_current_language() {
     let directory = SettingsDirectory::new();
 
@@ -770,7 +755,6 @@ fn settings_write_failure_after_language_preparation_keeps_the_current_language(
 }
 
 #[test]
-
 fn staged_language_files_support_lazy_english_fallback_after_source_files_change() {
     let directory = SettingsDirectory::new();
 
@@ -798,7 +782,6 @@ fn staged_language_files_support_lazy_english_fallback_after_source_files_change
 }
 
 #[test]
-
 fn incomplete_language_pack_cannot_discard_the_current_ui_tables() {
     let directory = SettingsDirectory::new();
 
@@ -820,7 +803,6 @@ fn incomplete_language_pack_cannot_discard_the_current_ui_tables() {
 }
 
 #[test]
-
 fn invalid_language_tables_cannot_replace_active_resources_or_saved_settings() {
     for (name, bytes) in [
         ("UIString.txt", b"".as_slice()),

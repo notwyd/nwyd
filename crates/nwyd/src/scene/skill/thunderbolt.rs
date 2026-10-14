@@ -69,7 +69,6 @@ pub const fn colours(mode: i32) -> Option<[u32; 3]> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct PoisonChild {
     pub at: Vec3,
     pub argb: Option<u32>,
@@ -95,7 +94,6 @@ pub const POISON: Option<PoisonBuild> = Some(|child, cx, rng, out| {
 });
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct ThunderBolt {
     pub at: Vec3,
     pub mode: i32,
@@ -141,7 +139,6 @@ impl Effect for ThunderBolt {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Built {
     pub bolts: [Billboard; 2],
     pub poison: PoisonChild,

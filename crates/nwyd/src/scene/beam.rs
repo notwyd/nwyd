@@ -31,7 +31,6 @@ pub fn blend_pair(pass: BillboardPass) -> (u32, u32) {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Beam {
     pub texture: usize,
     pub lifetime_ms: u32,
@@ -53,7 +52,6 @@ pub struct Beam {
 
 impl Beam {
     #[allow(clippy::too_many_arguments)]
-
     pub fn new(
         a: Vec3,
         b: Vec3,

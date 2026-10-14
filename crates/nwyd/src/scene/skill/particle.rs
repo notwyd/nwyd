@@ -19,7 +19,6 @@ pub const TAIL: Burst = Burst::MEASURED_TAIL;
 pub const GATE: DetailGate = DetailGate::Always;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Order {
     pub at: PositionRef,
     pub recipe: Burst,
@@ -63,7 +62,6 @@ pub fn read(spawn: &Spawn) -> Option<Order> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Placed {
     pub emitter: burst::Particle,
     pub children: Vec<crate::scene::effects::Billboard>,

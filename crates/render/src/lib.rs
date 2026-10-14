@@ -42,7 +42,6 @@ pub use texture::{AlphaPolicy, GpuTexture};
 pub use world::{TerrainBatch, TerrainMesh, TerrainRenderer, WorldVertex};
 
 #[inline(always)]
-
 pub const fn gpu_label(label: &str) -> Option<&str> {
     Some(label)
 }

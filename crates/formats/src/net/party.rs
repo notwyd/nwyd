@@ -95,7 +95,6 @@ pub const KINGDOM_ZONES: [(u32, u32); 4] = [(8, 15), (8, 16), (9, 15), (9, 16)];
 pub const ZONE_SCALE: f64 = 0.0078125;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Member {
     pub id: u16,
     pub name: String,
@@ -213,7 +212,6 @@ pub fn parse_member(opcode: u16, payload: &[u8]) -> Result<Member> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Leave {
     Dissolved,
     Member(u32),
@@ -258,7 +256,6 @@ pub fn parse_leave(payload: &[u8]) -> Result<Leave> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Marks {
     pub owner: u16,
     pub ids: [u16; MARKS],
@@ -311,7 +308,6 @@ pub fn parse_marks(payload: &[u8]) -> Result<Marks> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Accept {
     pub client_id: u16,
     pub inviter: u16,
@@ -355,7 +351,6 @@ impl Accept {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Change {
     Joined(Member),
     Invited(Member),

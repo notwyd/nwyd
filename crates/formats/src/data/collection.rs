@@ -9,7 +9,6 @@ pub const LEN: usize = RECORDS * RECORD_LEN;
 pub const NEEDED: usize = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Entry {
     pub id: i32,
     pub request_id: i32,

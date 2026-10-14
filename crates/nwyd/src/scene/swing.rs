@@ -42,14 +42,12 @@ pub const TRAIL_COLOUR_WINDOW: RangeInclusive<u8> = 0x50..=0x90;
 pub const TRAIL_COLOURS: [u32; 4] = [0x0030_30FF, 0x0000_B6B6, 0x00B6_00B6, 0x00FF_1010];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Silence {
     NotSwinging,
     OwnerHidden,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Swing {
     pub record: usize,
     pub hand: Hand,
@@ -363,7 +361,6 @@ impl Swing {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct SancBurst {
     pub billboards: usize,
     pub kind: usize,
@@ -431,7 +428,6 @@ pub fn weapon_length_mul(weapon_class: i32) -> f32 {
 pub const MOUNTED_BLADE_SCALE: f32 = 1.5;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct TrailVertex {
     pub position: Vec3,
     pub diffuse: u32,
@@ -459,7 +455,6 @@ pub const TRAIL_INDICES: [u16; TRAIL_PRIMITIVES * 3] = {
 };
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct Ribbon {
     pub texture: u32,
     pub vertices: [TrailVertex; TRAIL_VERTICES],
@@ -485,7 +480,6 @@ pub const TRAIL_CLASS: &super::effect_tree::Class = &super::effect_tree::Class {
 };
 
 #[derive(Debug, Clone, PartialEq)]
-
 pub struct TrailHistory {
     pub world: [Matrix4; HISTORY_FRAMES],
     pub bone: [Matrix4; HISTORY_FRAMES],
@@ -769,7 +763,6 @@ impl Swing {
 }
 
 #[derive(Debug, Clone, Copy)]
-
 struct HandActivity {
     class: i32,
     model: u32,
@@ -1009,7 +1002,6 @@ pub const TRAIL_TEXTURE_BASE: u32 = 0xD8;
 pub const TRAIL_SUPPRESS_MOTION: i8 = b'K' as i8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct TrailPick {
     pub texture: u32,
     pub suppressed: Option<bool>,

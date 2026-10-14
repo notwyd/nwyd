@@ -1,7 +1,6 @@
 use crate::config::Language;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 pub enum Codepage {
     #[default]
     Windows1252,
@@ -105,13 +104,11 @@ pub fn encode(text: &str, codepage: Codepage) -> Vec<u8> {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
 
     #[test]
-
     fn configured_languages_decode_known_bytes_and_round_trip() {
         let samples: [(Language, &str, &[u8]); 8] = [
             (Language::English, "Settings", b"Settings"),
@@ -152,7 +149,6 @@ mod tests {
     }
 
     #[test]
-
     fn unmappable_characters_become_single_question_marks_after_buffer_boundaries() {
         for codepage in [
             Codepage::Windows949,
@@ -172,7 +168,6 @@ mod tests {
     }
 
     #[test]
-
     fn malformed_multibyte_sequences_are_replaced_without_losing_following_ascii() {
         for codepage in [
             Codepage::Windows949,
@@ -184,7 +179,6 @@ mod tests {
     }
 
     #[test]
-
     fn unknown_codepages_keep_the_existing_byte_preserving_fallback() {
         let codepage = Codepage::Unsupported(12345);
 

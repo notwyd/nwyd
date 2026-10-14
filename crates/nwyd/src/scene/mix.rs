@@ -13,7 +13,6 @@ pub const SCRIPT: &[u8] = b"ui/Panel/game/ItemMix.pane";
 pub const HELP_SCRIPT: &str = "MixHelpN.dat";
 
 #[derive(Debug, Default)]
-
 pub struct HelpTables {
     pub help: Vec<formats::data::item_help::Help>,
     pub names: Vec<String>,
@@ -143,7 +142,6 @@ pub const NO_COUNT: usize = 413;
 pub const NO_MONEY: usize = 414;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Refused {
     NoItems,
     NotEnough,
@@ -164,14 +162,12 @@ impl Refused {
 pub const GAP_EXEMPT_FAMILY: i32 = 0x36;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Click {
     Recipe(usize),
     Send,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Browser {
     pub filter: (i32, i32, i32),
     pub matched: Vec<usize>,
@@ -191,7 +187,6 @@ impl Browser {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct Shown {
     pub need: mix_list::Need,
     pub item: Option<Item>,
@@ -593,7 +588,6 @@ pub fn confirm() -> msgbox::Request {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Outcome {
     Picked { recipe: usize, staged: usize },
     Confirmed,

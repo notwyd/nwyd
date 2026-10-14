@@ -2,7 +2,6 @@
 use std::io;
 
 #[cfg(not(target_arch = "wasm32"))]
-
 pub(crate) fn read_bounded(
     limit: usize,
     once: bool,
@@ -43,14 +42,12 @@ pub(crate) fn c_body(bytes: &[u8], capacity: usize) -> &[u8] {
 }
 
 #[cfg(test)]
-
 mod tests {
 
     use super::*;
     use std::io::Read;
 
     #[test]
-
     fn fragmented_reads_fill_but_never_exceed_limit() {
         let mut input = &b"abcdefgh"[..];
 
@@ -72,7 +69,6 @@ mod tests {
     }
 
     #[test]
-
     fn single_read_mode_stops_after_first_chunk() {
         let mut input = &b"abcdef"[..];
 
@@ -92,7 +88,6 @@ mod tests {
     }
 
     #[test]
-
     fn eof_and_read_errors_preserve_only_the_successful_prefix() {
         for fail in [false, true] {
             let mut calls = 0;
@@ -121,7 +116,6 @@ mod tests {
     }
 
     #[test]
-
     fn empty_capacity_never_invokes_reader() {
         let body = read_bounded(0, false, |_| panic!("empty response cannot be read"));
 
@@ -129,7 +123,6 @@ mod tests {
     }
 
     #[test]
-
     fn invalid_read_counts_do_not_commit_unread_bytes() {
         let mut calls = 0;
 
@@ -151,7 +144,6 @@ mod tests {
     }
 
     #[test]
-
     fn c_body_reserves_space_and_stops_at_first_zero() {
         for (bytes, capacity, expected) in [
             (&b"hello"[..], 0, &b""[..]),

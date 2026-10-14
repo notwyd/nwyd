@@ -4,7 +4,6 @@ use formats::net::guild_invite::{self, Invite};
 use ui::Strings;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Raised {
     pub entity: u16,
     pub routed: bool,

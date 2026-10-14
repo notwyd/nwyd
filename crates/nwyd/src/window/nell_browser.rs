@@ -103,7 +103,6 @@ impl Client {
                 let _ = failure;
 
                 #[cfg(not(target_os = "windows"))]
-
                 tracing::warn!("NWYD: could not open the NPC browser");
 
                 scene.nell_browser.close();

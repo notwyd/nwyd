@@ -1,13 +1,11 @@
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 pub struct Ini {
     sections: BTreeMap<String, Section>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-
 struct Section {
     name: String,
     entries: BTreeMap<String, (String, String)>,
@@ -155,7 +153,6 @@ pub mod notice {
     pub const SECTION: &str = "Notice";
 
     #[derive(Debug, Clone, PartialEq, Eq)]
-
     pub enum Action {
         Disabled,
         AlreadyShown,

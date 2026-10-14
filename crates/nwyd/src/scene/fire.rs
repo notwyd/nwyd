@@ -50,7 +50,6 @@ pub fn arm(mode: i32) -> Option<usize> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Spark {
     pub kind: usize,
     pub lifetime_ms: u32,
@@ -212,7 +211,6 @@ pub fn decal(mode: i32, colour: u32, position: Vec3) -> Option<super::shade::Sha
 pub const OPEN_SOUND: i64 = 0x9B;
 
 #[derive(Debug)]
-
 pub struct Fire {
     pub position: Vec3,
     pub mode: i32,
@@ -452,7 +450,6 @@ impl Effect for Fire {
 }
 
 #[derive(Debug)]
-
 struct FollowingShade {
     shade: super::shade::Shade,
     anchor: std::rc::Rc<std::cell::Cell<Vec3>>,

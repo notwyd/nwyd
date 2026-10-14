@@ -6,14 +6,12 @@ use super::{
 use glam::Vec3;
 
 #[derive(Debug, Clone, Default)]
-
 pub struct State {
     epoch: Option<u32>,
     pub sprites: Vec<Attachment>,
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Attachment {
     pub slot: u16,
     pub billboard: Billboard,

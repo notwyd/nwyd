@@ -9,7 +9,6 @@ use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
-
 pub struct BatchUniforms {
     pub viewport: [f32; 2],
     pub alpha_reference: f32,

@@ -21,7 +21,6 @@ pub mod slots {
 }
 
 #[allow(dead_code)]
-
 mod field {
 
     pub const PATH: usize = 0x000;
@@ -40,7 +39,6 @@ mod field {
 }
 
 #[allow(dead_code)]
-
 mod legacy_field {
 
     pub const PATH: usize = 0x000;
@@ -53,7 +51,6 @@ mod legacy_field {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum FormatFlag {
     None_,
     Alpha,
@@ -89,7 +86,6 @@ impl FormatFlag {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub struct Entry {
     pub path: Vec<u8>,
     pub name: Vec<u8>,
@@ -151,7 +147,6 @@ pub fn djb2_lower(s: &[u8]) -> u32 {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct TextureList {
     entries: Vec<Option<Entry>>,
 }

@@ -1,7 +1,6 @@
 use super::*;
 
 #[test]
-
 fn characterization_legacy_prompt_cp1252_split_boundary_and_explicit_lines() {
     let mut dialogs = Dialogs::for_test();
 
@@ -43,7 +42,6 @@ fn characterization_legacy_prompt_cp1252_split_boundary_and_explicit_lines() {
 }
 
 #[test]
-
 fn runtime_language_legacy_prompt_wraps_unicode_without_replacing_characters() {
     let mut dialogs = Dialogs::for_test();
 

@@ -97,7 +97,6 @@ pub const SHADE_GRID: i32 = 4;
 pub const SHADE_TEXTURE: usize = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-
 pub struct Dress {
     pub mesh_id: i32,
     pub scale: f32,
@@ -192,7 +191,6 @@ pub fn fire_order(mode: i32) -> Option<(i32, i32, u32)> {
 }
 
 #[derive(Debug)]
-
 pub struct MagicArrow {
     pub source: Vec3,
     pub dest: Vec3,

@@ -2,7 +2,6 @@ use super::bon::{MAX_BONES, Skeleton};
 use super::{Matrix4, identity, matrix_multiply};
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct ClipTable<'a> {
     pub matrices: &'a [Matrix4],
     pub bones: usize,
@@ -23,14 +22,12 @@ impl<'a> ClipTable<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub enum Smoothing {
     On,
     Off,
 }
 
 #[derive(Debug, Clone, Copy)]
-
 pub struct PoseRequest {
     pub model: u32,
     pub slot: usize,
@@ -44,7 +41,6 @@ pub struct PoseRequest {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 pub struct PoseResult {
     pub sub: u32,
     pub frame: usize,
@@ -54,7 +50,6 @@ pub struct PoseResult {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct FrameNode {
     pub bone_id: i32,
     pub parent_id: i32,
@@ -86,7 +81,6 @@ impl FrameNode {
 }
 
 #[derive(Debug, Clone)]
-
 pub struct FrameTree {
     nodes: Vec<FrameNode>,
     slots: Vec<Option<usize>>,

@@ -1,6 +1,5 @@
 #[derive(Clone, Copy)]
 #[repr(usize)]
-
 pub enum Shader {
     Sprite,
     CubeSprite,

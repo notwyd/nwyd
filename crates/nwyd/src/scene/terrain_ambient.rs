@@ -10,14 +10,12 @@ use render::{
 };
 
 #[derive(Debug, Clone)]
-
 struct Cell {
     at: Vec3,
     paired: bool,
 }
 
 #[derive(Debug)]
-
 struct Zone {
     key: (u8, u8),
     cells: Vec<Cell>,
@@ -26,13 +24,11 @@ struct Zone {
 }
 
 #[derive(Debug, Default)]
-
 pub struct State {
     zones: Vec<Zone>,
 }
 
 #[derive(Debug, Default)]
-
 pub struct Emissions {
     pub billboards: Vec<Billboard>,
     pub fires: Vec<Vec3>,
