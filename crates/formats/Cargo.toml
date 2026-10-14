@@ -1,0 +1,17 @@
+[package]
+name = "nwyd-formats"
+description = "Binary asset and network data formats for the NWYD client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+readme = false
+publish = ["crates-io"]
+include = ["/src/**", "/Cargo.toml", "/LICENSE", "!**/*.md"]
+
+[dependencies]
+thiserror.workspace = true
+png.workspace = true
+image.workspace = true
+encoding_rs = "0.8.35"
