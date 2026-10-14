@@ -1,0 +1,73 @@
+[package]
+name = "nwyd"
+description = "An open source NWYD game client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+readme = false
+publish = false
+
+[dependencies]
+assets.workspace = true
+audio.workspace = true
+formats.workspace = true
+protocol.workspace = true
+render.workspace = true
+ui.workspace = true
+
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+glam.workspace = true
+pollster.workspace = true
+rustc-hash.workspace = true
+log = { version = "0.4", features = ["release_max_level_off"] }
+tracing = { workspace = true, features = ["release_max_level_off"] }
+tracing-log.workspace = true
+tracing-subscriber.workspace = true
+time = "0.3"
+wgpu.workspace = true
+winit.workspace = true
+web-time.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rfd = "0.17.2"
+dirs = "7"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlElement", "HtmlCanvasElement", "Storage", "Event", "CustomEvent", "CustomEventInit", "Request", "RequestInit", "RequestMode", "Response", "Headers", "AbortController", "AbortSignal", "console", "Location"] }
+
+[build-dependencies]
+embed-resource = "3.0.11"
+
+[target.'cfg(unix)'.dependencies]
+getrandom = "0.3"
+libc.workspace = true
+
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+ureq.workspace = true
+wry = { version = "0.57", default-features = false, features = ["os-webview"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+webkit2gtk = { version = "2.0.2", features = ["v2_16"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.62.2"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_System_Com", "Win32_System_SystemInformation", "Win32_System_Com_Urlmon", "Win32_System_Ole", "Win32_System_Variant", "Win32_System_LibraryLoader", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Controls", "Win32_Networking_WinInet"] }
+
+[lib]
+name = "nwyd"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "nwyd"
+path = "src/main.rs"
