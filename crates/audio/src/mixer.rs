@@ -5,7 +5,6 @@ use crate::volume;
 pub const CHANNELS: usize = 2;
 
 #[derive(Debug)]
-
 pub struct Mixer {
     pub bank: Bank,
     device_rate: u32,

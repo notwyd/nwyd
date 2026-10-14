@@ -17,3 +17,9 @@ tracing.workspace = true
 
 cpal.workspace = true
 symphonia.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+cpal = { workspace = true, features = ["wasm-bindgen"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["AudioContext", "AudioContextState", "Event", "EventTarget", "Window"] }

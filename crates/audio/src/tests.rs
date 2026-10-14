@@ -104,7 +104,6 @@ fn assert_samples(actual: &[f32], expected: &[f32]) {
 }
 
 #[test]
-
 fn wave_decodes_unsigned_eight_bit_mono_without_padding_samples() {
     let wave = wave::parse(&pcm(1, 8000, 8, &[0, 128, 255])).unwrap();
 
@@ -120,7 +119,6 @@ fn wave_decodes_unsigned_eight_bit_mono_without_padding_samples() {
 }
 
 #[test]
-
 fn wave_decodes_signed_little_endian_stereo() {
     let samples = [i16::MIN, i16::MAX, -1234, 5678];
 
@@ -142,7 +140,6 @@ fn wave_decodes_signed_little_endian_stereo() {
 }
 
 #[test]
-
 fn wave_skips_unknown_odd_sized_chunks() {
     let bytes = riff(vec![
         (*b"JUNK", vec![1, 2, 3]),
@@ -154,7 +151,6 @@ fn wave_skips_unknown_odd_sized_chunks() {
 }
 
 #[test]
-
 fn wave_accepts_data_before_format() {
     let bytes = riff(vec![
         (*b"data", vec![0xff, 0x7f]),
@@ -165,7 +161,6 @@ fn wave_accepts_data_before_format() {
 }
 
 #[test]
-
 fn wave_rejects_invalid_and_truncated_container_headers() {
     let valid = pcm(1, 8000, 16, &[0, 0]);
 
@@ -181,7 +176,6 @@ fn wave_rejects_invalid_and_truncated_container_headers() {
 }
 
 #[test]
-
 fn wave_rejects_chunk_payloads_past_the_end() {
     let mut bytes = pcm(1, 8000, 16, &[0, 0]);
 
@@ -197,7 +191,6 @@ fn wave_rejects_chunk_payloads_past_the_end() {
 }
 
 #[test]
-
 fn wave_requires_both_format_and_data_chunks() {
     assert_eq!(
         wave::parse(&riff(vec![(*b"data", vec![0, 0])])),
@@ -216,7 +209,6 @@ fn wave_requires_both_format_and_data_chunks() {
 }
 
 #[test]
-
 fn wave_rejects_compression_zero_rate_and_unsupported_layouts() {
     let compressed = riff(vec![
         (*b"fmt ", pcm_format(3, 1, 8000, 16)),
@@ -239,7 +231,6 @@ fn wave_rejects_compression_zero_rate_and_unsupported_layouts() {
 }
 
 #[test]
-
 fn volume_mapping_clamps_percentages_and_uses_decibels() {
     assert_eq!(volume::sfx(-50), -2500);
 
@@ -269,7 +260,6 @@ fn volume_mapping_clamps_percentages_and_uses_decibels() {
 }
 
 #[test]
-
 fn bank_refuses_invalid_and_muted_requests_without_loading() {
     let loader = TestLoader::new(None);
 
@@ -289,7 +279,6 @@ fn bank_refuses_invalid_and_muted_requests_without_loading() {
 }
 
 #[test]
-
 fn bank_caches_loaded_sounds_until_release() {
     let loader = mono_loader(8000, &[1000, 2000]);
 
@@ -313,7 +302,6 @@ fn bank_caches_loaded_sounds_until_release() {
 }
 
 #[test]
-
 fn bank_caches_failed_loads_and_release_allows_retry() {
     let mut loader = TestLoader::new(None);
 
@@ -337,7 +325,6 @@ fn bank_caches_failed_loads_and_release_allows_retry() {
 }
 
 #[test]
-
 fn bank_rejects_undecodable_sound_data() {
     let loader = TestLoader::new(Some(b"synthetic invalid wave".to_vec()));
 
@@ -352,7 +339,6 @@ fn bank_rejects_undecodable_sound_data() {
 }
 
 #[test]
-
 fn sound_allocates_free_voices_and_stops_at_the_end() {
     let loader = mono_loader(8000, &[1000, 2000]);
 
@@ -376,7 +362,6 @@ fn sound_allocates_free_voices_and_stops_at_the_end() {
 }
 
 #[test]
-
 fn looping_sound_wraps_across_multiple_durations() {
     let loader = mono_loader(8000, &[1000, 2000]);
 
@@ -397,7 +382,6 @@ fn looping_sound_wraps_across_multiple_durations() {
 }
 
 #[test]
-
 fn empty_wave_stops_even_a_looping_voice() {
     let loader = mono_loader(8000, &[]);
 
@@ -413,7 +397,6 @@ fn empty_wave_stops_even_a_looping_voice() {
 }
 
 #[test]
-
 fn mixer_resamples_mono_to_stereo_with_linear_interpolation() {
     let loader = mono_loader(2, &[0, 16000]);
 
@@ -434,7 +417,6 @@ fn mixer_resamples_mono_to_stereo_with_linear_interpolation() {
 }
 
 #[test]
-
 fn inactive_mixer_emits_silence_without_consuming_voices() {
     let loader = mono_loader(8000, &[1000, 2000]);
 
@@ -465,7 +447,6 @@ fn inactive_mixer_emits_silence_without_consuming_voices() {
 }
 
 #[test]
-
 fn mixer_clips_overlapping_voices_and_clears_unpaired_output() {
     let samples = [30000_i16, -30000];
 
@@ -491,7 +472,6 @@ fn mixer_clips_overlapping_voices_and_clears_unpaired_output() {
 }
 
 #[test]
-
 fn repeated_loop_requests_preserve_the_current_playback_position() {
     let loader = mono_loader(8000, &[1000, 2000]);
 
@@ -514,7 +494,6 @@ fn repeated_loop_requests_preserve_the_current_playback_position() {
 }
 
 #[test]
-
 fn silent_engine_plays_without_an_audio_device() {
     let sounds = sound_list::parse(b"1 sound/test.wav 2").unwrap();
 
@@ -542,7 +521,6 @@ fn silent_engine_plays_without_an_audio_device() {
 }
 
 #[test]
-
 fn invalid_music_data_reports_the_requested_asset_name() {
     assert_eq!(
         Track::open(b"synthetic invalid mp3".to_vec(), "test.mp3").unwrap_err(),

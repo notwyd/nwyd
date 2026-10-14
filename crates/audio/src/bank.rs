@@ -4,7 +4,6 @@ use formats::audio::sound_list::{Slot, SoundList};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
 struct Lcg(u32);
 
 impl Lcg {
@@ -22,14 +21,12 @@ pub trait Loader: Send {
 pub(crate) const FRAME: u64 = 1 << 32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-
 struct Voice {
     position: Option<u64>,
     looping: bool,
 }
 
 #[derive(Debug, Clone)]
-
 pub struct Sound {
     wave: Wave,
     voices: Vec<Voice>,
@@ -129,7 +126,6 @@ impl Sound {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Refusal {
     OutOfRange,
     Muted,
@@ -139,7 +135,6 @@ pub enum Refusal {
 }
 
 #[derive(Debug)]
-
 pub struct Bank {
     list: SoundList,
     volume: i32,

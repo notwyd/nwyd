@@ -3,7 +3,6 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Error {
     NoDevice,
     NoConfig(String),
@@ -25,6 +24,8 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {}
 
 pub struct Output {
+    #[cfg(target_arch = "wasm32")]
+    _browser_unlock: BrowserUnlock,
     _stream: cpal::Stream,
     rate: u32,
     channels: u16,
@@ -124,6 +125,8 @@ pub fn open(mixer: Arc<Mutex<Mixer>>) -> Result<Output, Error> {
     stream.play().map_err(|e| Error::Stream(e.to_string()))?;
 
     Ok(Output {
+        #[cfg(target_arch = "wasm32")]
+        _browser_unlock: BrowserUnlock::new(&stream)?,
         _stream: stream,
         rate,
         channels,
@@ -161,6 +164,82 @@ fn scatter<T: Copy + Default>(
 
                 chunk[1] = to(r);
             }
+        }
+    }
+}
+
+/// Asset loading outlives the folder picker's user activation. Resume the audio
+/// context from a later trusted gesture, including after a browser interruption.
+#[cfg(target_arch = "wasm32")]
+struct BrowserUnlock {
+    window: web_sys::Window,
+    resume: wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl BrowserUnlock {
+    const EVENTS: [&'static str; 3] = ["pointerdown", "pointerup", "keydown"];
+
+    fn new(stream: &cpal::Stream) -> Result<Self, Error> {
+        use wasm_bindgen::JsCast;
+
+        let cpal::platform::StreamInner::WebAudio(stream) = stream.as_inner();
+
+        let context = stream.audio_context().clone();
+
+        let window = web_sys::window()
+            .ok_or_else(|| Error::Stream("browser window is unavailable".into()))?;
+
+        let resume = wasm_bindgen::closure::Closure::new(move |event: web_sys::Event| {
+            if !event.is_trusted()
+                || matches!(
+                    context.state(),
+                    web_sys::AudioContextState::Running | web_sys::AudioContextState::Closed
+                )
+            {
+                return;
+            }
+
+            // Call resume during the event itself, while user activation is live.
+            let result = context.resume();
+
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Ok(promise) = result {
+                    if let Err(error) = wasm_bindgen_futures::JsFuture::from(promise).await {
+                        tracing::debug!(?error, "browser audio is waiting for another gesture");
+                    }
+                }
+            });
+        });
+
+        let unlock = Self { window, resume };
+
+        for event in Self::EVENTS {
+            unlock
+                .window
+                .add_event_listener_with_callback_and_bool(
+                    event,
+                    unlock.resume.as_ref().unchecked_ref(),
+                    true,
+                )
+                .map_err(|error| Error::Stream(format!("audio gesture listener: {error:?}")))?;
+        }
+
+        Ok(unlock)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Drop for BrowserUnlock {
+    fn drop(&mut self) {
+        use wasm_bindgen::JsCast;
+
+        for event in Self::EVENTS {
+            let _ = self.window.remove_event_listener_with_callback_and_bool(
+                event,
+                self.resume.as_ref().unchecked_ref(),
+                true,
+            );
         }
     }
 }

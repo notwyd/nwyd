@@ -7,7 +7,6 @@ pub const FORMAT_PCM: u16 = 1;
 const FMT_MIN: usize = 16;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Error {
     NotRiff,
     Truncated,
@@ -37,7 +36,6 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 #[derive(Clone, PartialEq, Eq)]
-
 pub struct Wave {
     pub channels: u16,
     pub rate: u32,
