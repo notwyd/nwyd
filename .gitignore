@@ -1,2 +1,6 @@
 /target/
 *.swp
+
+/dist/
+/tools/web-relay/node_modules/
+/web/node_modules/
