@@ -1,0 +1,204 @@
+use crate::error::{Error, Result};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+
+#[derive(Clone)]
+
+pub struct Gpu {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: Arc<wgpu::Device>,
+    pub queue: Arc<wgpu::Queue>,
+    pub breadcrumb: Arc<Breadcrumb>,
+    lost: Arc<AtomicBool>,
+}
+
+#[derive(Debug, Default)]
+
+pub struct Breadcrumb {
+    line: Mutex<String>,
+    stamps: AtomicU64,
+}
+
+impl Breadcrumb {
+    pub fn set(&self, line: impl Into<String>) {
+        self.stamps.fetch_add(1, Ordering::Relaxed);
+
+        match self.line.lock() {
+            Ok(mut held) => *held = line.into(),
+            Err(poison) => *poison.into_inner() = line.into(),
+        }
+    }
+
+    pub fn read(&self) -> String {
+        let stamps = self.stamps.load(Ordering::Relaxed);
+
+        if stamps == 0 {
+            return "nothing recorded yet — the failure is before the first frame".to_string();
+        }
+
+        let line = match self.line.lock() {
+            Ok(held) => held.clone(),
+            Err(poison) => poison.into_inner().clone(),
+        };
+
+        format!("{line} (stamp {stamps})")
+    }
+}
+
+pub fn describe_uncaptured(err: &wgpu::Error, adapter: &str, census: &str) -> String {
+    use std::error::Error as _;
+
+    let family = match err {
+        wgpu::Error::OutOfMemory { .. } => "out of memory",
+        wgpu::Error::Validation { .. } => "validation",
+        wgpu::Error::Internal { .. } => "internal",
+    };
+
+    let mut report = format!("nwyd: GPU {family} error on {adapter}\nnwyd:   {err}");
+
+    let mut source = err.source();
+
+    while let Some(cause) = source {
+        report.push_str(&format!("\nnwyd:   caused by: {cause}"));
+
+        source = cause.source();
+    }
+
+    report.push_str(&format!("\nnwyd:   last census: {census}"));
+
+    report
+}
+
+impl std::fmt::Debug for Gpu {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let info = self.adapter.get_info();
+
+        f.debug_struct("Gpu")
+            .field("backend", &info.backend)
+            .field("name", &info.name)
+            .field("device_type", &info.device_type)
+            .finish()
+    }
+}
+
+pub const REQUIRED_FEATURES: wgpu::Features = wgpu::Features::TEXTURE_COMPRESSION_BC;
+
+fn instance_descriptor() -> wgpu::InstanceDescriptor {
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+
+    if cfg!(target_arch = "wasm32") {
+        // The shared renderer requires WebGPU (including BC textures), not WebGL.
+        descriptor.backends = wgpu::Backends::BROWSER_WEBGPU;
+    } else if cfg!(target_os = "windows") {
+        descriptor.backends = wgpu::Backends::VULKAN;
+    }
+
+    descriptor.with_env()
+}
+
+impl Gpu {
+    pub async fn open(
+        instance: wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+    ) -> Result<Gpu> {
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: surface,
+                apply_limit_buckets: false,
+            })
+            .await
+            .map_err(|e| Error::NoAdapter(e.to_string()))?;
+
+        let missing = REQUIRED_FEATURES - adapter.features();
+
+        if !missing.is_empty() {
+            return Err(Error::MissingFeatures {
+                adapter: adapter.get_info().name,
+                missing: format!("{missing:?}"),
+            });
+        }
+
+        // Timestamp writes outside render passes are a native extension. They
+        // are not needed by the browser renderer and cannot be requested there.
+        let profiling_features = if cfg!(target_arch = "wasm32") {
+            wgpu::Features::empty()
+        } else {
+            adapter.features()
+                & (wgpu::Features::TIMESTAMP_QUERY
+                    | wgpu::Features::TIMESTAMP_QUERY_INSIDE_ENCODERS)
+        };
+
+        let descriptor = wgpu::DeviceDescriptor {
+            label: crate::gpu_label("nwyd"),
+            required_features: REQUIRED_FEATURES | profiling_features,
+            required_limits: adapter.limits(),
+            experimental_features: wgpu::ExperimentalFeatures::default(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: wgpu::Trace::Off,
+        };
+
+        let (device, queue) = adapter
+            .request_device(&descriptor)
+            .await
+            .map_err(|e| Error::NoDevice(e.to_string()))?;
+
+        let breadcrumb = Arc::new(Breadcrumb::default());
+
+        {
+            let name = adapter.get_info().name;
+
+            let crumb = Arc::clone(&breadcrumb);
+
+            device.on_uncaptured_error(Arc::new(move |err: wgpu::Error| {
+                let report = describe_uncaptured(&err, &name, &crumb.read());
+
+                tracing::info!("{report}");
+
+                use std::io::Write as _;
+
+                let _ = std::io::stderr().flush();
+
+                panic!("{report}");
+            }));
+        }
+
+        let lost = Arc::new(AtomicBool::new(false));
+
+        let notified = Arc::clone(&lost);
+
+        device.set_device_lost_callback(move |reason, message| {
+            notified.store(true, Ordering::Release);
+
+            if reason == wgpu::DeviceLostReason::Unknown {
+                tracing::warn!(
+                    ? reason,% message,
+                    "nwyd: GPU device lost; rendering resources need recovery"
+                );
+            }
+        });
+
+        Ok(Gpu {
+            instance,
+            adapter,
+            device: Arc::new(device),
+            queue: Arc::new(queue),
+            breadcrumb,
+            lost,
+        })
+    }
+
+    pub fn instance() -> wgpu::Instance {
+        wgpu::Instance::new(instance_descriptor())
+    }
+
+    pub fn info(&self) -> wgpu::AdapterInfo {
+        self.adapter.get_info()
+    }
+
+    pub fn is_lost(&self) -> bool {
+        self.lost.load(Ordering::Acquire)
+    }
+}
