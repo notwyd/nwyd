@@ -8,7 +8,6 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-
 pub enum Error {
     Unlisted(usize),
     NoFile(String),
