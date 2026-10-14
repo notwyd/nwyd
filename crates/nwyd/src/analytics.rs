@@ -144,7 +144,7 @@ pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
                     status = response.status().as_u16(),
                     "analytics event rejected"
                 ),
-                Err(_) => tracing::warn!("analytics delivery failed"),
+                Err(e) => tracing::warn!("analytics delivery failed: {e}"),
             }
         })
     }

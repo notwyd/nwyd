@@ -372,13 +372,6 @@ impl Scene {
         }
     }
 
-    pub fn redirect_after_ticket(&mut self, now_ms: u32) -> Option<field::RedirectFollow> {
-        match self {
-            Scene::Field(scene) => field::redirect_after_ticket(scene, now_ms),
-            _ => None,
-        }
-    }
-
     pub fn status_timeout(&self) -> Option<std::time::Duration> {
         match self {
             Scene::LoginPanels(scene) => scene.status_timeout,

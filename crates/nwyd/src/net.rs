@@ -761,11 +761,7 @@ impl Session {
             );
         }
 
-        if !field_send_allowed(
-            self.last_limited_opcode,
-            opcode,
-            now_ms.wrapping_sub(self.last_send_ms),
-        ) {
+        if !field_send_allowed(self.last_limited_opcode, opcode, self.last_send_ms, now_ms) {
             self.log_packet(format!("{opcode:#05x} {what} throttled"));
 
             if opcode == crate::scene::item_move::OPCODE_MOVE {
@@ -1376,8 +1372,10 @@ pub const HANDLED: [u16; 109] = [
     server::ARENA_LIST,
 ];
 
-fn field_send_allowed(previous: u16, next: u16, elapsed_ms: u32) -> bool {
-    if elapsed_ms > 1000 {
+fn field_send_allowed(previous: u16, next: u16, last_send_ms: u32, now_ms: u32) -> bool {
+    let deadline = last_send_ms.wrapping_add(1000);
+
+    if deadline < now_ms {
         return true;
     }
 
@@ -1385,7 +1383,7 @@ fn field_send_allowed(previous: u16, next: u16, elapsed_ms: u32) -> bool {
         return false;
     }
 
-    elapsed_ms == 1000
+    deadline <= now_ms
         || !matches!(previous, 0x367 | 0x39D | 0x39E)
         || !matches!(next, 0x367 | 0x39D | 0x39E)
 }
@@ -1395,6 +1393,139 @@ mod tests {
 
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn movement_and_attack_throttles_keep_the_native_deadline_boundaries() {
+        for (last, now, movement, attack) in [
+            (25003, 25002, false, false),
+            (25003, 26002, false, false),
+            (25003, 26003, false, true),
+            (25003, 26004, true, true),
+            (0xFFFF_FFF0, 0xFFFF_FFF0, true, true),
+            (0xFFFF_FFF0, 983, false, false),
+            (0xFFFF_FFF0, 984, false, true),
+            (0xFFFF_FFF0, 985, true, true),
+        ] {
+            assert_eq!(
+                field_send_allowed(0x36C, 0x36C, last, now),
+                movement,
+                "movement: last={last}, now={now}",
+            );
+
+            for previous in [0x367, 0x39D, 0x39E] {
+                for next in [0x367, 0x39D, 0x39E] {
+                    assert_eq!(
+                        field_send_allowed(previous, next, last, now),
+                        attack,
+                        "attack {previous:#x}->{next:#x}: last={last}, now={now}",
+                    );
+                }
+            }
+
+            for (previous, next) in [
+                (0x36C, 0x39D),
+                (0x39D, 0x36C),
+                (0x39D, 0x3A0),
+                (0x3A0, 0x36C),
+                (0x333, 0x333),
+            ] {
+                assert!(field_send_allowed(previous, next, last, now));
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn a_forward_watermark_cannot_send_a_second_limited_packet_or_consume_its_key() {
+        use std::io::Read;
+        use std::net::TcpListener;
+
+        fn request(opcode: u16) -> Vec<u8> {
+            if opcode == 0x36C {
+                let mut frame = vec![0; 52];
+                protocol::header::set_opcode(&mut frame, opcode);
+                frame
+            } else {
+                formats::net::attack::Attack::default().to_bytes(opcode)
+            }
+        }
+
+        let pairs = std::iter::once((0x36C, 0x36C)).chain(
+            [0x367, 0x39D, 0x39E]
+                .into_iter()
+                .flat_map(|first| [0x367, 0x39D, 0x39E].map(|second| (first, second))),
+        );
+
+        for (first, second) in pairs {
+            let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap();
+            let mut session = Session::default().with_fingerprint(Some(Fingerprint::ZERO));
+            session
+                .login(
+                    &listener.local_addr().unwrap().to_string(),
+                    "Player",
+                    "testpass",
+                    123,
+                    5000,
+                )
+                .unwrap();
+
+            let (mut peer, _) = listener.accept().unwrap();
+            peer.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+
+            let mut login = accepted();
+            if let ServerMessage::LoginAccepted(accept) = &mut login {
+                accept.key = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+            }
+            session
+                .connection
+                .as_mut()
+                .unwrap()
+                .apply_message_state(&login);
+
+            assert_eq!(session.last_send_ms, 5000);
+            assert!(
+                session
+                    .send_field(&mut request(first), "first", 25002)
+                    .unwrap()
+            );
+            assert_eq!(session.last_send_ms, 25003);
+
+            let mut suppressed = request(second);
+            let original = suppressed.clone();
+            assert!(
+                !session
+                    .send_field(&mut suppressed, "second", 25002)
+                    .unwrap()
+            );
+            assert_eq!(suppressed, original);
+            assert_eq!(session.last_send_ms, 25003);
+            assert_eq!(session.last_limited_opcode, first);
+
+            assert!(
+                session
+                    .send_field(&mut client::keepalive(), "marker", 25002)
+                    .unwrap()
+            );
+            session.disconnect();
+
+            let mut wire = Vec::new();
+            peer.read_to_end(&mut wire).unwrap();
+            assert_eq!(&wire[..4], &[0x11, 0xF3, 0x11, 0x1F]);
+
+            let mut decoder = protocol::codec::Decoder::new();
+            decoder.feed(&wire[4..]);
+            let (packets, error) = decoder.drain();
+            assert!(error.is_none(), "{error:?}");
+            assert_eq!(packets.len(), 3);
+            assert!(packets.iter().all(|packet| packet.checksum_ok));
+            assert_eq!(packets[0].header.opcode, 0x20D);
+            assert_eq!(packets[1].header.opcode, first);
+            assert_eq!(packets[1].header.tick, 25003);
+            assert_eq!(packets[1].header.key, 0xFE);
+            assert_eq!(packets[2].header.opcode, 0x3A0);
+            assert_eq!(packets[2].header.key, 0xFD);
+        }
+    }
 
     fn accepted() -> ServerMessage {
         let mut account = [0; account::NAME_LEN];

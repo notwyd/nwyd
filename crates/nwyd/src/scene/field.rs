@@ -1361,10 +1361,6 @@ pub fn redirect_after_disconnect(
     })
 }
 
-pub fn redirect_after_ticket(scene: &mut FieldScene, now_ms: u32) -> Option<RedirectFollow> {
-    redirect_after_disconnect(scene, true, now_ms)
-}
-
 pub fn refresh_channel_popup(scene: &mut FieldScene) {
     let FieldScene {
         panels,

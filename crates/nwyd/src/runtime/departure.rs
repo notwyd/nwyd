@@ -199,18 +199,8 @@ pub fn apply(host: &mut impl Host, packet: Packet) -> PacketFlow {
             match host.state().scene.cache_redirect(ticket) {
                 Some(redirect::Cached::Stored { channel }) => {
                     tracing::info!(
-                        "NWYD: 0x52A admitted for channel {channel}; replacing the transfer socket"
+                        "NWYD: 0x52A admitted for channel {channel}; waiting for the transfer socket to close"
                     );
-
-                    let now = host.game_time();
-
-                    let follow = host.state().scene.redirect_after_ticket(now);
-
-                    if let Some(follow) = follow {
-                        follow_redirect(host, follow);
-
-                        return PacketFlow::RetireSocket;
-                    }
                 }
                 Some(redirect::Cached::WrongClient { expected, got }) => {
                     tracing::info!(
@@ -275,3 +265,6 @@ pub fn apply(host: &mut impl Host, packet: Packet) -> PacketFlow {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

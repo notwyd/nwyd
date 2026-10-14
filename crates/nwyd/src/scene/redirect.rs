@@ -86,3 +86,61 @@ pub fn destination(table: &ServerList, server: usize, redirect: &Redirect) -> De
             .map(str::to_owned),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ticket(client_id: u16) -> Redirect {
+        Redirect {
+            client_id,
+            payload: [0; 68],
+            account: "TRANSFER".into(),
+            token: b"*2".to_vec(),
+        }
+    }
+
+    #[test]
+    fn an_error_without_socket_close_preserves_the_pending_transfer() {
+        let mut state = State::default();
+        state.arm_transfer(1_000);
+        state.cache(37, ticket(37));
+        assert_eq!(state.stream_failed(false, 2_000), Closed::Lost);
+        assert_eq!(state.stream_failed(true, 3_000), Closed::Follow(ticket(37)));
+        assert_eq!(state.stream_failed(true, 3_001), Closed::Lost);
+    }
+
+    #[test]
+    fn a_wrong_client_ticket_cannot_replace_the_addressed_transfer() {
+        let mut state = State::default();
+        state.arm_transfer(1_000);
+        state.cache(37, ticket(37));
+        assert_eq!(
+            state.cache(37, ticket(38)),
+            Cached::WrongClient {
+                expected: 37,
+                got: 38
+            }
+        );
+        assert_eq!(state.disconnected(2_000), Closed::Follow(ticket(37)));
+    }
+
+    #[test]
+    fn a_transfer_must_still_be_armed_when_the_socket_closes() {
+        for (armed_at, closed_at, follows) in [
+            (0, 2_000, false),
+            (1_000, 16_000, true),
+            (1_000, 16_001, false),
+        ] {
+            let mut state = State::default();
+            state.arm_transfer(armed_at);
+            state.cache(37, ticket(37));
+            let expected = if follows {
+                Closed::Follow(ticket(37))
+            } else {
+                Closed::Lost
+            };
+            assert_eq!(state.disconnected(closed_at), expected);
+        }
+    }
+}
