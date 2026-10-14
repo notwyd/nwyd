@@ -2,6 +2,7 @@
 SHELL := /bin/sh
 
 CARGO ?= cargo
+RUSTFMT_TOOLCHAIN ?= nightly
 TARGET_DIR ?= $(if $(CARGO_TARGET_DIR),$(CARGO_TARGET_DIR),target)
 HOST_OS := $(shell uname -s)
 HOST_TARGET := $(shell rustc -vV | sed -n 's/^host: //p')
@@ -20,7 +21,7 @@ help:
 	  'make release-macos: native macOS release' \
 	  'make release-windows: cross-compile Windows x64 from Linux with cargo-xwin' \
 	  'make check-windows: check the Windows x64 cross-build from Linux' \
-	  'make fmt / fmt-check: format Rust source / check formatting' \
+	  'make fmt / fmt-check: format Rust source / check formatting with nightly rustfmt' \
 	  'make package-libs: package and verify all six libraries' \
 	  'make publish-check: dry-run library publication to crates.io' \
 	  'Windows prerequisites: cargo-xwin, clang, lld, llvm-rc, llvm-tools and the MSVC Rust target.' \
@@ -34,10 +35,10 @@ test:
 	$(CARGO) test --locked --workspace
 
 fmt:
-	$(CARGO) fmt --all
+	$(CARGO) +$(RUSTFMT_TOOLCHAIN) fmt --all
 
 fmt-check:
-	$(CARGO) fmt --all -- --check
+	$(CARGO) +$(RUSTFMT_TOOLCHAIN) fmt --all -- --check
 
 release:
 	@test "$(HOST_OS)" = Linux -o "$(HOST_OS)" = Darwin || { echo 'Build on Linux or macOS.' >&2; exit 2; }
