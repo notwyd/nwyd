@@ -6,23 +6,18 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub fn fold(stored: &[u8]) -> String {
-
     let mut out = String::with_capacity(stored.len());
 
     let mut prev_sep = true;
 
     for &b in stored {
-
         if b == b'\\' || b == b'/' {
-
             if !prev_sep {
-
                 out.push('/');
             }
 
             prev_sep = true;
         } else {
-
             out.push(b.to_ascii_lowercase() as char);
 
             prev_sep = false;
@@ -30,7 +25,6 @@ pub fn fold(stored: &[u8]) -> String {
     }
 
     if out.ends_with('/') {
-
         out.pop();
     }
 
@@ -50,11 +44,9 @@ pub struct GameDir {
 
 impl GameDir {
     pub fn open(root: impl Into<PathBuf>) -> std::io::Result<GameDir> {
-
         let root = root.into();
 
         if !root.is_dir() {
-
             return Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("game directory {} does not exist", root.display()),
@@ -78,32 +70,25 @@ impl GameDir {
     }
 
     pub fn root(&self) -> &Path {
-
         &self.root
     }
 
     pub fn language(&self) -> Language {
-
         self.language
     }
 
     pub fn set_language(&mut self, language: Language) {
-
         self.language = language;
     }
 
     pub fn snapshot_language(&self, language: Language) -> std::io::Result<Self> {
-
         let selected = format!("lang/{}/", language.dir().to_ascii_lowercase());
 
         let mut files = FxHashMap::default();
 
         for (key, path) in self.index.iter() {
-
             if key.starts_with(&selected) || key.starts_with("lang/en/") {
-
                 let bytes = std::fs::read(self.root.join(path)).map_err(|error| {
-
                     std::io::Error::new(error.kind(), format!("reading {path}: {error}"))
                 })?;
 
@@ -121,43 +106,35 @@ impl GameDir {
     }
 
     pub fn len(&self) -> usize {
-
         self.index.len()
     }
 
     pub fn is_empty(&self) -> bool {
-
         self.index.is_empty()
     }
 
     pub fn case_collisions(&self) -> &[(String, String)] {
-
         &self.collisions
     }
 
     pub fn resolve(&self, stored: &[u8]) -> Option<PathBuf> {
-
         let actual = self.index.get(&fold(stored))?;
 
         Some(self.root.join(actual))
     }
 
     pub fn contains(&self, stored: &[u8]) -> bool {
-
         self.index.contains_key(&fold(stored))
     }
 
     pub fn reads(&self) -> usize {
-
         self.reads.load(Ordering::Relaxed)
     }
 
     pub fn read(&self, stored: &[u8]) -> std::io::Result<Vec<u8>> {
-
         self.reads.fetch_add(1, Ordering::Relaxed);
 
         if let Some(bytes) = self.language_files.get(&fold(stored)) {
-
             return Ok(bytes.clone());
         }
 
@@ -175,21 +152,17 @@ impl GameDir {
     }
 
     pub fn resolve_lang(&self, name: &str) -> Option<PathBuf> {
-
         self.resolve_lang_in(self.language, name)
     }
 
     pub fn resolve_lang_in(&self, language: Language, name: &str) -> Option<PathBuf> {
-
         let direct = format!("Lang\\{}\\{name}", language.dir());
 
         if let Some(p) = self.resolve(direct.as_bytes()) {
-
             return Some(p);
         }
 
         if language == Language::English {
-
             return None;
         }
 
@@ -197,16 +170,13 @@ impl GameDir {
     }
 
     pub fn read_lang(&self, name: &str) -> std::io::Result<Vec<u8>> {
-
         match self.resolve_lang(name) {
             Some(p) => {
-
                 if let Ok(relative) = p.strip_prefix(&self.root)
                     && let Some(bytes) = self
                         .language_files
                         .get(&fold(relative.to_string_lossy().as_bytes()))
                 {
-
                     return Ok(bytes.clone());
                 }
 
@@ -223,7 +193,6 @@ impl GameDir {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &str> {
-
         self.index.values().map(String::as_str)
     }
 }
@@ -234,23 +203,18 @@ fn walk(
     index: &mut FxHashMap<String, String>,
     collisions: &mut Vec<(String, String)>,
 ) {
-
     let Ok(entries) = std::fs::read_dir(dir) else {
-
         return;
     };
 
     for entry in entries.flatten() {
-
         let Ok(name) = entry.file_name().into_string() else {
-
             continue;
         };
 
         let restore = prefix.len();
 
         if !prefix.is_empty() {
-
             prefix.push('/');
         }
 
@@ -259,7 +223,6 @@ fn walk(
         match entry.file_type() {
             Ok(t) if t.is_dir() => walk(&entry.path(), prefix, index, collisions),
             Ok(_) => {
-
                 index_path(prefix, index, collisions);
             }
             Err(_) => {}
@@ -274,19 +237,14 @@ fn index_path(
     index: &mut FxHashMap<String, String>,
     collisions: &mut Vec<(String, String)>,
 ) {
-
     match index.entry(fold(path.as_bytes())) {
         Entry::Vacant(v) => {
-
             v.insert(path.to_owned());
         }
         Entry::Occupied(mut o) => {
-
             let (winner, loser) = if path < o.get().as_str() {
-
                 (path.to_owned(), o.get().clone())
             } else {
-
                 (o.get().clone(), path.to_owned())
             };
 
@@ -310,11 +268,9 @@ mod tests {
 
     impl TestDirectory {
         fn new() -> Self {
-
             static NEXT: AtomicUsize = AtomicUsize::new(0);
 
             loop {
-
                 let path = std::env::temp_dir().join(format!(
                     "nwyd-assets-test-{}-{}",
                     std::process::id(),
@@ -330,7 +286,6 @@ mod tests {
         }
 
         fn write(&self, name: &str, bytes: &[u8]) {
-
             let path = self.0.join(name);
 
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -341,7 +296,6 @@ mod tests {
 
     impl Drop for TestDirectory {
         fn drop(&mut self) {
-
             let _ = std::fs::remove_dir_all(&self.0);
         }
     }
@@ -349,14 +303,12 @@ mod tests {
     #[test]
 
     fn lookup_keys_normalize_case_separators_and_dot_prefixes() {
-
         for path in [
             b"UI/Panel.BMP".as_slice(),
             b"\\UI\\\\Panel.BMP\\",
             b"././ui//panel.bmp/",
             b".\\.\\UI\\Panel.bmp",
         ] {
-
             assert_eq!(fold(path), "ui/panel.bmp");
         }
 
@@ -370,7 +322,6 @@ mod tests {
     #[test]
 
     fn lookup_keys_preserve_non_ascii_bytes_and_parent_components() {
-
         assert_eq!(fold(b"UI/\xc9.BMP"), "ui/É.bmp");
 
         assert_eq!(fold(b"UI/../Panel.BMP"), "ui/../panel.bmp");
@@ -379,7 +330,6 @@ mod tests {
     #[test]
 
     fn indexes_nested_files_and_preserves_actual_spelling() {
-
         let root = TestDirectory::new();
 
         root.write("UI/Panel.BMP", b"synthetic image");
@@ -411,7 +361,6 @@ mod tests {
     #[test]
 
     fn empty_directory_has_no_indexed_assets() {
-
         let root = TestDirectory::new();
 
         let game = GameDir::open(&root.0).unwrap();
@@ -426,13 +375,11 @@ mod tests {
     #[test]
 
     fn open_rejects_missing_roots_and_regular_files() {
-
         let root = TestDirectory::new();
 
         root.write("file.bin", b"synthetic");
 
         for path in [root.0.join("missing"), root.0.join("file.bin")] {
-
             assert_eq!(GameDir::open(path).unwrap_err().kind(), ErrorKind::NotFound);
         }
     }
@@ -440,7 +387,6 @@ mod tests {
     #[test]
 
     fn reads_binary_assets_and_counts_failed_attempts_across_clones() {
-
         let root = TestDirectory::new();
 
         root.write("Data.bin", b"\0NWYD\xff");
@@ -464,7 +410,6 @@ mod tests {
     #[test]
 
     fn indexed_file_removed_before_read_returns_an_io_error() {
-
         let root = TestDirectory::new();
 
         root.write("Data.bin", b"synthetic");
@@ -482,7 +427,6 @@ mod tests {
     #[test]
 
     fn selected_language_takes_precedence_over_english() {
-
         let root = TestDirectory::new();
 
         root.write("Lang/EN/Labels.txt", b"english");
@@ -503,7 +447,6 @@ mod tests {
     #[test]
 
     fn missing_translation_falls_back_to_english() {
-
         let root = TestDirectory::new();
 
         root.write("Lang/EN/Labels.txt", b"english");
@@ -523,7 +466,6 @@ mod tests {
     #[test]
 
     fn language_lookup_does_not_fall_back_to_an_unrelated_translation() {
-
         let root = TestDirectory::new();
 
         root.write("Lang/PT/Labels.txt", b"portuguese");
@@ -546,15 +488,12 @@ mod tests {
     #[test]
 
     fn case_collision_winner_does_not_depend_on_directory_order() {
-
         for paths in [["ui/A.bmp", "UI/a.bmp"], ["UI/a.bmp", "ui/A.bmp"]] {
-
             let mut index = FxHashMap::default();
 
             let mut collisions = Vec::new();
 
             for path in paths {
-
                 index_path(path, &mut index, &mut collisions);
             }
 
@@ -569,7 +508,6 @@ mod tests {
     #[test]
 
     fn language_snapshots_keep_selected_and_fallback_bytes_consistent_across_clones() {
-
         let root = TestDirectory::new();
 
         root.write("Lang/PT/Labels.txt", b"portuguese");
@@ -608,7 +546,6 @@ mod tests {
     #[test]
 
     fn failed_language_snapshot_does_not_change_the_active_language_or_cached_text() {
-
         let root = TestDirectory::new();
 
         root.write("Lang/PT/Labels.txt", b"portuguese");
