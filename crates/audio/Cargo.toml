@@ -1,0 +1,19 @@
+[package]
+name = "nwyd-audio"
+description = "Audio decoding, mixing, and playback for the NWYD client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+readme = false
+publish = ["crates-io"]
+include = ["/src/**", "/Cargo.toml", "/LICENSE", "!**/*.md"]
+
+[dependencies]
+formats.workspace = true
+
+tracing.workspace = true
+
+cpal.workspace = true
+symphonia.workspace = true
