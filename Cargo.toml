@@ -1,6 +1,55 @@
-[package]
-name = "nwyd"
+[workspace]
+resolver = "3"
+members = ["crates/nwyd", "crates/assets", "crates/audio", "crates/formats", "crates/protocol", "crates/render", "crates/ui"]
+default-members = ["crates/nwyd"]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.90"
+repository = "https://github.com/notwyd/nwyd"
 
-[dependencies]
+[workspace.dependencies]
+assets = { package = "nwyd-assets", version = "0.1.0", path = "crates/assets" }
+audio = { package = "nwyd-audio", version = "0.1.0", path = "crates/audio" }
+formats = { package = "nwyd-formats", version = "0.1.0", path = "crates/formats" }
+protocol = { package = "nwyd-protocol", version = "0.1.0", path = "crates/protocol" }
+render = { package = "nwyd-render", version = "0.1.0", path = "crates/render" }
+ui = { package = "nwyd-ui", version = "0.1.0", path = "crates/ui" }
+
+thiserror = "2"
+png = "0.18"
+image = { version = "0.25.10", default-features = false, features = ["bmp", "jpeg", "pnm", "hdr", "tga"] }
+libc = "0.2"
+
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "3.4", default-features = false, features = ["rustls"] }
+url = "2"
+bytemuck = { version = "1.25", features = ["derive"] }
+fontdue = "0.9"
+glam = "0.33"
+pollster = "1"
+rustc-hash = "2"
+tracing = "0.1"
+tracing-log = "0.2"
+tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "fmt"] }
+wgpu = { version = "30", features = ["wgsl"] }
+winit = "0.30"
+web-time = "1"
+
+cpal = "0.18"
+symphonia = { version = "0.6", default-features = false, features = ["mp3", "id3v2"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.dev.package.nwyd-formats]
+opt-level = 2

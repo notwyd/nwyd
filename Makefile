@@ -9,7 +9,7 @@ HOST_TARGET := $(shell rustc -vV | sed -n 's/^host: //p')
 WINDOWS_TARGET := x86_64-pc-windows-msvc
 GAME_DIR ?= .
 
-.PHONY: help check test fmt fmt-check release run release-linux release-macos release-windows check-windows package-libs publish-check
+.PHONY: help check test fmt fmt-check release run release-linux release-macos release-windows check-windows package-libs publish-check check-web release-web serve-web test-web
 
 help:
 	@printf '%s\n' \
@@ -20,6 +20,10 @@ help:
 	  'make release-linux: native Linux release' \
 	  'make release-macos: native macOS release' \
 	  'make release-windows: cross-compile Windows x64 from Linux with cargo-xwin' \
+	  'make check-web: check the WebAssembly target' \
+	  'make release-web: build the browser bundle in dist/play' \
+	  'make serve-web: serve the browser bundle at http://localhost:8080/play/' \
+	  'make test-web: install test dependencies and test browser imports and caching' \
 	  'make check-windows: check the Windows x64 cross-build from Linux' \
 	  'make fmt / fmt-check: format Rust source / check formatting with nightly rustfmt' \
 	  'make package-libs: package and verify all six libraries' \
@@ -69,3 +73,16 @@ package-libs:
 
 publish-check:
 	$(CARGO) publish --dry-run --locked --workspace --exclude nwyd
+
+check-web:
+	$(CARGO) check --locked --target wasm32-unknown-unknown -p nwyd
+
+release-web:
+	CARGO="$(CARGO)" CARGO_TARGET_DIR="$(TARGET_DIR)" ./tools/build-web.sh
+
+serve-web: release-web
+	python3 -m http.server 8080 --bind 127.0.0.1 --directory dist
+
+test-web:
+	npm --prefix web ci --ignore-scripts
+	npm --prefix web test
