@@ -112,8 +112,6 @@ fn follow_redirect(host: &mut impl Host, follow: RedirectFollow) {
                 field.analytics = state.session.analytics.clone();
 
                 if let Some(panels) = field.panels.as_mut() {
-                    panels.analytics = state.session.analytics.clone();
-
                     panels.guild_identity.account = state.session.guild_account().to_owned();
                 }
             }

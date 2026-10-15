@@ -617,8 +617,6 @@ impl Screen {
 }
 
 pub struct Panels {
-    pub(crate) analytics: crate::analytics::Analytics,
-    pub(crate) analytics_next_level: i32,
     pub guild_proxy: std::sync::Arc<std::sync::Mutex<super::guild_request::ProxyState>>,
     pub client_config: std::sync::Arc<formats::net::client_config::Config>,
     pub zone_time: super::zone_time::Shared,
@@ -3024,8 +3022,6 @@ pub fn build(
         store: None,
         store_owner_opened: None,
         store_price: None,
-        analytics: Default::default(),
-        analytics_next_level: 0,
         client_config: Default::default(),
         guild_proxy: Default::default(),
         coin_action: 0,
@@ -4201,14 +4197,6 @@ pub(crate) fn carry_out(
                 );
 
                 touched = true;
-            }
-            item_use::Action::TrackUse { id } => {
-                if let Some(name) = usize::try_from(*id)
-                    .ok()
-                    .and_then(|id| panels.items.name(id))
-                {
-                    panels.analytics.item_actioned(entered, *id, &name);
-                }
             }
             item_use::Action::Sound { slot } => panels.notice.sounds.push(*slot),
             item_use::Action::ItemChanged { at } => {

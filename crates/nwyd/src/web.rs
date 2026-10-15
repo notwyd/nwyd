@@ -33,7 +33,6 @@ impl GameFiles {
         }
     }
 
-
     pub fn add_file(&mut self, path: String, bytes: Vec<u8>) -> Result<(), JsValue> {
         self.bytes = self
             .bytes
@@ -49,7 +48,6 @@ impl GameFiles {
 
         Ok(())
     }
-
 
     pub async fn start(
         self,
@@ -77,7 +75,27 @@ impl GameFiles {
             js_error(error, "Não foi possível carregar os arquivos do jogo. Selecione uma instalação completa e válida.")
         })?;
 
-        let client = crate::startup::load_client(game, crate::analytics::Analytics::default())
+        #[cfg(feature = "analytics")]
+        let analytics = {
+            let base_url = web_sys::window()
+                .and_then(|window| window.location().origin().ok())
+                .unwrap_or_default();
+
+            crate::analytics::configured(&crate::analytics::Config {
+                base_url,
+                ..Default::default()
+            })
+            .unwrap_or_else(|error| {
+                tracing::warn!("analytics disabled: {error}");
+
+                crate::analytics::Analytics::default()
+            })
+        };
+
+        #[cfg(not(feature = "analytics"))]
+        let analytics = crate::analytics::Analytics::default();
+
+        let client = crate::startup::load_client(game, analytics)
             .map_err(|error| {
                 js_error(error, "Não foi possível preparar o jogo. Verifique se a pasta selecionada contém todos os arquivos de uma instalação válida.")
             })?;

@@ -379,10 +379,6 @@ pub fn apply_actor_status(
     }
 
     if local {
-        if (score.score.level as i16) > (scene.entered.status.level as i16) {
-            scene.analytics.level_up(&scene.entered);
-        }
-
         scene.entered.status = score.score;
 
         scene.entered.guild = score.guild;
@@ -799,20 +795,7 @@ pub fn slot_patch(
     if local && let Some(slot) = patch.index() {
         match patch.container {
             Container::Equipment => scene.entered.equipment.items[slot] = patch.item,
-            Container::Carry => {
-                scene.entered.carry[slot] = patch.item;
-
-                if !patch.item.is_empty()
-                    && let Some(panels) = &scene.panels
-                    && let Some(name) = panels.items.name(usize::from(patch.item.index))
-                {
-                    scene.analytics.item_collected(
-                        &scene.entered,
-                        &name,
-                        formats::data::item_effect::stack_size(&patch.item),
-                    );
-                }
-            }
+            Container::Carry => scene.entered.carry[slot] = patch.item,
             Container::Cargo => scene.entered.warehouse.cargo[slot] = patch.item,
             Container::Other(_) => {}
         }

@@ -204,7 +204,6 @@ pub enum Enter {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sent {
-    pub analytics: Option<crate::analytics::Message>,
     pub mode: usize,
     pub text: String,
     pub packet: Vec<u8>,
@@ -2117,7 +2116,6 @@ pub fn route_with_move_alpha(
             let packet = queue_packet(panels, command_packet(client_id, "helmohidecmd"));
 
             return Enter::Sent(Sent {
-                analytics: None,
                 mode: NORMAL,
                 text: "helmohidecmd".into(),
                 packet,
@@ -2135,7 +2133,6 @@ pub fn route_with_move_alpha(
             let packet = queue_packet(panels, packet);
 
             return Enter::Sent(Sent {
-                analytics: None,
                 mode: NORMAL,
                 text: command.into(),
                 packet,
@@ -2153,7 +2150,6 @@ pub fn route_with_move_alpha(
             let packet = queue_packet(panels, packet);
 
             return Enter::Sent(Sent {
-                analytics: None,
                 mode: WHISPER,
                 text: filtered,
                 packet,
@@ -2249,18 +2245,6 @@ pub fn route_with_move_alpha(
     }
 
     Enter::Sent(Sent {
-        analytics: match mode {
-            NORMAL | GUILD | ALLY => Some(crate::analytics::Message {
-                kind: if mode == NORMAL {
-                    "NORMAL_CHAT"
-                } else {
-                    "GUILD_CHAT"
-                },
-                recipient: "ALL".into(),
-                text: filtered.clone(),
-            }),
-            _ => None,
-        },
         mode,
         text: filtered,
         packet,
@@ -2378,11 +2362,6 @@ fn whisper(
     append(panels, &echo, MODES[WHISPER].color, None);
 
     Enter::Sent(Sent {
-        analytics: (word != "tab").then(|| crate::analytics::Message {
-            kind: "PRIVATE_MESSAGE",
-            recipient: target.into(),
-            text: filtered.clone(),
-        }),
         mode: WHISPER,
         text: filtered,
         packet,

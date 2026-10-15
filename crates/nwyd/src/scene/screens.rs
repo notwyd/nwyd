@@ -2789,14 +2789,6 @@ pub fn skill_opened(panels: &mut Panels, entered: &Entered) {
 }
 
 pub fn refresh_all(panels: &mut Panels, entered: &Entered) {
-    let level = i32::from(entered.status.level as i16);
-
-    if level == panels.analytics_next_level {
-        panels.analytics.level_up(entered);
-    }
-
-    panels.analytics_next_level = level + 1;
-
     {
         let Panels {
             screens,

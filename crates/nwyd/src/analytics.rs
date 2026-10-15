@@ -7,10 +7,3 @@ pub use enabled::{Analytics, Config, DEFAULT_BASE_URL, DEFAULT_ENVIRONMENT_KEY, 
 mod disabled;
 #[cfg(not(feature = "analytics"))]
 pub use disabled::Analytics;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Message {
-    pub kind: &'static str,
-    pub recipient: String,
-    pub text: String,
-}

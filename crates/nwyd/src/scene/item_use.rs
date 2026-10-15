@@ -84,9 +84,6 @@ pub enum Action {
     },
     Send(Request),
     Feed(super::consume::FeedSend),
-    TrackUse {
-        id: i32,
-    },
     Sound {
         slot: i64,
     },
@@ -435,7 +432,7 @@ impl Dispatched {
     pub fn actions(&self, kind: i32, id: i32, at: Coord) -> Vec<Action> {
         match (self.sent.clone(), self.refused) {
             (Some(sent), _) => {
-                let mut out = vec![sent, Action::TrackUse { id }];
+                let mut out = vec![sent];
 
                 out.extend(self.sound.map(|slot| Action::Sound { slot }));
 
@@ -603,7 +600,6 @@ pub fn prompt_box(action: u8, strdef: usize) -> super::msgbox::Request {
 pub fn describe(action: &Action) -> Option<String> {
     match action {
         Action::Send(_)
-        | Action::TrackUse { .. }
         | Action::Feed(_)
         | Action::Sound { .. }
         | Action::Stage(_)
@@ -1205,7 +1201,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn dispatched_items_track_use_after_the_send_and_before_inventory_refresh() {
+    fn dispatched_items_send_then_play_sound_and_refresh_inventory() {
         let at = Coord {
             container: container::INVENTORY,
             slot: 3,
@@ -1228,7 +1224,6 @@ mod tests {
             dispatched.actions(0, 700, at),
             vec![
                 sent,
-                Action::TrackUse { id: 700 },
                 Action::Sound { slot: SOUND_USE },
                 Action::ItemChanged { at },
             ]
@@ -1236,7 +1231,7 @@ mod tests {
     }
 
     #[test]
-    fn refused_and_empty_dispatches_do_not_track_item_use() {
+    fn refused_and_empty_dispatches_only_report_refusal() {
         let at = Coord {
             container: container::INVENTORY,
             slot: 3,

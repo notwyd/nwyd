@@ -4786,8 +4786,6 @@ pub fn chat_key(scene: &mut FieldScene, ch: char) -> bool {
 
     let mut raised = None;
 
-    let mut message = None;
-
     let mut local: Option<&'static chat::Local> = None;
 
     let mut relocation: Option<Option<String>> = None;
@@ -4875,7 +4873,6 @@ pub fn chat_key(scene: &mut FieldScene, ch: char) -> bool {
                     match chat::enter_with_move_alpha(
                         panels, client_id, &speaker, level, move_alpha, &reserved, now_ms,
                     ) {
-                        chat::Enter::Sent(sent) => message = sent.analytics,
                         chat::Enter::Local(row) => {
                             local = Some(row);
                         }
@@ -4905,10 +4902,6 @@ pub fn chat_key(scene: &mut FieldScene, ch: char) -> bool {
 
     if let Some((speaker, text, life_ms)) = raised {
         balloon::raise(scene, speaker, &text, life_ms);
-    }
-
-    if let Some(message) = message {
-        scene.analytics.message(&scene.entered, &message);
     }
 
     if let Some(row) = local {

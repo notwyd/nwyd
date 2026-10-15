@@ -151,8 +151,6 @@ pub fn prepare(state: State<'_>, packet: Packet) -> Option<Prepared> {
                         }
 
                         if let Some(panels) = field.panels.as_mut() {
-                            panels.analytics = state.session.analytics.clone();
-
                             panels.client_config = state.session.client_config.clone();
 
                             panels.guild_proxy = state.session.guild_proxy.clone();

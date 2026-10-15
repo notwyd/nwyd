@@ -1,9 +1,9 @@
-use super::Message;
-use crate::scene::enter::Entered;
 use serde_json::{Value, json};
+use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{
     sync::{
-        Arc, Mutex,
+        Mutex,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, SyncSender},
     },
@@ -151,6 +151,7 @@ pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 struct Delivery {
     sender: Option<SyncSender<Vec<u8>>>,
     stopped: Arc<AtomicBool>,
@@ -158,6 +159,7 @@ struct Delivery {
     worker: Option<thread::JoinHandle<()>>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Drop for Delivery {
     fn drop(&mut self) {
         self.stopped.store(true, Ordering::Relaxed);
@@ -234,83 +236,10 @@ impl Analytics {
         self.identify(account);
 
         self.event("gameStarted", json!({}));
-
-        self.event(
-            "clientDevice",
-            json!({
-                "deviceType": "PC", "operatingSystem": "WINDOWS",
-                "operatingSystemVersion": true, "addressMAC": true, "addressIP": true,
-                "timezoneOffset": "-03:00"
-            }),
-        );
     }
 
     pub(crate) fn ended(&self) {
         self.event("gameEnded", json!({}));
-    }
-
-    pub(crate) fn level_up(&self, character: &Entered) {
-        let mut params = character_params(character);
-
-        params["levelUpName"] = json!("LEVEL_UP");
-
-        params["userLevel"] = json!(character.base_status.level as i16);
-
-        self.event("levelUp", params);
-    }
-
-    pub(crate) fn message(&self, character: &Entered, message: &Message) {
-        if message
-            .recipient
-            .split('\0')
-            .next()
-            .unwrap_or_default()
-            .is_empty()
-            || message
-                .text
-                .split('\0')
-                .next()
-                .unwrap_or_default()
-                .is_empty()
-        {
-            return;
-        }
-
-        let mut params = character_params(character);
-
-        params["communicationType"] = json!(message.kind);
-
-        params["uniqueTracking"] = json!("uniqueTracking");
-
-        params["message"] = json!(message.text);
-
-        params["recipients"] = json!([{ "recipientID": message.recipient }]);
-
-        self.event("messageSent", params);
-    }
-
-    pub(crate) fn item_actioned(&self, character: &Entered, id: i32, name: &str) {
-        let mut params = character_params(character);
-
-        params["action"] = json!("USE");
-
-        params["itemID"] = json!(id.to_string());
-
-        params["itemName"] = json!(name);
-
-        params["itemType"] = json!("ITEM");
-
-        self.event("itemActioned", params);
-    }
-
-    pub(crate) fn item_collected(&self, character: &Entered, name: &str, amount: i32) {
-        let mut params = character_params(character);
-
-        params["reward"] = json!({"rewardName": "COLLECT_ITEM", "rewardProducts": {
-            "items": [{"item": {"itemType": "GOLD", "itemName": name, "itemAmount": amount}}]
-        }});
-
-        self.event("itemCollected", params);
     }
 
     fn event(&self, name: &str, mut params: Value) {
@@ -335,6 +264,7 @@ impl Analytics {
             body.truncate(MAX_BYTES);
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
         if let Some(sender) = &delivery.sender
             && sender.try_send(body).is_err()
         {
@@ -343,6 +273,9 @@ impl Analytics {
                 "analytics queue full or unavailable; event dropped"
             );
         }
+
+        #[cfg(target_arch = "wasm32")]
+        delivery.send(&body);
     }
 
     #[cfg(all(test, not(target_arch = "wasm32")))]
@@ -391,16 +324,6 @@ fn session_id() -> anyhow::Result<String> {
             value & 0xFFFF_FFFF_FFFF,
         ))
     }
-}
-
-fn character_params(character: &Entered) -> Value {
-    let arch = (character.equipment.body().index as i16) % 10 > 5;
-
-    json!({
-        "characterName": character.name(),
-        "characterClass": (["TK", "FM", "BM", "HT"].get(usize::from(character.class)).unwrap_or(&"TK")),
-        "characterTrans": if arch { "Arch" } else { "Mortal" }
-    })
 }
 
 fn styled(value: &Value) -> Vec<u8> {
@@ -555,8 +478,23 @@ mod native;
 mod tests;
 
 #[cfg(target_arch = "wasm32")]
-pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
-    config.endpoint()?;
+#[path = "browser.rs"]
+mod browser;
 
-    Ok(Analytics::default())
+#[cfg(target_arch = "wasm32")]
+use browser::Delivery;
+
+#[cfg(target_arch = "wasm32")]
+pub fn configured(config: &Config) -> anyhow::Result<Analytics> {
+    let Some(url) = config.endpoint()? else {
+        return Ok(Analytics::default());
+    };
+
+    let delivery = Delivery::new(url.as_str())?;
+
+    Ok(Analytics {
+        session_id: delivery.session_id().into(),
+        delivery: Some(Arc::new(delivery)),
+        user_id: "".into(),
+    })
 }

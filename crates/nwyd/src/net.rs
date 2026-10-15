@@ -1576,15 +1576,20 @@ mod tests {
 
         let started = events.recv_timeout(Duration::from_secs(5)).unwrap();
 
-        let device = events.recv_timeout(Duration::from_secs(5)).unwrap();
-
         assert_eq!(session.account, "DISPLAY");
 
-        assert_eq!(started["eventList"][0]["eventName"], "gameStarted");
+        let session_id = started["eventList"][0]["sessionID"].as_str().unwrap();
 
-        assert_eq!(started["eventList"][0]["userID"], "SYNTHETIC_LOGIN");
-
-        assert_eq!(device["eventList"][0]["eventName"], "clientDevice");
+        assert_eq!(
+            started,
+            serde_json::json!({"eventList": [{
+                "eventName": "gameStarted",
+                "userID": "SYNTHETIC_LOGIN",
+                "sessionID": session_id,
+                "eventTimestamp": started["eventList"][0]["eventTimestamp"],
+                "eventParams": {"platform": "GLOBAL_SERVER"}
+            }]})
+        );
 
         session.receive(accepted());
 
@@ -1594,10 +1599,20 @@ mod tests {
 
         session.analytics.ended();
 
+        let ended = events.recv_timeout(Duration::from_secs(5)).unwrap();
+
         assert_eq!(
-            events.recv_timeout(Duration::from_secs(5)).unwrap()["eventList"][0]["eventName"],
-            "gameEnded"
+            ended,
+            serde_json::json!({"eventList": [{
+                "eventName": "gameEnded",
+                "userID": "SYNTHETIC_LOGIN",
+                "sessionID": session_id,
+                "eventTimestamp": ended["eventList"][0]["eventTimestamp"],
+                "eventParams": {"platform": "GLOBAL_SERVER"}
+            }]})
         );
+
+        assert!(events.try_recv().is_err());
     }
 
     #[test]

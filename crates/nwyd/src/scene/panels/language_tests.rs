@@ -315,8 +315,6 @@ impl Panels {
             store: None,
             store_owner_opened: None,
             store_price: None,
-            analytics: Default::default(),
-            analytics_next_level: 0,
             client_config: Default::default(),
             guild_proxy: Default::default(),
             coin_action: 0,

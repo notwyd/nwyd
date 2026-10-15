@@ -2,6 +2,67 @@ use super::*;
 use crate::scene::login_panels::language_tests::{placed, translated};
 
 #[test]
+fn chat_channels_preserve_delivery_echo_and_history() {
+    for (draft, mode, target, echo) in [
+        ("hello", NORMAL, "", "[Synthetic]> hello"),
+        ("-hello", GUILD, "", "[Synthetic]> hello"),
+        ("--hello", ALLY, "", "[Synthetic]> hello"),
+        (
+            "/Friend hello",
+            WHISPER,
+            "Friend",
+            "[Synthetic] : Friend> hello",
+        ),
+        ("/r hello", WHISPER, "reply", "[Synthetic] [reply]> hello"),
+    ] {
+        let mut panels = Panels::for_test();
+
+        let Enter::Sent(sent) = route(
+            &mut panels,
+            42,
+            "Synthetic",
+            50,
+            &Reserved::default(),
+            10000,
+            draft,
+        ) else {
+            panic!("chat draft {draft:?} was not sent");
+        };
+
+        assert_eq!(sent.mode, mode);
+        assert_eq!(sent.text, "hello");
+        assert_eq!(sent.balloon, mode == NORMAL);
+        assert_eq!(panels.chat.outbox, [sent.packet.clone()]);
+        assert_eq!(panels.chat.history[0], draft);
+        assert_eq!(panels.chat.records.back().unwrap().text, echo);
+        assert_eq!(&sent.packet[6..8], &42u16.to_le_bytes());
+
+        let text_offset = if mode == NORMAL {
+            assert_eq!(sent.packet.len(), 0x8C);
+            assert_eq!(&sent.packet[4..6], &0x333u16.to_le_bytes());
+            assert_eq!(
+                take_balloon(&mut panels).map(|(id, text, _)| (id, text)),
+                Some((42, "hello".into()))
+            );
+            0x0C
+        } else {
+            assert_eq!(sent.packet.len(), 0xA0);
+            assert_eq!(&sent.packet[4..6], &0x334u16.to_le_bytes());
+            assert_eq!(&sent.packet[0x0C..0x0C + target.len()], target.as_bytes());
+            assert_eq!(sent.packet[0x0C + target.len()], 0);
+            assert_eq!(
+                &sent.packet[0x9C..0x9E],
+                &(if mode == WHISPER { 0u16 } else { 3u16 }).to_le_bytes()
+            );
+            assert!(take_balloon(&mut panels).is_none());
+            0x1C
+        };
+
+        assert_eq!(&sent.packet[text_offset..text_offset + 6], b"hello\0");
+    }
+}
+
+#[test]
 fn runtime_language_preserves_chat_draft_history_cooldowns_and_mode() {
     let mut panels = Panels::for_test();
 
@@ -262,9 +323,11 @@ fn runtime_language_prior_command_drafts_keep_semantic_packets() {
                     "record {record} changed command target"
                 );
 
-                assert_eq!(after.analytics, before.analytics);
-
                 assert_eq!(after.mode, before.mode);
+
+                assert_eq!(after.text, before.text);
+
+                assert_eq!(after.balloon, before.balloon);
             }
             (Enter::PendingCommand(before), Enter::PendingCommand(after)) => {
                 assert_eq!(after, before)
@@ -339,7 +402,7 @@ fn runtime_language_default_helm_command_remains_command_after_translation() {
     );
 
     assert!(
-        matches!(before, Enter::Sent(ref sent) if sent.mode == NORMAL && sent.analytics.is_none())
+        matches!(before, Enter::Sent(ref sent) if sent.mode == NORMAL && sent.text == "helmohidecmd" && !sent.balloon)
     );
 
     let strings = translated(&[(1951, "capacete")], "");

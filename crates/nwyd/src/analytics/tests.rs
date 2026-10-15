@@ -1,33 +1,55 @@
 use super::*;
-use crate::scene::enter::Entered;
 use std::time::Instant;
-
-fn character() -> Entered {
-    let bytes = vec![0; formats::net::enter::MINIMUM_LEN];
-
-    let packet = formats::net::enter::parse(&bytes).unwrap();
-
-    let mut character = Entered::from_packet(&packet, 0, None);
-
-    character.name[..5].copy_from_slice(b"Aster");
-
-    character.class = 2;
-
-    character.equipment.items[0].index = 26;
-
-    character.status.level = 100;
-
-    character.base_status.level = 42;
-
-    character
-}
 
 fn event(receiver: &mpsc::Receiver<Value>) -> Value {
     let request = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
 
+    assert_eq!(request.as_object().unwrap().len(), 1);
+
     assert_eq!(request["eventList"].as_array().unwrap().len(), 1);
 
     request["eventList"][0].clone()
+}
+
+fn assert_lifecycle(event: &Value, name: &str, user_id: &str) {
+    let session = event["sessionID"].as_str().unwrap();
+
+    assert_eq!(session.len(), 36);
+
+    for (i, byte) in session.bytes().enumerate() {
+        if matches!(i, 8 | 13 | 18 | 23) {
+            assert_eq!(byte, b'-');
+        } else {
+            assert!(byte.is_ascii_digit() || (b'A'..=b'F').contains(&byte));
+        }
+    }
+
+    let timestamp = event["eventTimestamp"].as_str().unwrap();
+
+    assert_eq!(timestamp.len(), 23);
+
+    for (i, byte) in timestamp.bytes().enumerate() {
+        match i {
+            4 | 7 => assert_eq!(byte, b'-'),
+            10 => assert_eq!(byte, b' '),
+            13 | 16 => assert_eq!(byte, b':'),
+            19 => assert_eq!(byte, b'.'),
+            _ => assert!(byte.is_ascii_digit()),
+        }
+    }
+
+    assert!(timestamp.ends_with(".000"));
+
+    assert_eq!(
+        event,
+        &json!({
+            "eventName": name,
+            "userID": user_id,
+            "sessionID": session,
+            "eventTimestamp": timestamp,
+            "eventParams": {"platform": "GLOBAL_SERVER"}
+        })
+    );
 }
 
 #[test]
@@ -147,62 +169,28 @@ fn environment_keys_cannot_modify_the_url_structure() {
 }
 
 #[test]
-fn login_queues_started_then_device_with_the_same_session_across_accounts() {
+fn login_and_end_emit_only_lifecycle_fields_with_one_session_across_accounts() {
     let (mut analytics, receiver) = Analytics::recording();
 
-    analytics.login("account_one");
+    for account in ["account_one", "account_two"] {
+        analytics.login(account);
 
-    let started = event(&receiver);
+        analytics.ended();
 
-    let device = event(&receiver);
+        let started = event(&receiver);
 
-    assert_eq!(started["eventName"], "gameStarted");
+        let ended = event(&receiver);
 
-    assert_eq!(started["userID"], "ACCOUNT_ONE");
+        assert_lifecycle(&started, "gameStarted", &account.to_ascii_uppercase());
 
-    assert_eq!(started["eventParams"], json!({"platform": "GLOBAL_SERVER"}));
+        assert_lifecycle(&ended, "gameEnded", &account.to_ascii_uppercase());
 
-    assert_eq!(device["eventName"], "clientDevice");
+        assert_eq!(started["sessionID"], analytics.session_id.as_ref());
 
-    assert_eq!(
-        device["eventParams"],
-        json!({
-            "platform": "GLOBAL_SERVER", "deviceType": "PC", "operatingSystem": "WINDOWS",
-            "operatingSystemVersion": true, "addressMAC": true, "addressIP": true,
-            "timezoneOffset": "-03:00"
-        })
-    );
+        assert_eq!(ended["sessionID"], started["sessionID"]);
+    }
 
-    let id = started["sessionID"].as_str().unwrap();
-
-    assert_eq!(id.len(), 36);
-
-    assert!(
-        id.chars()
-            .all(|c| c.is_ascii_digit() || ('A'..='F').contains(&c) || c == '-')
-    );
-
-    assert_eq!(device["sessionID"], started["sessionID"]);
-
-    let timestamp = started["eventTimestamp"].as_str().unwrap();
-
-    assert_eq!(timestamp.len(), 23);
-
-    assert!(timestamp.ends_with(".000"));
-
-    analytics.ended();
-
-    assert_eq!(event(&receiver)["eventName"], "gameEnded");
-
-    analytics.login("account_two");
-
-    let again = event(&receiver);
-
-    assert_eq!(again["userID"], "ACCOUNT_TWO");
-
-    assert_eq!(again["sessionID"], started["sessionID"]);
-
-    assert_eq!(event(&receiver)["eventName"], "clientDevice");
+    assert!(receiver.try_recv().is_err());
 }
 
 #[test]
@@ -247,7 +235,7 @@ fn unidentified_sessions_suppress_events_until_an_account_is_identified() {
 
     analytics.ended();
 
-    analytics.level_up(&character());
+    analytics.login("");
 
     analytics.identify("synthetic_account");
 
@@ -268,130 +256,6 @@ fn unidentified_sessions_suppress_events_until_an_account_is_identified() {
     disabled.ended();
 
     assert!(disabled.delivery.is_none());
-}
-
-#[test]
-fn character_events_preserve_field_types_and_payload_shapes() {
-    let (analytics, receiver) = Analytics::recording();
-
-    let character = character();
-
-    analytics.level_up(&character);
-
-    let level = event(&receiver);
-
-    assert_eq!(level["eventName"], "levelUp");
-
-    assert_eq!(
-        level["eventParams"],
-        json!({"platform":"GLOBAL_SERVER",
-        "characterName":"Aster", "characterClass":"BM", "characterTrans":"Arch",
-        "levelUpName":"LEVEL_UP", "userLevel":42})
-    );
-
-    analytics.message(
-        &character,
-        &Message {
-            kind: "PRIVATE_MESSAGE",
-            recipient: "Friend".into(),
-            text: "olá \"friend\"\n".into(),
-        },
-    );
-
-    let message = event(&receiver);
-
-    assert_eq!(message["eventName"], "messageSent");
-
-    assert_eq!(message["eventParams"]["message"], "olá \"friend\"\n");
-
-    assert_eq!(
-        message["eventParams"]["communicationType"],
-        "PRIVATE_MESSAGE"
-    );
-
-    assert_eq!(message["eventParams"]["uniqueTracking"], "uniqueTracking");
-
-    assert_eq!(
-        message["eventParams"]["recipients"],
-        json!([{ "recipientID":"Friend" }])
-    );
-
-    analytics.item_actioned(&character, 411, "Potion");
-
-    let used = event(&receiver);
-
-    assert_eq!(used["eventName"], "itemActioned");
-
-    assert_eq!(used["eventParams"]["itemID"], "411");
-
-    assert_eq!(used["eventParams"]["itemType"], "ITEM");
-
-    assert_eq!(used["eventParams"]["action"], "USE");
-
-    analytics.item_collected(&character, "Potion", 500);
-
-    let collected = event(&receiver);
-
-    assert_eq!(collected["eventName"], "itemCollected");
-
-    assert_eq!(
-        collected["eventParams"]["reward"],
-        json!({
-        "rewardName":"COLLECT_ITEM", "rewardProducts":{"items":[{"item":{
-            "itemType":"GOLD", "itemName":"Potion", "itemAmount":500
-        }}]}})
-    );
-}
-
-#[test]
-fn empty_recipients_or_messages_do_not_generate_events() {
-    let (analytics, receiver) = Analytics::recording();
-
-    let character = character();
-
-    for (recipient, text) in [
-        ("", "hello"),
-        ("Friend", ""),
-        ("\0Friend", "hello"),
-        ("Friend", "\0hello"),
-    ] {
-        analytics.message(
-            &character,
-            &Message {
-                kind: "PRIVATE_MESSAGE",
-                recipient: recipient.into(),
-                text: text.into(),
-            },
-        );
-    }
-
-    analytics.ended();
-
-    assert_eq!(event(&receiver)["eventName"], "gameEnded");
-
-    assert!(receiver.try_recv().is_err());
-}
-
-#[test]
-fn character_class_fallback_and_signed_body_transformation_are_preserved() {
-    let mut character = character();
-
-    character.class = u8::MAX;
-
-    character.equipment.items[0].index = 5;
-
-    assert_eq!(
-        character_params(&character),
-        json!({"characterName":"Aster", "characterClass":"TK", "characterTrans":"Mortal"})
-    );
-
-    character.equipment.items[0].index = 6;
-
-    assert_eq!(character_params(&character)["characterTrans"], "Arch");
-
-    character.equipment.items[0].index = u16::MAX;
-
-    assert_eq!(character_params(&character)["characterTrans"], "Mortal");
 }
 
 #[test]
