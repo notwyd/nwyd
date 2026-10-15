@@ -44,7 +44,11 @@ mod native {
         let launcher = formats::launcher::parse(launcher_line.as_bytes())?
             .filter(formats::launcher::Credentials::enabled);
 
+        #[cfg(feature = "analytics")]
         let analytics = nwyd::analytics::configured(&nwyd::analytics::Config::from_env()?)?;
+
+        #[cfg(not(feature = "analytics"))]
+        let analytics = nwyd::analytics::Analytics::default();
 
         let Some(mut client) = select_and_load_game(&analytics) else {
             return Ok(());

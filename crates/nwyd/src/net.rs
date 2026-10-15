@@ -1554,6 +1554,7 @@ mod tests {
         }))
     }
 
+    #[cfg(all(feature = "analytics", not(target_arch = "wasm32")))]
     #[test]
     fn analytics_starts_on_accepted_login_and_preserves_the_login_identity() {
         let (analytics, events) = crate::analytics::Analytics::recording();

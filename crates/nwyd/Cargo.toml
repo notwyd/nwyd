@@ -9,6 +9,10 @@ repository.workspace = true
 readme = false
 publish = false
 
+[features]
+default = ["analytics"]
+analytics = ["dep:getrandom", "dep:time", "windows/Win32_System_SystemInformation"]
+
 [dependencies]
 assets.workspace = true
 audio.workspace = true
@@ -28,7 +32,7 @@ log = { version = "0.4", features = ["release_max_level_off"] }
 tracing = { workspace = true, features = ["release_max_level_off"] }
 tracing-log.workspace = true
 tracing-subscriber.workspace = true
-time = "0.3"
+time = { version = "0.3", optional = true }
 wgpu.workspace = true
 winit.workspace = true
 web-time.workspace = true
@@ -48,7 +52,7 @@ web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlE
 embed-resource = "3.0.11"
 
 [target.'cfg(unix)'.dependencies]
-getrandom = "0.3"
+getrandom = { version = "0.3", optional = true }
 libc.workspace = true
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
@@ -61,7 +65,7 @@ webkit2gtk = { version = "2.0.2", features = ["v2_16"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-core = "0.62.2"
-windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_System_Com", "Win32_System_SystemInformation", "Win32_System_Com_Urlmon", "Win32_System_Ole", "Win32_System_Variant", "Win32_System_LibraryLoader", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Controls", "Win32_Networking_WinInet"] }
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_System_Com", "Win32_System_Com_Urlmon", "Win32_System_Ole", "Win32_System_Variant", "Win32_System_LibraryLoader", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Controls", "Win32_Networking_WinInet"] }
 
 [lib]
 name = "nwyd"
