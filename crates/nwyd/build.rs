@@ -102,9 +102,17 @@ fn windows_icon() {
         }
     }
 
-    embed_resource::compile_for("resources/windows.rc", ["nwyd"], embed_resource::NONE)
-        .manifest_required()
-        .expect("compile the nwyd Windows icon resource");
+    let manifest = std::env::var_os("CARGO_MANIFEST_DIR").expect("Cargo manifest directory");
+
+    let resources = Path::new(&manifest).join("resources");
+
+    embed_resource::compile_for(
+        resources.join("windows.rc"),
+        ["nwyd"],
+        embed_resource::ParamsIncludeDirs([resources]),
+    )
+    .manifest_required()
+    .expect("compile the nwyd Windows icon resource");
 }
 
 fn git(args: &[&str]) -> Option<String> {
