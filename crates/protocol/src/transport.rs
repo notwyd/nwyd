@@ -110,7 +110,7 @@ impl Link {
             ),
         ] {
             if let Err(error) = result {
-                tracing::warn!(% error, "could not apply retail socket option");
+                tracing::warn!(% error, "could not apply socket option");
             }
         }
 
@@ -169,7 +169,7 @@ pub struct Connection {
     received: u64,
     closed: bool,
     diagnostics: Arc<Diagnostics>,
-    pub retail_sender: crate::retail::SharedSender,
+    pub send_state: crate::send_state::SharedSender,
 }
 
 impl Connection {
@@ -202,7 +202,7 @@ impl Connection {
             link_id: id,
             socket,
             inbound,
-            retail_sender: Default::default(),
+            send_state: Default::default(),
             schedule: Schedule::default(),
             client_id: 0,
             rng: Lcg::new(seed),
@@ -308,7 +308,7 @@ impl Connection {
         }
 
         let tick = self
-            .retail_sender
+            .send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .prepare(body, tick);

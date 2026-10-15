@@ -134,43 +134,39 @@ fn draw(ctx: &egui::Context, view: &View<'_>) -> Action {
         .frame(
             egui::Frame::new()
                 .fill(theme::BACKGROUND)
-                .inner_margin(egui::Margin::symmetric(24, 20)),
+                .inner_margin(egui::Margin::symmetric(28, 20)),
         )
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let (rect, _) =
-                    ui.allocate_exact_size(egui::vec2(30.0, 30.0), egui::Sense::hover());
-                let center = rect.center();
-                let left = center + egui::vec2(-10.0, 0.0);
-                let right = center + egui::vec2(10.0, 0.0);
-                ui.painter()
-                    .line_segment([left, right], (2.0, theme::GREEN));
-                for position in [left, right] {
-                    ui.painter().circle_filled(position, 4.0, theme::GREEN);
-                }
-                ui.vertical(|ui| {
-                    ui.label(RichText::new("NWYD Relay").size(22.0).strong());
-                    ui.label(
-                        RichText::new("Jogue no navegador")
-                            .small()
-                            .color(theme::MUTED),
-                    );
+                brand_mark(ui);
+                ui.label(
+                    RichText::new("NWYD")
+                        .size(26.0)
+                        .extra_letter_spacing(-1.2)
+                        .strong(),
+                );
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.label(theme::eyebrow("RELAY"));
                 });
             });
+            ui.add_space(12.0);
+            ui.separator();
         });
 
     egui::TopBottomPanel::bottom("footer")
         .frame(
             egui::Frame::new()
                 .fill(theme::BACKGROUND)
-                .inner_margin(egui::Margin::symmetric(24, 12)),
+                .inner_margin(egui::Margin::symmetric(28, 14)),
         )
         .show(ctx, |ui| {
+            ui.separator();
+            ui.add_space(2.0);
             ui.horizontal_wrapped(|ui| {
                 ui.label(
                     RichText::new(format!("v{}", env!("CARGO_PKG_VERSION")))
                         .small()
-                        .color(theme::MUTED),
+                        .color(theme::GOLD),
                 );
                 ui.label(
                     RichText::new("Fechar esta janela desconecta suas sessões.")
@@ -181,72 +177,87 @@ fn draw(ctx: &egui::Context, view: &View<'_>) -> Action {
         });
 
     egui::CentralPanel::default()
-        .frame(egui::Frame::new().fill(theme::BACKGROUND).inner_margin(egui::Margin::symmetric(24, 4)))
+        .frame(
+            egui::Frame::new()
+                .fill(theme::BACKGROUND)
+                .inner_margin(egui::Margin::symmetric(28, 4)),
+        )
         .show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                theme::card().show(ui, |ui| {
-                    ui.set_width(ui.available_width());
-                    ui.horizontal(|ui| {
-                        if matches!(view.status, RelayStatus::Launching) {
-                            ui.spinner();
-                        } else {
-                            let (rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 18.0), egui::Sense::hover());
-                            ui.painter().circle_filled(rect.center(), 4.0, view.color());
-                        }
-                        ui.label(RichText::new("CONEXÃO LOCAL").size(11.0).color(view.color()));
-                    });
-                    ui.heading(view.title());
-                    match view.status {
-                        RelayStatus::Launching => {
-                            ui.label("Preparando a conexão com o navegador.");
-                        }
-                        RelayStatus::Ready => {
-                            ui.label("Abra a página do jogo para começar sua sessão.");
-                        }
-                        RelayStatus::Failed(error) => {
-                            ui.label(RichText::new(error).color(theme::ERROR));
-                        }
-                        RelayStatus::Stopped => {
-                            ui.label("Inicie o relay para conectar o navegador novamente.");
-                        }
-                    }
-                    ui.add_space(5.0);
-                    let primary = view.primary_action();
-                    if primary != Action::None {
-                        let label = match view.status {
-                            RelayStatus::Ready => "Abrir página do jogo",
-                            RelayStatus::Stopped => "Iniciar relay",
-                            _ => "Tentar novamente",
-                        };
-                        if ui.add_sized(
-                            [ui.available_width(), 42.0],
-                            egui::Button::new(RichText::new(label).color(theme::GREEN).strong())
-                                .fill(theme::GREEN_DARK)
-                                .stroke(egui::Stroke::new(1.0_f32, theme::GREEN)),
-                        ).clicked() {
-                            action = primary;
-                        }
-                    }
-                    if matches!(view.status, RelayStatus::Ready) {
-                        ui.vertical_centered(|ui| {
-                            ui.label(RichText::new(PLAY_URL).small().color(theme::MUTED));
+                ui.add_space(8.0);
+                section_label(ui, "JOGUE NO NAVEGADOR");
+                ui.add_space(8.0);
+                theme::card()
+                    .stroke(egui::Stroke::new(1.0_f32, theme::GOLD_LINE))
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.horizontal(|ui| {
+                            if matches!(view.status, RelayStatus::Launching) {
+                                ui.add(egui::Spinner::new().size(12.0).color(theme::GOLD));
+                            } else {
+                                status_dot(ui, view.color());
+                            }
+                            ui.label(theme::eyebrow("CONEXÃO LOCAL").color(view.color()));
                         });
-                    }
-                });
+                        ui.add_space(4.0);
+                        status_heading(ui, view.title());
+                        match view.status {
+                            RelayStatus::Launching => {
+                                ui.label(RichText::new("Preparando a conexão com o navegador.").color(theme::MUTED));
+                            }
+                            RelayStatus::Ready => {
+                                ui.label(RichText::new("Abra a página do jogo para começar sua sessão.").color(theme::MUTED));
+                            }
+                            RelayStatus::Failed(error) => {
+                                ui.label(RichText::new(error).color(theme::ERROR));
+                            }
+                            RelayStatus::Stopped => {
+                                ui.label(RichText::new("Inicie o relay para conectar o navegador novamente.").color(theme::MUTED));
+                            }
+                        }
+                        ui.add_space(8.0);
+                        let primary = view.primary_action();
+                        if primary != Action::None {
+                            let label = match view.status {
+                                RelayStatus::Ready => "Abrir página do jogo",
+                                RelayStatus::Stopped => "Iniciar relay",
+                                _ => "Tentar novamente",
+                            };
+                            if theme::primary_button(ui, label).clicked() {
+                                action = primary;
+                            }
+                        }
+                        if matches!(view.status, RelayStatus::Ready) {
+                            ui.vertical_centered(|ui| {
+                                ui.label(RichText::new(PLAY_URL).small().color(theme::MUTED));
+                            });
+                        }
+                        ui.add_space(6.0);
+                        ui.separator();
+                        ui.horizontal(|ui| {
+                            status_dot(ui, view.color());
+                            ui.label(RichText::new(session_label(view.sessions)).size(12.0).color(theme::MUTED));
+                        });
+                        if let Some(address) = &view.address {
+                            ui.label(
+                                RichText::new(format!("Aguardando conexões em {address}"))
+                                    .size(11.0)
+                                    .color(theme::MUTED),
+                            );
+                        }
+                    });
 
-                ui.add_space(8.0);
-                ui.label(RichText::new(session_label(view.sessions)).color(view.color()));
-                if let Some(address) = &view.address {
-                    ui.label(RichText::new(format!("Aguardando conexões em {address}")).small().color(theme::MUTED));
-                }
-                ui.add_space(8.0);
-                ui.label(RichText::new("COMO JOGAR").size(11.0).color(theme::MUTED));
-                instruction(ui, "1", "Abra a página do jogo e selecione a pasta dos arquivos.");
-                instruction(ui, "2", "Permita o acesso à rede local se o navegador solicitar.");
-                instruction(ui, "3", "Mantenha o relay aberto enquanto joga.");
+                ui.add_space(18.0);
+                section_label(ui, "COMO JOGAR");
+                ui.add_space(6.0);
+                instruction(ui, "01", "Abra a página do jogo e selecione a pasta dos arquivos.");
+                instruction(ui, "02", "Permita o acesso à rede local se o navegador solicitar.");
+                instruction(ui, "03", "Mantenha o relay aberto enquanto joga.");
+                ui.add_space(2.0);
                 ui.label(RichText::new("Os arquivos salvos podem ser reutilizados em todas as abas do navegador.").small().color(theme::MUTED));
 
-                ui.add_space(8.0);
+                ui.add_space(12.0);
+                ui.separator();
                 egui::CollapsingHeader::new("Usando o ExitLag").show(ui, |ui| {
                     ui.label(format!("Configure o ExitLag para rotear {} antes de iniciar uma sessão. Confirme a conexão no ExitLag.", view.executable));
                     ui.label("Se o NWYD Relay não estiver na lista, solicite suporte para este executável.");
@@ -264,15 +275,75 @@ fn draw(ctx: &egui::Context, view: &View<'_>) -> Action {
                         }
                     }
                 });
+                ui.add_space(8.0);
             });
         });
     action
 }
 
+fn brand_mark(ui: &mut egui::Ui) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(24.0, 30.0), egui::Sense::hover());
+    let point = |x, y| rect.min + egui::vec2(x, y);
+    let stroke = egui::Stroke::new(1.5_f32, theme::GOLD);
+    ui.painter().add(egui::Shape::line(
+        vec![
+            point(3.0, 25.0),
+            point(3.0, 5.0),
+            point(21.0, 25.0),
+            point(21.0, 5.0),
+        ],
+        stroke,
+    ));
+    for (start, end) in [
+        (point(3.0, 12.0), point(21.0, 25.0)),
+        (point(3.0, 5.0), point(21.0, 18.0)),
+    ] {
+        ui.painter().line_segment([start, end], stroke);
+    }
+}
+
+fn section_label(ui: &mut egui::Ui, text: &str) {
+    ui.horizontal(|ui| {
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(22.0, 12.0), egui::Sense::hover());
+        ui.painter()
+            .hline(rect.x_range(), rect.center().y, (1.0, theme::GOLD));
+        ui.label(theme::eyebrow(text));
+    });
+}
+
+fn status_heading(ui: &mut egui::Ui, title: &str) {
+    let (prefix, accent) = title.rsplit_once(' ').unwrap_or((title, ""));
+    let mut job = egui::text::LayoutJob::default();
+    for text in [
+        RichText::new(format!("{prefix} "))
+            .strong()
+            .color(theme::TEXT),
+        RichText::new(accent).italics().color(theme::GOLD_LIGHT),
+    ] {
+        text.size(32.0).extra_letter_spacing(-0.8).append_to(
+            &mut job,
+            ui.style(),
+            egui::FontSelection::Default,
+            egui::Align::BOTTOM,
+        );
+    }
+    ui.add(egui::Label::new(job).wrap());
+}
+
+fn status_dot(ui: &mut egui::Ui, color: Color32) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(8.0, 14.0), egui::Sense::hover());
+    ui.painter().circle_filled(rect.center(), 3.0, color);
+}
+
 fn instruction(ui: &mut egui::Ui, number: &str, text: &str) {
     ui.horizontal_top(|ui| {
-        ui.label(RichText::new(number).color(theme::GREEN));
-        ui.add(egui::Label::new(text).wrap());
+        ui.label(
+            RichText::new(number)
+                .monospace()
+                .size(12.0)
+                .color(theme::GOLD),
+        );
+        ui.add(egui::Label::new(RichText::new(text).color(theme::MUTED)).wrap());
     });
 }
 
@@ -322,42 +393,52 @@ mod tests {
     }
 
     #[test]
-    fn every_relay_state_draws_at_the_minimum_window_size_without_opening_a_link() {
-        let ctx = egui::Context::default();
-        theme::install(&ctx);
-        for status in [
-            RelayStatus::Launching,
-            RelayStatus::Ready,
-            RelayStatus::Failed(
-                "A porta 8787 já está em uso. Feche o outro relay e tente novamente.".into(),
-            ),
-            RelayStatus::Stopped,
-        ] {
-            let mut view = View::from_snapshot(None);
-            view.status = &status;
-            view.address = Some("127.0.0.1:8787".into());
-            let output = ctx.run(
-                egui::RawInput {
-                    screen_rect: Some(egui::Rect::from_min_size(
-                        egui::Pos2::ZERO,
-                        egui::vec2(420.0, 480.0),
-                    )),
-                    ..Default::default()
-                },
-                |ctx| assert_eq!(draw(ctx, &view), Action::None),
-            );
-            assert!(
-                !output
-                    .platform_output
-                    .commands
-                    .iter()
-                    .any(|command| matches!(command, egui::OutputCommand::OpenUrl(_)))
-            );
-            let primitives = ctx.tessellate(output.shapes, output.pixels_per_point);
-            assert!(!primitives.is_empty());
-            for primitive in primitives {
-                if let egui::epaint::Primitive::Mesh(mesh) = primitive.primitive {
-                    assert!(mesh.vertices.iter().all(|vertex| vertex.pos.is_finite()));
+    fn every_relay_state_fits_the_default_and_minimum_window_widths() {
+        for size in [egui::vec2(420.0, 480.0), egui::vec2(600.0, 780.0)] {
+            let ctx = egui::Context::default();
+            theme::install(&ctx);
+            for status in [
+                RelayStatus::Launching,
+                RelayStatus::Ready,
+                RelayStatus::Failed(
+                    "A porta 8787 já está em uso. Feche o outro relay e tente novamente.".into(),
+                ),
+                RelayStatus::Stopped,
+            ] {
+                let mut view = View::from_snapshot(None);
+                view.status = &status;
+                view.address = Some("127.0.0.1:8787".into());
+                let output = ctx.run(
+                    egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                        ..Default::default()
+                    },
+                    |ctx| assert_eq!(draw(ctx, &view), Action::None),
+                );
+                assert!(
+                    !output
+                        .platform_output
+                        .commands
+                        .iter()
+                        .any(|command| matches!(command, egui::OutputCommand::OpenUrl(_)))
+                );
+                for shape in &output.shapes {
+                    if let egui::Shape::Text(text) = &shape.shape {
+                        let bounds = text.galley.rect.translate(text.pos.to_vec2());
+                        assert!(bounds.left() >= 0.0, "{}", text.galley.text());
+                        assert!(
+                            bounds.right() <= size.x,
+                            "text overflows the window: {}",
+                            text.galley.text(),
+                        );
+                    }
+                }
+                let primitives = ctx.tessellate(output.shapes, output.pixels_per_point);
+                assert!(!primitives.is_empty());
+                for primitive in primitives {
+                    if let egui::epaint::Primitive::Mesh(mesh) = primitive.primitive {
+                        assert!(mesh.vertices.iter().all(|vertex| vertex.pos.is_finite()));
+                    }
                 }
             }
         }

@@ -259,7 +259,7 @@ impl Pointers {
             Ok(image) => image,
             Err(error) => {
                 pointers.notes.push(format!(
-                    "no pointer artwork: WYD.exe could not be read: {error}"
+                    "no pointer artwork: game executable could not be read: {error}"
                 ));
 
                 return pointers;
@@ -270,7 +270,7 @@ impl Pointers {
             Ok(resources) => resources,
             Err(error) => {
                 pointers.notes.push(format!(
-                    "no pointer artwork: WYD.exe has no readable resources: {error}"
+                    "no pointer artwork: game executable has no readable resources: {error}"
                 ));
 
                 return pointers;

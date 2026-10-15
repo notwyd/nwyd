@@ -17,7 +17,7 @@ pub struct Attachment {
     pub billboard: Billboard,
     body_slot: usize,
     lift: f32,
-    retail_size: Vec3,
+    base_size: Vec3,
     published: bool,
     disabled: bool,
 }
@@ -53,7 +53,7 @@ fn add(
         billboard: b,
         body_slot,
         lift,
-        retail_size: size,
+        base_size: size,
         published: a.body_points.points[body_slot].is_some(),
         disabled: false,
     });
@@ -281,7 +281,7 @@ pub(crate) fn update_in_scene(
     let scale = a.presentation_scale();
 
     for s in &mut a.body_sprites.sprites {
-        s.billboard.scale = s.retail_size * factor;
+        s.billboard.scale = s.base_size * factor;
 
         let (body_slot, lift) = if special && (0x870..=0x888).contains(&s.slot) {
             let i = usize::from((s.slot - 0x870) / 4);

@@ -15,7 +15,7 @@ pub const USER_AGENT: &str =
 pub fn open(
     parent: &winit::window::Window,
     url: &str,
-    retail_exe: &std::path::Path,
+    game_exe: &std::path::Path,
 ) -> anyhow::Result<Browser> {
     #[cfg(target_os = "windows")]
     {
@@ -28,13 +28,13 @@ pub fn open(
         Ok(native::Browser::open(
             windows::Win32::Foundation::HWND(handle.hwnd.get() as *mut _),
             url,
-            retail_exe,
+            game_exe,
         )?)
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
-        let _ = retail_exe;
+        let _ = game_exe;
 
         webkit::Browser::open(parent, url)
     }

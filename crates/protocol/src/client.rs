@@ -74,41 +74,15 @@ pub const MAC_LEN: usize = 6;
 
 pub const SHIPPED_VERSION: i32 = 0xC8C9 * 0x1000 + 0x301;
 
-pub const VERSION: i32 = 0x0C9D_8301;
+pub const VERSION: i32 = crate::send_state::Profile::BuildC9D9.login_version();
 
 pub const PROXY_DLL: &str = "version.dll";
 
-pub const PROXY_ANCHOR: [u8; 10] = [0x6A, 0x04, 0x8D, 0x54, 0x24, 0x24, 0xC7, 0x44, 0x24, 0x24];
-
-const PROXY_ANCHOR_735: [u8; 10] = [0x6A, 0x04, 0x8D, 0x54, 0x24, 0x1C, 0xC7, 0x44, 0x24, 0x1C];
-
 pub fn version_from_proxy(dll: &[u8]) -> Option<i32> {
-    let mut found = None;
+    let word = crate::proxy::build_word(dll).ok()?;
+    let version = word.checked_mul(0x1000)?.checked_add(0x301)?;
 
-    for candidate in dll.windows(PROXY_ANCHOR.len() + 4) {
-        let prefix = &candidate[..PROXY_ANCHOR.len()];
-
-        if prefix != PROXY_ANCHOR && prefix != PROXY_ANCHOR_735 {
-            continue;
-        }
-
-        if found.is_some() {
-            return None;
-        }
-
-        let at = PROXY_ANCHOR.len();
-
-        let word = u32::from_le_bytes([
-            candidate[at],
-            candidate[at + 1],
-            candidate[at + 2],
-            candidate[at + 3],
-        ]);
-
-        found = Some(word);
-    }
-
-    found.map(|word| word.wrapping_shl(12).wrapping_add(0x301) as i32)
+    i32::try_from(version).ok()
 }
 
 pub const ACCOUNT_MIN: usize = 4;

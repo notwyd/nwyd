@@ -8,12 +8,13 @@ rust-version.workspace = true
 repository.workspace = true
 readme = false
 publish = ["crates-io"]
-include = ["/src/**", "/Cargo.toml", "/LICENSE", "!**/*.md"]
+include = ["/src/**", "/Cargo.toml", "/LICENSE", "/NOTICE", "!**/*.md"]
 
 [dependencies]
 formats.workspace = true
 tracing.workspace = true
 
+iced-x86 = { version = "1.21.0", default-features = false, features = ["std", "decoder", "instr_info"] }
 web-time = "1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NWYD asset cache browser tests</title>
+  <style>
+    body { color: #e5e7eb; background: #111827; font: 16px/1.5 system-ui, sans-serif; max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+    button { font: inherit; padding: .5rem 1rem; }
+    pre { white-space: pre-wrap; }
+    iframe { display: none; }
+    .pass { color: #86efac; }
+    .fail { color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <h1>Asset cache browser tests</h1>
+  <p>Uses native IndexedDB and Web Locks across independent same-origin frames. Each run creates and deletes a tiny, isolated test database. The player's saved assets are never touched.</p>
+  <button id="run" type="button">Run browser tests</button>
+  <pre id="results" role="status" aria-live="polite">Ready. Serve this repository over localhost or HTTPS.</pre>
+  <script type="module" src="./cache.browser.mjs"></script>
+</body>
+</html>

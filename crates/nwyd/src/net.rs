@@ -257,8 +257,8 @@ pub enum Transition {
 
 #[derive(Default)]
 pub struct Session {
-    pub guild_proxy: std::sync::Arc<std::sync::Mutex<crate::scene::guild_request::RetailState>>,
-    retail_sender: protocol::retail::SharedSender,
+    pub guild_proxy: std::sync::Arc<std::sync::Mutex<crate::scene::guild_request::ProxyState>>,
+    send_state: protocol::send_state::SharedSender,
     pub(crate) analytics: crate::analytics::Analytics,
     pub client_config: std::sync::Arc<formats::net::client_config::Config>,
     server_return_notice: bool,
@@ -279,7 +279,6 @@ pub struct Session {
     drift: crate::clock_drift::Monitor,
     report_clock_drift: Option<bool>,
     unhandled: std::collections::BTreeSet<u16>,
-    version: Option<i32>,
 }
 
 impl Session {
@@ -408,14 +407,22 @@ impl Session {
         self
     }
 
-    pub fn with_version(mut self, version: Option<i32>) -> Session {
-        self.version = version;
+    pub fn with_profile(mut self, profile: protocol::send_state::Profile) -> Session {
+        self.disconnect();
+
+        self.send_state = std::sync::Arc::new(std::sync::Mutex::new(
+            protocol::send_state::Sender::new(profile),
+        ));
 
         self
     }
 
     pub fn version(&self) -> i32 {
-        self.version.unwrap_or(client::VERSION)
+        self.send_state
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .profile()
+            .login_version()
     }
 
     pub fn phase(&self) -> Phase {
@@ -570,7 +577,7 @@ impl Session {
 
         let version = self.version();
 
-        connection.retail_sender = self.retail_sender.clone();
+        connection.send_state = self.send_state.clone();
 
         let mut body = client::login(&request, &fingerprint, version);
 
@@ -597,7 +604,7 @@ impl Session {
         self.phase = Phase::Authenticating;
 
         self.last_send_ms = self
-            .retail_sender
+            .send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .last_tick;
@@ -656,7 +663,7 @@ impl Session {
             .map_err(|error| format!("could not send the redirect login packet: {error}"))?;
 
         self.last_send_ms = self
-            .retail_sender
+            .send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .last_tick;
@@ -679,7 +686,7 @@ impl Session {
     }
 
     pub fn take_chat_limit_notice(&mut self) -> Option<usize> {
-        self.retail_sender
+        self.send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .take_notice()
@@ -720,7 +727,7 @@ impl Session {
         };
 
         connection
-            .retail_sender
+            .send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .config = self.client_config.clone();
@@ -738,7 +745,7 @@ impl Session {
         }
 
         self.last_send_ms = connection
-            .retail_sender
+            .send_state
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .last_tick;
@@ -1388,6 +1395,10 @@ fn field_send_allowed(previous: u16, next: u16, last_send_ms: u32, now_ms: u32) 
         || !matches!(next, 0x367 | 0x39D | 0x39E)
 }
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "net/profile_tests.rs"]
+mod profile_tests;
+
 #[cfg(test)]
 mod tests {
 
@@ -1485,25 +1496,25 @@ mod tests {
             assert_eq!(session.last_send_ms, 5000);
             assert!(
                 session
-                    .send_field(&mut request(first), "first", 25002)
+                    .send_field(&mut request(first), "first", 25006)
                     .unwrap()
             );
-            assert_eq!(session.last_send_ms, 25003);
+            assert_eq!(session.last_send_ms, 25007);
 
             let mut suppressed = request(second);
             let original = suppressed.clone();
             assert!(
                 !session
-                    .send_field(&mut suppressed, "second", 25002)
+                    .send_field(&mut suppressed, "second", 25006)
                     .unwrap()
             );
             assert_eq!(suppressed, original);
-            assert_eq!(session.last_send_ms, 25003);
+            assert_eq!(session.last_send_ms, 25007);
             assert_eq!(session.last_limited_opcode, first);
 
             assert!(
                 session
-                    .send_field(&mut client::keepalive(), "marker", 25002)
+                    .send_field(&mut client::keepalive(), "marker", 25006)
                     .unwrap()
             );
             session.disconnect();
@@ -1520,7 +1531,7 @@ mod tests {
             assert!(packets.iter().all(|packet| packet.checksum_ok));
             assert_eq!(packets[0].header.opcode, 0x20D);
             assert_eq!(packets[1].header.opcode, first);
-            assert_eq!(packets[1].header.tick, 25003);
+            assert_eq!(packets[1].header.tick, 25007);
             assert_eq!(packets[1].header.key, 0xFE);
             assert_eq!(packets[2].header.opcode, 0x3A0);
             assert_eq!(packets[2].header.key, 0xFD);

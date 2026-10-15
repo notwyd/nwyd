@@ -61,7 +61,7 @@ impl PartCache {
             tracing::warn!(
                 % path, declared_indices = mesh.header.num_indices, retained_indices =
                 mesh.indices.len(),
-                "rendering complete triangles from a short retail mesh index tail"
+                "rendering complete triangles from a short mesh index tail"
             );
         }
 

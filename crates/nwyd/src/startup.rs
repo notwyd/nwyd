@@ -12,6 +12,8 @@ const CONFIG_FILE: &[u8] = b"Config.bin";
 const STATUS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
 pub fn load_client(mut game: GameDir, analytics: crate::analytics::Analytics) -> Result<Client> {
+    let profile = client_profile(&game)?;
+
     let items = crate::scene::item_table::load(&game)?;
 
     let mut config = load_config(&game);
@@ -92,15 +94,13 @@ pub fn load_client(mut game: GameDir, analytics: crate::analytics::Analytics) ->
         },
     };
 
-    let (version, _) = client_version(&game);
-
     Ok(Client::new(settings, scene)
         .with_render_quality(config.raw[config_bin::slot::EFFECT_QUALITY], true)
         .with_inverted_mouse(config.invert_mouse())
         .with_audio(audio)
         .with_session(
             crate::net::Session::new(crate::net::Verbosity::Quiet)
-                .with_version(Some(version))
+                .with_profile(profile)
                 .with_analytics(analytics),
         )
         .with_game_settings(preferences, settings_path, &game)
@@ -198,24 +198,25 @@ fn write_quick_slots(game: &GameDir, bytes: &[u8]) -> Result<()> {
     crate::user_paths::write_quick_slots(game, bytes)
 }
 
-fn client_version(game: &GameDir) -> (i32, String) {
-    use protocol::client;
+fn client_profile(game: &GameDir) -> Result<protocol::send_state::Profile> {
+    let bytes = game
+        .read(protocol::client::PROXY_DLL.as_bytes())
+        .context("could not read version.dll from the game directory")?;
 
-    let named = client::PROXY_DLL;
+    let word = protocol::proxy::build_word(&bytes)
+        .context("could not discover the login version in version.dll")?;
 
-    match game.read(named.as_bytes()) {
-        Ok(bytes) => match client::version_from_proxy(&bytes) {
-            Some(version) => (version, format!("resolved from {named}")),
-            None => (
-                client::VERSION,
-                format!("compiled-in fallback — {named} carries no unique build word"),
-            ),
-        },
-        Err(error) => (
-            client::VERSION,
-            format!("compiled-in fallback — {named} is unreadable: {error}"),
-        ),
-    }
+    let profile = protocol::send_state::Profile::from_build_word(word).with_context(|| {
+        format!("version.dll build {word:#06X} uses an unsupported timestamp watermark")
+    })?;
+
+    tracing::info!(
+        build = format_args!("{word:#06X}"),
+        version = format_args!("{:#010X}", profile.login_version()),
+        "NWYD: protocol profile resolved from version.dll"
+    );
+
+    Ok(profile)
 }
 
 fn load_config(game: &GameDir) -> Config {
@@ -230,5 +231,37 @@ fn load_config(game: &GameDir) -> Config {
 
             Config::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_missing_proxy_stops_startup_before_loading_other_assets() {
+        let game = GameDir::from_files("test-game", []).unwrap();
+        let error = match load_client(game, Default::default()) {
+            Ok(_) => panic!("startup accepted a missing proxy"),
+            Err(error) => error,
+        };
+
+        assert!(error.to_string().contains("could not read version.dll"));
+    }
+
+    #[test]
+    fn an_invalid_proxy_cannot_select_a_fallback_protocol() {
+        let game = GameDir::from_files(
+            "test-game",
+            [("VERSION.DLL".into(), b"not a PE image".to_vec())],
+        )
+        .unwrap();
+        let error = client_profile(&game).unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("could not discover the login version")
+        );
     }
 }

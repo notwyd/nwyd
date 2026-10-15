@@ -101,4 +101,4 @@ pub(crate) fn fixed_string(field: &[u8], codepage: crate::text::Codepage) -> Str
     crate::text::codepage::decode(&field[..end], codepage)
 }
 
-pub mod retail;
+pub mod game_rules;

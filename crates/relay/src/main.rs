@@ -19,7 +19,7 @@ fn main() -> eframe::Result {
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_title("NWYD Relay")
-                .with_inner_size([560.0, 660.0])
+                .with_inner_size([600.0, 780.0])
                 .with_min_inner_size([420.0, 480.0]),
             renderer: eframe::Renderer::Glow,
             ..Default::default()

@@ -31,8 +31,22 @@ make release-windows
 
 ## WebAssembly
 
+- Node.js 22.12+ and npm
+
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo install --locked wasm-bindgen-cli --version 0.2.126
 make release-web
+```
+
+## Relay
+
+```sh
+make release-relay
+```
+
+### Windows (cross-build from Linux)
+
+```sh
+make release-relay-windows
 ```

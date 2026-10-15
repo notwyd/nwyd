@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/nwyd", "crates/assets", "crates/audio", "crates/formats", "crates/protocol", "crates/render", "crates/ui"]
+members = ["crates/nwyd", "crates/relay", "crates/assets", "crates/audio", "crates/formats", "crates/protocol", "crates/render", "crates/ui"]
 default-members = ["crates/nwyd"]
 
 [workspace.package]

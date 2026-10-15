@@ -619,7 +619,7 @@ impl Screen {
 pub struct Panels {
     pub(crate) analytics: crate::analytics::Analytics,
     pub(crate) analytics_next_level: i32,
-    pub guild_proxy: std::sync::Arc<std::sync::Mutex<super::guild_request::RetailState>>,
+    pub guild_proxy: std::sync::Arc<std::sync::Mutex<super::guild_request::ProxyState>>,
     pub client_config: std::sync::Arc<formats::net::client_config::Config>,
     pub zone_time: super::zone_time::Shared,
     pub sealed_records: super::kept::Records,

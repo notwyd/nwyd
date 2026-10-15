@@ -1927,8 +1927,13 @@ impl Client {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn start(&mut self, event_loop: &ActiveEventLoop) -> Result<Live> {
+        let icon = formats::texture::decode_image(include_bytes!("../resources/nwyd.png"))
+            .context("decoding the application icon")?;
+        let icon = winit::window::Icon::from_rgba(icon.data, icon.width, icon.height)
+            .context("creating the application icon")?;
         let attributes = Window::default_attributes()
             .with_title(self.settings.title.clone())
+            .with_window_icon(Some(icon))
             .with_inner_size(logical_backbuffer(event_loop, self.settings.backbuffer))
             .with_resizable(false)
             .with_fullscreen(

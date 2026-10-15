@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes de integração do inicializador NWYD</title>
+  <style>
+    body { max-width: 850px; margin: 40px auto; padding: 0 20px; font: 16px/1.5 system-ui; }
+    li { margin: 12px 0; }
+    .pass { color: #087c34; }
+    .fail { color: #ba1c1c; white-space: pre-wrap; }
+    iframe { width: 100%; height: 180px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Testes de integração do inicializador NWYD</h1>
+  <p>Os testes usam o inicializador real com um ambiente de jogo e adaptador gráfico simulados, IndexedDB real e documentos independentes da mesma origem. Não é necessário fornecer arquivos do jogo.</p>
+  <p id="summary" role="status">Executando testes…</p>
+  <ol id="results"></ol>
+  <div id="frames"></div>
+  <script type="module" src="./launcher.browser.mjs"></script>
+</body>
+</html>

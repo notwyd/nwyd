@@ -369,14 +369,14 @@ pub struct Browser {
 }
 
 impl Browser {
-    pub fn open(parent: HWND, url: &str, retail_exe: &Path) -> Result<Self> {
-        Self::open_with_user_agent(parent, url, retail_exe, Some(super::USER_AGENT))
+    pub fn open(parent: HWND, url: &str, game_exe: &Path) -> Result<Self> {
+        Self::open_with_user_agent(parent, url, game_exe, Some(super::USER_AGENT))
     }
 
     pub fn open_with_user_agent(
         parent: HWND,
         url: &str,
-        retail_exe: &Path,
+        game_exe: &Path,
         agent: Option<&str>,
     ) -> Result<Self> {
         unsafe {
@@ -432,11 +432,7 @@ impl Browser {
 
             use std::os::windows::ffi::OsStrExt;
 
-            let path: Vec<_> = retail_exe
-                .as_os_str()
-                .encode_wide()
-                .chain(Some(0))
-                .collect();
+            let path: Vec<_> = game_exe.as_os_str().encode_wide().chain(Some(0)).collect();
 
             if let Ok(module) =
                 LoadLibraryExW(PCWSTR(path.as_ptr()), None, LOAD_LIBRARY_AS_DATAFILE)

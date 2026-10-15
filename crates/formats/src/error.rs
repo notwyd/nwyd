@@ -177,7 +177,7 @@ impl fmt::Display for Kind {
             Kind::RoyalArena => "Royal Arena payload",
             Kind::ArenaVisualData => "ArenaVisualData.bin",
             Kind::CData => "cdata.bin",
-            Kind::Executable => "WYD.exe",
+            Kind::Executable => "game executable",
             Kind::AccountInfo => "account info payload",
             Kind::EnterWorld => "enter world payload",
             Kind::Spawn => "entity spawn payload",

@@ -1036,7 +1036,7 @@ pub const USABLE_IDS: [std::ops::RangeInclusive<i32>; 34] = [
 ];
 
 pub fn refinable(items: &ItemList, item: &Item) -> bool {
-    if formats::data::retail::refinement_denied(
+    if formats::data::game_rules::refinement_denied(
         item.index,
         formats::mesh::appearance::refine_level(item, items) as i32,
     ) {

@@ -121,18 +121,18 @@ pub fn packed(value: i32, rng: &mut Lcg) -> i32 {
 }
 
 #[derive(Default)]
-pub struct RetailState {
+pub struct ProxyState {
     suffix: String,
     last_name_fallback: u32,
 }
 
-impl std::fmt::Debug for RetailState {
+impl std::fmt::Debug for ProxyState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RetailState").finish_non_exhaustive()
+        f.debug_struct("ProxyState").finish_non_exhaustive()
     }
 }
 
-impl RetailState {
+impl ProxyState {
     pub fn prepare(&mut self, endpoint: formats::net::guild_web::Endpoint, body: &mut String) {
         use formats::net::guild_web::Endpoint;
 

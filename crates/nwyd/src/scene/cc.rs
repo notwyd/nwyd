@@ -1396,7 +1396,7 @@ fn buff_loop(scene: &mut FieldScene, player: usize, now_ms: u32) -> Option<Stopp
                 .effects()
                 .total_scaled(&scene.entered.equipment.items[7], 0x15);
 
-            if !formats::data::retail::skill_weapon_allowed(code, weapon) {
+            if !formats::data::game_rules::skill_weapon_allowed(code, weapon) {
                 continue;
             }
 

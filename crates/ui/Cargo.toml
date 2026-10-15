@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 readme = false
 publish = ["crates-io"]
-include = ["/src/**", "/Cargo.toml", "/LICENSE", "!**/*.md"]
+include = ["/src/**", "/Cargo.toml", "/LICENSE", "/NOTICE", "!**/*.md"]
 
 [dependencies]
 formats.workspace = true

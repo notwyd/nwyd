@@ -9,7 +9,7 @@ HOST_TARGET := $(shell rustc -vV | sed -n 's/^host: //p')
 WINDOWS_TARGET := x86_64-pc-windows-msvc
 GAME_DIR ?= .
 
-.PHONY: help check test fmt fmt-check release run release-linux release-macos release-windows check-windows package-libs publish-check check-web release-web serve-web test-web
+.PHONY: help check test fmt fmt-check release run release-linux release-macos release-windows check-windows package-libs publish-check check-web release-web serve-web test-web release-relay release-relay-windows test-relay
 
 help:
 	@printf '%s\n' \
@@ -20,10 +20,13 @@ help:
 	  'make release-linux: native Linux release' \
 	  'make release-macos: native macOS release' \
 	  'make release-windows: cross-compile Windows x64 from Linux with cargo-xwin' \
+	  'make release-relay: build the native desktop relay' \
+	  'make release-relay-windows: cross-compile the Windows relay' \
+	  'make test-relay: test the relay and desktop UI' \
 	  'make check-web: check the WebAssembly target' \
-	  'make release-web: build the browser bundle in dist/play' \
-	  'make serve-web: serve the browser bundle at http://localhost:8080/play/' \
-	  'make test-web: install test dependencies and test browser imports and caching' \
+	  'make release-web: build WASM and bundle/minify browser assets in dist' \
+	  'make serve-web: serve the browser bundle at http://localhost:8080/' \
+	  'make test-web: install browser dependencies and test imports and caching' \
 	  'make check-windows: check the Windows x64 cross-build from Linux' \
 	  'make fmt / fmt-check: format Rust source / check formatting with nightly rustfmt' \
 	  'make package-libs: package and verify all six libraries' \
@@ -69,13 +72,22 @@ check-windows:
 	$(CARGO) xwin check --locked --target "$(WINDOWS_TARGET)" --target-dir "$(TARGET_DIR)" -p nwyd
 
 package-libs:
-	$(CARGO) package --locked --workspace --exclude nwyd
+	$(CARGO) package --locked --workspace --exclude nwyd --exclude nwyd-relay
 
 publish-check:
-	$(CARGO) publish --dry-run --locked --workspace --exclude nwyd
+	$(CARGO) publish --dry-run --locked --workspace --exclude nwyd --exclude nwyd-relay
+
+release-relay:
+	$(CARGO) build --locked --release --target "$(HOST_TARGET)" --target-dir "$(TARGET_DIR)" -p nwyd-relay
+
+release-relay-windows:
+	CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS="-C target-feature=+crt-static" $(CARGO) xwin build --locked --release --target "$(WINDOWS_TARGET)" --target-dir "$(TARGET_DIR)" -p nwyd-relay
+
+test-relay:
+	$(CARGO) test --locked -p nwyd-relay --all-targets
 
 check-web:
-	$(CARGO) check --locked --target wasm32-unknown-unknown -p nwyd
+	$(CARGO) check --locked --target wasm32-unknown-unknown --target-dir "$(TARGET_DIR)" -p nwyd
 
 release-web:
 	CARGO="$(CARGO)" CARGO_TARGET_DIR="$(TARGET_DIR)" ./tools/build-web.sh
@@ -83,6 +95,5 @@ release-web:
 serve-web: release-web
 	python3 -m http.server 8080 --bind 127.0.0.1 --directory dist
 
-test-web:
-	npm --prefix web ci --ignore-scripts
+test-web: check-web
 	npm --prefix web test

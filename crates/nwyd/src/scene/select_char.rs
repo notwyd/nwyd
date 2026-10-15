@@ -624,7 +624,7 @@ pub fn restore_selection_bodies(block: &mut Block, substitute: i16) {
             tracing::debug!(
                 target : "nwyd::body_state", event = "selection_body_restored", slot,
                 previous_body = body, account_body = substitute,
-                "Retail selection initializer restored account body"
+                "Selection initializer restored account body"
             );
         }
     }
@@ -1331,7 +1331,7 @@ impl SelectChar {
                         tracing::debug!(
                             target : "nwyd::body_state", event =
                             "selection_body_remembered", slot = record, body,
-                            "Retail selection panel remembered body"
+                            "Selection panel remembered body"
                         );
                     }
 

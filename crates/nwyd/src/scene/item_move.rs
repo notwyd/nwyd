@@ -618,7 +618,8 @@ fn combine(
 
     let refine = refine_level(&target, items) as i32;
 
-    if let Some(message) = formats::data::retail::refinement_prompt(src_id as u16, &target, refine)
+    if let Some(message) =
+        formats::data::game_rules::refinement_prompt(src_id as u16, &target, refine)
     {
         cooldowns.stamp(src_kind, now_ms);
 

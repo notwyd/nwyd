@@ -4,8 +4,9 @@ pub mod codec;
 pub mod header;
 pub mod keys;
 pub mod machine;
-pub mod retail;
+pub mod proxy;
 pub mod rng;
+pub mod send_state;
 pub mod server;
 pub mod transport;
 
