@@ -1,6 +1,3 @@
-//! Bounded asynchronous HTTP for the browser. Legacy HTTP endpoints can be
-//! reached through an explicitly configured, server-side allowlisted proxy.
-
 use std::{cell::RefCell, time::Duration};
 use wasm_bindgen::prelude::*;
 
@@ -18,7 +15,8 @@ pub fn configure_proxy(endpoint: &str) -> Result<(), String> {
         || url.fragment().is_some()
     {
         return Err(
-            "HTTP proxy must be an absolute HTTP(S) URL without credentials or a fragment".into(),
+            "O proxy HTTP deve ter um endereço HTTP(S) completo, sem credenciais nem fragmento"
+                .into(),
         );
     }
 
@@ -32,12 +30,15 @@ export async function nwyd_http(url, body, timeout, limit) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
     try {
+        const hostname = new URL(url).hostname;
+        const loopback = hostname === '127.0.0.1' || hostname === '[::1]' || hostname === 'localhost';
         const response = await fetch(url, {
             method: body === undefined ? 'GET' : 'POST',
             body,
             headers: body === undefined ? undefined : {'Content-Type': 'application/x-www-form-urlencoded'},
             credentials: 'omit',
             cache: 'no-store',
+            ...(loopback ? {targetAddressSpace: 'loopback'} : {}),
             signal: controller.signal,
         });
         if (!response.body) return [response.status, new Uint8Array()];
@@ -106,7 +107,7 @@ pub(crate) async fn fetch(
     .await
     .map_err(|error| {
         format!(
-            "browser HTTP request failed (check HTTPS, CORS, or the configured proxy): {error:?}"
+            "A requisição HTTP do navegador falhou (verifique HTTPS, CORS ou o proxy configurado): {error:?}"
         )
     })?;
 
@@ -115,7 +116,7 @@ pub(crate) async fn fetch(
     let status = response
         .get(0)
         .as_f64()
-        .ok_or("browser returned an invalid HTTP status")? as u16;
+        .ok_or("O navegador retornou um status HTTP inválido")? as u16;
 
     Ok((status, js_sys::Uint8Array::new(&response.get(1)).to_vec()))
 }

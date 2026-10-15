@@ -1,5 +1,3 @@
-//! CPU preparation runs on a native worker or cooperatively on the browser event loop.
-
 use std::sync::mpsc::{Receiver, SyncSender};
 
 pub(crate) fn spawn<T: Send + 'static, R: Send + 'static>(
@@ -26,8 +24,6 @@ pub(crate) fn spawn<T: Send + 'static, R: Send + 'static>(
 
         wasm_bindgen_futures::spawn_local(async move {
             loop {
-                // Yield between jobs, including while idle. Never block a browser thread
-                // on std::sync::mpsc or attempt to spawn an OS thread.
                 crate::web::delay(16).await;
 
                 match requests.try_recv() {

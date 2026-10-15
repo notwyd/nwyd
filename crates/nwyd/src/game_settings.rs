@@ -159,8 +159,6 @@ impl Preferences {
         Ok(())
     }
 
-    /// Load user preferences, importing a legacy file from either a native or
-    /// browser-selected directory only when no user preference is stored yet.
 
     pub fn load_for_game(game: &assets::GameDir) -> Result<Option<Self>> {
         let path = crate::user_paths::settings()?;

@@ -1,7 +1,3 @@
-//! Small user preferences persist in this origin's local storage when available,
-//! and remain usable for the current session if storage is blocked or full.
-//! Selected game files remain read-only and are never sent to a server.
-
 use super::browser_store::SessionPreferences;
 use std::{cell::RefCell, io, path::Path};
 

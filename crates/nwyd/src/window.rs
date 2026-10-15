@@ -321,8 +321,6 @@ impl Client {
         state: ElementState,
         repeat: bool,
     ) {
-        // Web winit reports Backspace without text. Route its control character
-        // once on every backend, including native events that already supply it.
         let text = match logical {
             winit::keyboard::Key::Named(winit::keyboard::NamedKey::Backspace) => Some("\u{8}"),
             _ => text,
@@ -1873,8 +1871,6 @@ impl Client {
         Ok(())
     }
 
-    /// Initialize WebGPU without blocking the browser, then attach the shared
-    /// game event loop to an existing canvas. The page controls its CSS size.
     #[cfg(target_arch = "wasm32")]
     pub async fn run_on_canvas(mut self, canvas: web_sys::HtmlCanvasElement) -> Result<()> {
         use winit::platform::web::EventLoopExtWebSys;

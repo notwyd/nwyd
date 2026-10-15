@@ -86,7 +86,6 @@ fn instance_descriptor() -> wgpu::InstanceDescriptor {
     let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
 
     if cfg!(target_arch = "wasm32") {
-        // The shared renderer requires WebGPU (including BC textures), not WebGL.
         descriptor.backends = wgpu::Backends::BROWSER_WEBGPU;
     } else if cfg!(target_os = "windows") {
         descriptor.backends = wgpu::Backends::VULKAN;
@@ -119,8 +118,6 @@ impl Gpu {
             });
         }
 
-        // Timestamp writes outside render passes are a native extension. They
-        // are not needed by the browser renderer and cannot be requested there.
         let profiling_features = if cfg!(target_arch = "wasm32") {
             wgpu::Features::empty()
         } else {

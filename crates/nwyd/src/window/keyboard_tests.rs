@@ -49,7 +49,6 @@ fn backspace(client: &mut Client, text: Option<&str>, state: ElementState, repea
 #[test]
 fn backspace_deletes_once_in_login_and_password_with_or_without_event_text() {
     for field in [0, 1] {
-        // Web winit omits text for Backspace; native backends may provide it.
         for text in [None, Some("\u{8}")] {
             let mut client = login_client(field);
             backspace(&mut client, text, ElementState::Pressed, false);

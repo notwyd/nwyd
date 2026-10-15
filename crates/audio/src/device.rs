@@ -168,8 +168,6 @@ fn scatter<T: Copy + Default>(
     }
 }
 
-/// Asset loading outlives the folder picker's user activation. Resume the audio
-/// context from a later trusted gesture, including after a browser interruption.
 #[cfg(target_arch = "wasm32")]
 struct BrowserUnlock {
     window: web_sys::Window,
@@ -200,7 +198,6 @@ impl BrowserUnlock {
                 return;
             }
 
-            // Call resume during the event itself, while user activation is live.
             let result = context.resume();
 
             wasm_bindgen_futures::spawn_local(async move {

@@ -1,4 +1,3 @@
-//! Browser transport: one binary WebSocket is one ordered TCP byte stream.
 use super::*;
 use std::{
     cell::{Cell, RefCell},
@@ -17,8 +16,6 @@ thread_local! {
     static GATEWAY: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
-/// Set the WebSocket-to-TCP gateway before logging in. An HTTPS page requires
-/// `wss:`. There is deliberately no default public gateway.
 
 pub fn configure_websocket_gateway(endpoint: &str) -> io::Result<()> {
     let url = web_sys::Url::new(endpoint).map_err(js_error)?;
@@ -231,7 +228,6 @@ impl Link {
             timer: Cell::new(None),
         });
 
-        // Count queued bytes consistently with writes made while CONNECTING.
         diagnostics.bytes(true, HELLO.len());
 
         let state = shared.clone();
@@ -403,8 +399,6 @@ impl Link {
             );
         });
 
-        // Own handlers before the fallible timer registration so any error
-        // detaches callbacks and closes the socket before closures are dropped.
         let socket = Socket {
             socket,
             shared,

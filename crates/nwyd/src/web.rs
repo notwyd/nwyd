@@ -1,5 +1,3 @@
-//! Public browser embedding API, consumed by web/play.js.
-
 use std::cell::Cell;
 use wasm_bindgen::prelude::*;
 
@@ -24,7 +22,7 @@ impl GameFiles {
             std::panic::set_hook(Box::new(|info| {
                 console_error_panic_hook::hook(info);
 
-                report_error(&format!("The game stopped unexpectedly: {info}"));
+                report_error(&format!("O jogo foi interrompido inesperadamente: {info}"));
             }));
         });
 
@@ -35,7 +33,6 @@ impl GameFiles {
         }
     }
 
-    /// Each path is relative to the selected directory; bytes never leave the browser.
 
     pub fn add_file(&mut self, path: String, bytes: Vec<u8>) -> Result<(), JsValue> {
         self.bytes = self
@@ -43,7 +40,9 @@ impl GameFiles {
             .checked_add(bytes.len())
             .filter(|total| *total <= MAX_ASSET_BYTES)
             .ok_or_else(|| {
-                JsValue::from_str("Game assets exceed the 1 GiB browser import limit.")
+                JsValue::from_str(
+                    "Os arquivos do jogo excedem o limite de importação de 1 GiB do navegador.",
+                )
             })?;
 
         self.files.push((path, bytes));
@@ -51,7 +50,6 @@ impl GameFiles {
         Ok(())
     }
 
-    /// Resolves after the shared renderer and browser event loop have started.
 
     pub async fn start(
         self,
@@ -61,32 +59,41 @@ impl GameFiles {
     ) -> Result<(), JsValue> {
         if STARTED.with(|started| started.get()) {
             return Err(JsValue::from_str(
-                "The game is already running. Reload the page to restart.",
+                "O jogo já está em execução. Recarregue a página para reiniciar.",
             ));
         }
 
         if !gateway.is_empty() {
-            protocol::transport::configure_websocket_gateway(&gateway).map_err(js_error)?;
+            protocol::transport::configure_websocket_gateway(&gateway)
+                .map_err(|error| js_error(error, "O endereço de conexão do relay é inválido."))?;
         }
 
         if !http_proxy.is_empty() {
-            crate::http_web::configure_proxy(&http_proxy).map_err(js_error)?;
+            crate::http_web::configure_proxy(&http_proxy)
+                .map_err(|error| js_error(error, "O endereço HTTP do relay é inválido."))?;
         }
 
-        let game = assets::GameDir::from_files(self.root, self.files).map_err(js_error)?;
+        let game = assets::GameDir::from_files(self.root, self.files).map_err(|error| {
+            js_error(error, "Não foi possível carregar os arquivos do jogo. Selecione uma instalação completa e válida.")
+        })?;
 
         let client = crate::startup::load_client(game, crate::analytics::Analytics::default())
-            .map_err(js_error)?;
+            .map_err(|error| {
+                js_error(error, "Não foi possível preparar o jogo. Verifique se a pasta selecionada contém todos os arquivos de uma instalação válida.")
+            })?;
 
-        // Creating a winit event loop is one-shot even if GPU initialization fails.
         STARTED.with(|started| started.set(true));
 
-        client.run_on_canvas(canvas).await.map_err(js_error)
+        client.run_on_canvas(canvas).await.map_err(|error| {
+            js_error(error, "Não foi possível iniciar os gráficos do jogo. Verifique se o navegador e a placa de vídeo oferecem suporte a WebGPU.")
+        })
     }
 }
 
-fn js_error(error: impl std::fmt::Display) -> JsValue {
-    JsValue::from_str(&format!("{error:#}"))
+fn js_error(error: impl std::fmt::Display, message: &str) -> JsValue {
+    web_sys::console::error_1(&JsValue::from_str(&format!("{error:#}")));
+
+    JsValue::from_str(message)
 }
 
 pub(crate) async fn delay(milliseconds: i32) {
@@ -103,7 +110,10 @@ pub(crate) async fn delay(milliseconds: i32) {
 pub(crate) fn report_error(message: &str) {
     web_sys::console::error_1(&JsValue::from_str(message));
 
-    dispatch_message("nwyd-error", message);
+    dispatch_message(
+        "nwyd-error",
+        "O jogo foi interrompido por um erro inesperado.",
+    );
 }
 
 pub(crate) fn report_notice(message: &str) {

@@ -14,7 +14,6 @@ fn config_base() -> Result<PathBuf> {
 
 #[cfg(target_arch = "wasm32")]
 fn config_base() -> Result<PathBuf> {
-    // These paths are browser-storage keys, never host filesystem paths.
     Ok(PathBuf::from("browser"))
 }
 

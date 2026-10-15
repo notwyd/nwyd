@@ -1,8 +1,5 @@
 use std::{collections::HashMap, io};
 
-/// Session values take precedence over local storage, including after a quota
-/// error leaves an older persisted value behind. Cache successful reads too, so
-/// losing storage access later does not discard already loaded preferences.
 #[derive(Default)]
 pub(super) struct SessionPreferences {
     values: HashMap<String, Vec<u8>>,
@@ -42,8 +39,6 @@ impl SessionPreferences {
         let value = serde_json::to_string(bytes)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
 
-        // Browser policies and storage quota must not prevent entering the game
-        // or changing settings. The latest value remains available this session.
         let _ = persist(&value);
 
         Ok(())

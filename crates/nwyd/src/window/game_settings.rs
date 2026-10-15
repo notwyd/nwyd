@@ -136,9 +136,10 @@ impl Client {
                     % error, path = % panel.path.display(), "NWYD: applying settings failed"
                 );
 
-                let portuguese = self.screens.as_ref().is_none_or(|screens| {
-                    screens.game().language() == formats::config::Language::Portuguese
-                });
+                let portuguese = cfg!(target_arch = "wasm32")
+                    || self.screens.as_ref().is_none_or(|screens| {
+                        screens.game().language() == formats::config::Language::Portuguese
+                    });
 
                 let message = if portuguese {
                     "Não foi possível aplicar as configurações. As configurações anteriores foram mantidas."
@@ -147,7 +148,7 @@ impl Client {
                 };
 
                 #[cfg(target_arch = "wasm32")]
-                crate::web::report_notice(&format!("{message}\n\n{error:#}"));
+                crate::web::report_notice(message);
 
                 #[cfg(not(target_arch = "wasm32"))]
                 if self.error_dialogs {

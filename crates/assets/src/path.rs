@@ -80,9 +80,6 @@ impl GameDir {
         })
     }
 
-    /// Construct a read-only directory from browser-selected files. Paths must be
-    /// relative to the selected directory, with its top-level name removed.
-    /// Bytes are moved into shared storage, so cloning a directory is cheap.
 
     pub fn from_files(
         root: impl Into<PathBuf>,
@@ -99,8 +96,6 @@ impl GameDir {
         for (path, bytes) in files {
             let path = relative_path(&path)?;
 
-            // Reject duplicate entries rather than making their contents depend
-            // on the order in which the browser completed its reads.
             if contents.contains_key(&path) {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
@@ -117,7 +112,6 @@ impl GameDir {
             contents.insert(path, bytes);
         }
 
-        // Match native collision handling while releasing bytes for hidden files.
         contents.retain(|path, _| index.get(&fold(path.as_bytes())) == Some(path));
 
         Ok(Self {
