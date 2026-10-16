@@ -8,6 +8,8 @@ pub const TREE_SUB_FRAME_MS: u32 = 0x50;
 
 pub const TREE_SLOT: usize = 0;
 
+pub const ALPHA_REFERENCE: f32 = 170.0 / 255.0;
+
 pub const KIND_RANGE_A: std::ops::RangeInclusive<u32> = 0x14B..=0x156;
 
 pub const MODEL_BASE_A: u32 = 0x3F;
@@ -128,7 +130,7 @@ impl Tree {
             fog_end: fog.end,
             fog_enabled: fog.enabled,
             force_opaque: false,
-            modulate_alpha: true,
+            modulate_alpha: false,
             glow: None,
         }
     }

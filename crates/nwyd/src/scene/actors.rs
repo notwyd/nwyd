@@ -1500,6 +1500,9 @@ pub struct ActorScene {
 pub(crate) mod resources;
 pub(crate) mod texture_loading;
 
+#[cfg(test)]
+mod tree_tests;
+
 impl ActorScene {
     pub(crate) fn set_evok_size(&mut self, size: u8) {
         self.evok_size = size.clamp(50, 100);
@@ -5093,7 +5096,6 @@ impl ActorScene {
             reach,
             ground,
             fog,
-            alpha_reference,
             &mut objects,
             &mut palettes,
             &mut draws,
@@ -5291,7 +5293,6 @@ impl ActorScene {
         reach: Reach,
         ground: &[&Terrain],
         fog: SkinFog,
-        alpha_reference: f32,
         objects: &mut Vec<SkinObject>,
         palettes: &mut Vec<BonePalette>,
         draws: &mut Vec<SkinDraw>,
@@ -5362,7 +5363,7 @@ impl ActorScene {
                 objects.push(SkinObject::new(
                     &params,
                     part.mesh.header.num_matrices,
-                    alpha_reference,
+                    trees::ALPHA_REFERENCE,
                 ));
 
                 palettes.push(BonePalette::build(&part.mesh, view, |bone| {

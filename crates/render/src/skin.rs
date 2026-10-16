@@ -9,6 +9,9 @@ use formats::mesh::SkinVertex;
 use formats::mesh::glow;
 use formats::mesh::msh::{MAX_BONE_PALETTE, SkinMesh};
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
 pub struct SkinVertexGpu {

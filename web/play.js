@@ -8,6 +8,13 @@ export async function mountGame(root, {
   cacheName = DEFAULT_CACHE_NAME,
   reload = () => window.location.reload(),
 } = {}) {
+  let relayMode = 'remote';
+  let resumeOnLoad = false;
+  try {
+    if (sessionStorage.getItem(`${cacheName}:relay-mode`) === 'local') relayMode = 'local';
+    resumeOnLoad = sessionStorage.getItem(`${cacheName}:restart`);
+    sessionStorage.removeItem(`${cacheName}:restart`);
+  } catch { /* Storage restrictions must not prevent starting the game. */ }
   root.innerHTML = `
     <section class="nwyd-launcher" aria-label="Jogar no navegador">
       <div class="launcher-panel">
@@ -15,13 +22,30 @@ export async function mountGame(root, {
         <p class="local-note">Seus arquivos ficam neste dispositivo e serão reutilizados na próxima visita.</p>
         <div class="asset-setup">
           <p class="file-summary" hidden></p>
+          <button class="change-folder secondary" type="button" hidden>Escolher outra pasta</button>
           <div class="folder-selection" hidden>
             <label class="choose button"><span>Escolher pasta do jogo</span><input type="file" webkitdirectory multiple aria-label="Escolher pasta do jogo"></label>
             <p class="file-hint">A pasta deve conter <strong>ItemList.bin</strong>, <strong>UI</strong> e <strong>Env</strong>. Limite de 1 GiB.</p>
           </div>
           <p class="cache-status" role="status"></p>
+          <div class="relay-options">
+            <label for="relay-mode">Conexão com o servidor</label>
+            <select id="relay-mode" class="relay-mode">
+              <option value="remote">Relay remoto</option>
+              <option value="local">Relay local</option>
+            </select>
+            <p class="remote-relay-help">Use o relay remoto sem instalar nada.</p>
+            <div class="local-relay-help" hidden>
+              <ol>
+                <li><a href="https://github.com/notwyd/nwyd/releases/tag/relay-latest" target="_blank" rel="noopener noreferrer">Baixe o NWYD Relay no GitHub</a> para seu sistema.</li>
+                <li>No Windows, abra <code>nwyd-relay-windows-x86_64.exe</code>. No Linux ou macOS, extraia o pacote e execute <code>./nwyd-relay</code>.</li>
+                <li>Aguarde “Pronto para jogar” e mantenha o relay aberto. Se o navegador pedir, permita o acesso à rede local.</li>
+              </ol>
+            </div>
+          </div>
           <progress max="1" value="0" hidden aria-label="Carregando arquivos do jogo"></progress>
           <p class="status" role="status" aria-live="polite">Verificando arquivos salvos…</p>
+          <button class="launch button" type="button" disabled>Jogar</button>
           <button class="restart button" type="button" hidden>Jogar novamente</button>
           <p class="relay-status" role="status">Conectando…</p>
         </div>
@@ -36,7 +60,12 @@ export async function mountGame(root, {
       <p class="session-status" role="status" hidden></p>
       <div class="notice" role="status" hidden><span></span><button type="button" aria-label="Fechar mensagem">Fechar</button></div>
     </div>`;
-  const picker = root.querySelector('input');
+  const picker = root.querySelector('input[type="file"]');
+  const changeFolder = root.querySelector('.change-folder');
+  const launchButton = root.querySelector('.launch');
+  const relayOptions = root.querySelector('.relay-options');
+  const relaySelect = root.querySelector('.relay-mode');
+  relaySelect.value = relayMode;
   const selection = root.querySelector('.folder-selection');
   const status = root.querySelector('.status');
   const progress = root.querySelector('progress');
@@ -50,7 +79,7 @@ export async function mountGame(root, {
   const sessionStatus = root.querySelector('.session-status');
   const relayStatus = root.querySelector('.relay-status');
   const relayConnection = root.querySelector('.relay-connection');
-  // The hosted relay is fixed in relay.mjs; page parameters cannot redirect traffic.
+  // Both relay addresses are fixed in relay.mjs; page parameters cannot redirect traffic.
   let connection = null;
   let wasm;
   let cache;
@@ -69,13 +98,17 @@ export async function mountGame(root, {
   let relayMonitor;
   let relayRestarted = false;
   let selectionGeneration = 0;
+  let selectedCacheId;
+  let sessionSelection;
+  let sessionCacheId;
   let savesPending = 0;
   let cacheRefresh;
   let cacheChanges;
   try {
     if (typeof BroadcastChannel === 'function') cacheChanges = new BroadcastChannel(`${cacheName}:changes`);
   } catch { /* Focus and visibility refresh still work without notifications. */ }
-  const lifetime = new AbortController();
+  let relayAbort = new AbortController();
+  let relayGeneration = 0;
   const listeners = [];
   const on = (target, type, listener) => {
     target.addEventListener(type, listener);
@@ -147,6 +180,8 @@ export async function mountGame(root, {
       }, current);
       if (!current()) return;
       cacheInfo = saved;
+      selectedCacheId = saved.id;
+      if (sessionSelection === token) sessionCacheId = saved.id;
       cacheNote('Arquivos salvos neste navegador, disponíveis no jogo e no editor.');
       try { cacheChanges?.postMessage({ type: 'changed' }); } catch {}
     } catch (error) {
@@ -164,6 +199,14 @@ export async function mountGame(root, {
     selection.hidden = closed || !initialized || busy || Boolean((cacheInfo || pendingPlan) && !showFolder);
     fileSummary.hidden = closed || (!cacheInfo && !pendingPlan);
     fileSummary.textContent = pendingPlan ? `Pasta do jogo selecionada: ${pendingPlan.root}.` : cacheInfo ? `Arquivos salvos do jogo prontos: ${cacheInfo.root}.` : '';
+    changeFolder.hidden = closed || !initialized || (!cacheInfo && !pendingPlan) || showFolder;
+    changeFolder.disabled = picker.disabled;
+    launchButton.hidden = closed;
+    launchButton.disabled = picker.disabled || checkingRelay || !connection || (!cacheInfo && !pendingPlan);
+    relayOptions.hidden = closed;
+    relaySelect.disabled = closed || busy || started || needsReload();
+    root.querySelector('.local-relay-help').hidden = relayMode !== 'local';
+    root.querySelector('.remote-relay-help').hidden = relayMode !== 'remote';
     restart.hidden = !closed;
     restart.disabled = savesPending > 0 || reloadRequested;
     relayStatus.hidden = closed;
@@ -175,7 +218,7 @@ export async function mountGame(root, {
     closed = true;
     launchBlocked = true;
     stopRelayMonitor();
-    lifetime.abort();
+    relayAbort.abort();
     player.hidden = true;
     launcher.hidden = false;
     progress.hidden = true;
@@ -193,8 +236,9 @@ export async function mountGame(root, {
   const idleStatus = () => {
     if (disposed || closed || !wasm || busy || started || launchBlocked) return;
     status.classList.remove('error');
-    status.textContent = !connection && (cacheInfo || pendingPlan)
-      ? 'Arquivos prontos. Aguardando conexão…'
+    status.textContent = (cacheInfo || pendingPlan)
+      ? showFolder ? 'Escolha outra pasta ou clique em Jogar para usar a pasta atual.'
+        : connection ? 'Arquivos prontos. Clique em Jogar para começar.' : 'Arquivos prontos. Aguardando conexão…'
       : 'Escolha a pasta do jogo para começar.';
   };
   const begin = text => {
@@ -210,17 +254,18 @@ export async function mountGame(root, {
     progress.value = total ? read / total : 1;
     status.textContent = `${label} ${Math.round(read / 1048576)} / ${Math.round(total / 1048576)} MiB`;
   };
-  const checkRelay = async () => {
-    const found = await connectRelay({ signal: lifetime.signal });
+  const checkRelay = async (generation = relayGeneration) => {
+    const found = await connectRelay({ mode: relayMode, signal: relayAbort.signal });
     checkActive();
+    if (generation !== relayGeneration) throw new RelayError('aborted', 'Conexão cancelada.');
     connection = found;
     relayStatus.textContent = 'Conectado';
     relayStatus.classList.remove('error');
     setRelayStatus('connected');
     return found;
   };
-  const relayFailure = error => {
-    if (disposed || closed) return;
+  const relayFailure = (error, generation = relayGeneration) => {
+    if (disposed || closed || generation !== relayGeneration) return;
     connection = null;
     relayStatus.textContent = message(error);
     relayStatus.classList.add('error');
@@ -272,6 +317,8 @@ export async function mountGame(root, {
   const play = async () => {
     if (disposed || closed || !initialized || busy || checkingRelay || started || launchBlocked || needsReload() || !wasm || !connection || (!pendingPlan && !cacheInfo)) return;
     const plan = pendingPlan;
+    sessionSelection = plan ? selectionGeneration : undefined;
+    sessionCacheId = plan ? selectedCacheId : undefined;
     let game;
     begin(plan ? 'Carregando os arquivos locais do jogo…' : 'Carregando os arquivos salvos do jogo…');
     try {
@@ -279,8 +326,9 @@ export async function mountGame(root, {
         game = new wasm.GameFiles(plan.root);
         await importFiles(plan, game, reportProgress('Carregando arquivos locais…'));
       } else {
-        const loaded = await cache.load(rootName => new wasm.GameFiles(rootName), reportProgress('Carregando arquivos salvos…'));
+        const loaded = await cache.load(rootName => new wasm.GameFiles(rootName), reportProgress('Carregando arquivos salvos…'), cacheInfo.id);
         game = loaded?.game;
+        sessionCacheId = loaded?.info.id;
         checkActive();
         if (!loaded) {
           cacheInfo = null;
@@ -302,21 +350,31 @@ export async function mountGame(root, {
       updateControls();
     }
   };
+  const resumeRequestedGame = async () => {
+    if (!resumeOnLoad || !initialized || !wasm || busy || checkingRelay || !connection || (!pendingPlan && !cacheInfo)) return;
+    const sameFiles = cacheInfo?.id === resumeOnLoad;
+    resumeOnLoad = false;
+    if (sameFiles) await play();
+  };
   const connect = async () => {
     if (disposed || closed || busy || checkingRelay || started || needsReload()) return;
     checkingRelay = true;
+    const generation = relayGeneration;
     updateControls();
     try {
       checkActive();
-      await checkRelay();
+      await checkRelay(generation);
     } catch (error) {
-      relayFailure(error);
+      relayFailure(error, generation);
     } finally {
-      checkingRelay = false;
-      updateControls();
+      if (generation === relayGeneration) {
+        checkingRelay = false;
+        updateControls();
+      }
     }
+    if (generation !== relayGeneration) return;
     idleStatus();
-    if (connection) await play();
+    await resumeRequestedGame();
   };
   // Once the page is open, discover the relay and keep its status current. A
   // restarted relay has new credentials: do not silently replace a running
@@ -325,19 +383,20 @@ export async function mountGame(root, {
     if (!initialized || !wasm || disposed || closed || checkingRelay || fatalError || (!started && (busy || needsReload())) || relayRestarted) return;
     if (!started) return connect();
     checkingRelay = true;
+    const generation = relayGeneration;
     try {
       checkActive();
-      const found = await connectRelay({ signal: lifetime.signal, timeout: 3000 });
-      if (disposed || closed || fatalError) return;
+      const found = await connectRelay({ mode: relayMode, signal: relayAbort.signal, timeout: 3000 });
+      if (disposed || closed || fatalError || generation !== relayGeneration) return;
       if (found.gateway !== connection.gateway || found.httpProxy !== connection.httpProxy) {
         relayRestarted = true;
         setRelayStatus('restarted', 'A conexão foi reiniciada no servidor. Recarregue a página para jogar novamente.');
         stopRelayMonitor();
       } else setRelayStatus('connected');
     } catch (error) {
-      if (!fatalError) setRelayStatus('disconnected', message(error));
+      if (!fatalError && generation === relayGeneration) setRelayStatus('disconnected', message(error));
     } finally {
-      checkingRelay = false;
+      if (generation === relayGeneration) checkingRelay = false;
     }
   };
   const refreshCache = () => {
@@ -349,12 +408,11 @@ export async function mountGame(root, {
         if (disposed || closed || busy || started || pendingPlan) return;
         if (info?.id !== cacheInfo?.id) {
           cacheInfo = info;
-          showFolder = false;
           launchBlocked = false;
         }
         updateControls();
         idleStatus();
-        await play();
+        await resumeRequestedGame();
       } catch (error) {
         if (!disposed && !closed) cacheNote(`Não foi possível carregar os arquivos compartilhados: ${message(error)}`);
       } finally { cacheRefresh = undefined; }
@@ -385,6 +443,10 @@ export async function mountGame(root, {
     // Winit and the WASM runtime are one-shot. A new page restores saved files
     // and connects again, but only after the player explicitly asks to restart.
     reloadRequested = true;
+    try {
+      if (sessionCacheId) sessionStorage.setItem(`${cacheName}:restart`, sessionCacheId);
+      else sessionStorage.removeItem(`${cacheName}:restart`);
+    } catch {}
     updateControls();
     reload();
   });
@@ -403,11 +465,43 @@ export async function mountGame(root, {
       console.warn(error);
     });
   });
+  on(changeFolder, 'click', () => {
+    if (picker.disabled) return;
+    resumeOnLoad = false;
+    showFolder = true;
+    idleStatus();
+    updateControls();
+    picker.focus();
+  });
+  on(launchButton, 'click', () => {
+    resumeOnLoad = false;
+    launchBlocked = false;
+    void play();
+  });
+  on(relaySelect, 'change', () => {
+    if (relaySelect.disabled || !['remote', 'local'].includes(relaySelect.value)) return;
+    resumeOnLoad = false;
+    relayMode = relaySelect.value;
+    try { sessionStorage.setItem(`${cacheName}:relay-mode`, relayMode); } catch {}
+    relayGeneration++;
+    relayAbort.abort();
+    relayAbort = new AbortController();
+    checkingRelay = false;
+    connection = null;
+    relayRestarted = false;
+    relayStatus.textContent = 'Conectando…';
+    relayStatus.classList.remove('error');
+    setRelayStatus('checking');
+    idleStatus();
+    void connect();
+  });
   on(picker, 'change', () => {
     if (!picker.files.length || disposed || closed || busy || started || !wasm || needsReload()) return;
     try {
       const plan = planFiles([...picker.files]);
+      resumeOnLoad = false;
       pendingPlan = plan;
+      selectedCacheId = undefined;
       void persistSelection(plan, ++selectionGeneration);
       launchBlocked = false;
       showFolder = false;
@@ -420,10 +514,9 @@ export async function mountGame(root, {
       picker.value = '';
       updateControls();
     }
-    void play();
   });
   updateControls();
-  // Start remote discovery immediately, independently of WASM and file storage.
+  // Discover the chosen relay independently of WASM and file storage.
   // A slow/unavailable relay must not disable folder selection or saving.
   void connect();
   await Promise.all([
@@ -471,7 +564,7 @@ export async function mountGame(root, {
     dispose() {
       disposed = true;
       stopRelayMonitor();
-      lifetime.abort();
+      relayAbort.abort();
       pendingPlan = undefined;
       for (const remove of listeners) remove();
       cacheChanges?.close();

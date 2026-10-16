@@ -18,6 +18,8 @@ window.__launcherTestRuntime = {
   healthUrls: [],
   relayToken: 'a'.repeat(64),
   relayAvailable: !parameters.has('relayMissing'),
+  localRelayAvailable: !parameters.has('localRelayMissing'),
+  localRelayToken: 'c'.repeat(64),
   failHealthAfter: Number(parameters.get('failHealthAfter') ?? 0),
   holdStart: parameters.has('holdStart'),
   holdRead: parameters.has('holdRead'),
@@ -39,18 +41,16 @@ Object.defineProperty(navigator, 'permissions', {
   configurable: true,
   value: { query: async () => {
     window.__launcherTestRuntime.permissionQueries++;
-    throw new Error('Remote relay discovery must not query browser permissions.');
+    return { state: 'granted' };
   } },
 });
 const originalFetch = window.fetch.bind(window);
 window.fetch = async (url, options) => {
   const runtime = window.__launcherTestRuntime;
-  if (/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::|\/)/.test(String(url))) {
-    runtime.loopbackRequests++;
-    throw new Error('The launcher must never contact a local relay.');
-  }
-  if (url !== 'https://relay.notwyd.app/health') return originalFetch(url, options);
-  if ('targetAddressSpace' in options) throw new Error('Remote relay discovery must not request local network access.');
+  const local = url === 'http://127.0.0.1:8787/health';
+  if (!local && url !== 'https://relay.notwyd.app/health') return originalFetch(url, options);
+  if (local) runtime.loopbackRequests++;
+  else if ('targetAddressSpace' in options) throw new Error('Remote relay discovery must not request local network access.');
   runtime.healthRequests++;
   runtime.healthUrls.push(url);
   runtime.firstHealthInitialized ??= runtime.initialized;
@@ -59,7 +59,7 @@ window.fetch = async (url, options) => {
     await new Promise((resolve, reject) => {
       const abort = () => {
         runtime.healthAborts++;
-        reject(new DOMException('Cancelled.', 'AbortError'));
+        if (!parameters.has('ignoreHealthAbort')) reject(new DOMException('Cancelled.', 'AbortError'));
       };
       runtime.releaseHealth = () => {
         options.signal.removeEventListener('abort', abort);
@@ -68,12 +68,12 @@ window.fetch = async (url, options) => {
       options.signal.addEventListener('abort', abort, { once: true });
     });
   }
-  if (!runtime.relayAvailable || (runtime.failHealthAfter && runtime.healthRequests > runtime.failHealthAfter)) {
+  if (!(local ? runtime.localRelayAvailable : runtime.relayAvailable) || (runtime.failHealthAfter && runtime.healthRequests > runtime.failHealthAfter)) {
     throw new TypeError('Deliberate test relay connection failure.');
   }
   return new Response(JSON.stringify({
     app: 'nwyd-relay', protocol: parameters.has('incompatibleRelay') ? 2 : 1,
-    version: '0.1.0-test', token: runtime.relayToken,
+    version: '0.1.0-test', token: local ? runtime.localRelayToken : runtime.relayToken,
   }), { headers: { 'Content-Type': 'application/json' } });
 };
 Object.defineProperty(navigator, 'gpu', {
@@ -150,9 +150,14 @@ window.__launcherTest = {
     window.dispatchEvent(event);
     return event.defaultPrevented;
   },
-  chooseFolder(root = 'Game', marker = 7) {
+  cancelFolder() {
+    const input = document.querySelector('input[type=file]');
+    input.files = new DataTransfer().files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  },
+  chooseFolder(root = 'Game', marker = 7, invalid = false) {
     const transfer = new DataTransfer();
-    for (const path of ['ItemList.bin', 'UI/Panel.WYS', 'Env/Zone.TRN']) {
+    for (const path of invalid ? ['Readme.txt'] : ['ItemList.bin', 'UI/Panel.WYS', 'Env/Zone.TRN']) {
       const file = new File([new Uint8Array([marker])], path.split('/').at(-1));
       Object.defineProperty(file, 'webkitRelativePath', { value: `${root}/${path}` });
       transfer.items.add(file);
