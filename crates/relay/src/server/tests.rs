@@ -1,5 +1,6 @@
 use super::*;
 use crate::{RelayController, RelaySnapshot};
+use futures_util::{Stream, stream};
 use std::{net::SocketAddr, sync::Mutex};
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
@@ -132,6 +133,53 @@ async fn binary(socket: &mut TestSocket) -> Vec<u8> {
     })
     .await
     .unwrap()
+}
+
+async fn next_non_control(
+    socket: &mut (impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin),
+) -> Option<Result<tungstenite::Message, tungstenite::Error>> {
+    loop {
+        match socket.next().await {
+            Some(Ok(tungstenite::Message::Ping(_) | tungstenite::Message::Pong(_))) => {}
+            message => return message,
+        }
+    }
+}
+
+#[tokio::test]
+async fn shutdown_read_skips_control_frames_without_discarding_application_frames() {
+    for expected in [
+        tungstenite::Message::Close(None),
+        tungstenite::Message::Binary(vec![0, 1, 255].into()),
+        tungstenite::Message::Text("unexpected data".into()),
+    ] {
+        let mut messages = stream::iter([
+            Ok(tungstenite::Message::Ping(vec![1].into())),
+            Ok(tungstenite::Message::Pong(vec![2].into())),
+            Ok(expected.clone()),
+        ]);
+        let received =
+            tokio::time::timeout(Duration::from_secs(2), next_non_control(&mut messages))
+                .await
+                .unwrap()
+                .unwrap()
+                .unwrap();
+        assert_eq!(received, expected);
+    }
+}
+
+#[tokio::test]
+async fn shutdown_read_requires_more_than_control_frames_before_the_deadline() {
+    let mut messages = stream::iter([
+        Ok(tungstenite::Message::Ping(vec![1].into())),
+        Ok(tungstenite::Message::Pong(vec![2].into())),
+    ])
+    .chain(stream::pending());
+    assert!(
+        tokio::time::timeout(Duration::ZERO, next_non_control(&mut messages))
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]
@@ -378,15 +426,20 @@ async fn multiple_sessions_forward_binary_independently_and_shutdown_together() 
         assert_eq!(snapshot.bytes_to_server, 18);
         assert_eq!(snapshot.bytes_from_server, 18);
     }
+    let state = relay.state.clone();
     relay.stop().await;
+    assert_eq!(state.lock().unwrap().active_sessions, 0);
     for socket in [&mut first, &mut second] {
-        let closed = tokio::time::timeout(Duration::from_secs(2), socket.next())
+        let closed = tokio::time::timeout(Duration::from_secs(2), next_non_control(socket))
             .await
             .unwrap();
-        assert!(matches!(
-            closed,
-            Some(Ok(tungstenite::Message::Close(_))) | None | Some(Err(_))
-        ));
+        assert!(
+            matches!(
+                closed,
+                Some(Ok(tungstenite::Message::Close(_))) | None | Some(Err(_))
+            ),
+            "expected shutdown, got {closed:?}"
+        );
     }
     echo.abort();
 }
@@ -403,16 +456,9 @@ async fn server_eof_closes_browser_after_final_bytes() {
     });
     let mut socket = relay.socket(address).await;
     assert_eq!(binary(&mut socket).await, [5, 6, 7]);
-    let closed = tokio::time::timeout(Duration::from_secs(2), async {
-        loop {
-            match socket.next().await {
-                Some(Ok(tungstenite::Message::Ping(_))) => continue,
-                message => break message,
-            }
-        }
-    })
-    .await
-    .unwrap();
+    let closed = tokio::time::timeout(Duration::from_secs(2), next_non_control(&mut socket))
+        .await
+        .unwrap();
     assert!(matches!(closed, Some(Ok(tungstenite::Message::Close(_)))));
     upstream.await.unwrap();
     relay.stop().await;
