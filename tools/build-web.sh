@@ -15,7 +15,7 @@ if [ "$("$WASM_BINDGEN" --version)" != "wasm-bindgen $version" ]; then
   echo "wasm-bindgen-cli must match Cargo.lock ($version)." >&2
   exit 1
 fi
-"$CARGO" build --locked --release --target wasm32-unknown-unknown --lib -p nwyd
+"$CARGO" build --locked --release --target wasm32-unknown-unknown --lib -p nwyd "$@"
 "$WASM_BINDGEN" "$TARGET_DIR/wasm32-unknown-unknown/release/nwyd.wasm" --target web --out-dir "$TARGET_DIR/web/pkg" --out-name nwyd
 CARGO_TARGET_DIR="$TARGET_DIR" WEB_OUT="$WEB_OUT" npm --prefix web run build
 cp LICENSE crates/nwyd/assets/LiberationSans-LICENSE.txt "$WEB_OUT/"
