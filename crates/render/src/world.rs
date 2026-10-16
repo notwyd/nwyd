@@ -9,6 +9,12 @@ use formats::world::{HEIGHT_SCALE, QUAD_SIZE, TRN_DIM};
 use glam::Vec3;
 use wgpu::util::DeviceExt;
 
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod render_tests;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
 pub struct WorldVertex {
@@ -177,6 +183,79 @@ impl TerrainMesh {
                 bounds: b.bounds.translated(cells_x as f32, 0.0, cells_z as f32),
                 ..*b
             }));
+    }
+
+    pub fn stitch_boundaries(&mut self) -> Vec<std::ops::Range<usize>> {
+        let dimension = TRN_DIM as i32;
+        let boundary_key = |vertex: &WorldVertex| {
+            let x = vertex.pos[0] as i32;
+            let z = vertex.pos[2] as i32;
+
+            (x.rem_euclid(dimension) == 0 || z.rem_euclid(dimension) == 0).then_some((x, z))
+        };
+        let mut samples: std::collections::BTreeMap<(i32, i32), ((i32, i32), WorldVertex)> =
+            std::collections::BTreeMap::new();
+
+        for quad in self.vertices.chunks_exact(4) {
+            let owner = (
+                (quad[0].pos[0] / TRN_DIM as f32).floor() as i32,
+                (quad[0].pos[2] / TRN_DIM as f32).floor() as i32,
+            );
+
+            for vertex in quad {
+                let Some(key) = boundary_key(vertex) else {
+                    continue;
+                };
+
+                samples
+                    .entry(key)
+                    .and_modify(|sample| {
+                        if owner > sample.0 {
+                            *sample = (owner, *vertex);
+                        }
+                    })
+                    .or_insert((owner, *vertex));
+            }
+        }
+
+        let mut changed: Vec<std::ops::Range<usize>> = Vec::new();
+
+        for (index, vertex) in self.vertices.iter_mut().enumerate() {
+            let Some((_, source)) = boundary_key(vertex).and_then(|key| samples.get(&key)) else {
+                continue;
+            };
+
+            if vertex.pos[1] == source.pos[1]
+                && vertex.normal == source.normal
+                && vertex.diffuse == source.diffuse
+            {
+                continue;
+            }
+
+            vertex.pos[1] = source.pos[1];
+            vertex.normal = source.normal;
+            vertex.diffuse = source.diffuse;
+
+            match changed.last_mut() {
+                Some(range) if range.end == index => range.end += 1,
+                _ => changed.push(index..index + 1),
+            }
+        }
+
+        if !changed.is_empty() {
+            for batch in &mut self.batches {
+                let start = batch.first_quad as usize * 4;
+                let end = start + batch.quad_count as usize * 4;
+
+                batch.bounds = crate::cull::Aabb::EMPTY;
+
+                for vertex in &self.vertices[start..end] {
+                    batch.bounds.grow(vertex.pos);
+                }
+            }
+        }
+
+        changed
     }
 
     pub fn detail_texture_ids(&self) -> Vec<i32> {

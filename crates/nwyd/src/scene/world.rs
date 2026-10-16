@@ -37,6 +37,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub(crate) mod loading;
 mod tiles;
 
+#[cfg(test)]
+mod terrain_tests;
+
 pub const CAMERA_PAIR_UNBUILT: (f32, f32) = (0.0, 0.0);
 
 pub const WEATHER_SEED: u32 = 1;
@@ -811,6 +814,8 @@ pub fn build_spec(game: &GameDir, spec: &WorldSpec, calendar: &Calendar) -> Resu
         );
     }
 
+    mesh.stitch_boundaries();
+
     let mut tiles = Vec::new();
 
     let missing = tiles::load(game, &list, &mesh, &mut tiles)?;
@@ -1090,6 +1095,78 @@ pub fn load_camera(game: &GameDir, path: &str) -> Result<CamAction> {
 
 pub fn environment_type(zone_x: u8, zone_y: u8) -> i32 {
     render::world::terrain_environment(zone_x, zone_y)
+}
+
+fn stitch_terrain_boundaries(
+    mesh: &mut TerrainMesh,
+    terrain_revision: &mut u64,
+    terrain_pages: &mut Vec<u64>,
+) {
+    let changed = mesh.stitch_boundaries();
+
+    if changed.is_empty() {
+        return;
+    }
+
+    let revision = terrain_revision
+        .checked_add(1)
+        .expect("terrain revision exhausted");
+
+    terrain_pages.resize(mesh.vertices.len().div_ceil(256), 0);
+
+    for range in changed {
+        terrain_pages[range.start / 256..range.end.div_ceil(256)].fill(revision);
+    }
+
+    *terrain_revision = revision;
+}
+
+fn refresh_terrain_colours(
+    mesh: &mut TerrainMesh,
+    terrains: &[&Terrain],
+    terrain_revision: &mut u64,
+    terrain_pages: &mut Vec<u64>,
+) {
+    let revision = terrain_revision
+        .checked_add(1)
+        .expect("terrain revision exhausted");
+
+    terrain_pages.resize(mesh.vertices.len().div_ceil(256), 0);
+
+    let mut changed = false;
+
+    for (zone_index, terrain) in terrains.iter().enumerate() {
+        let dx = (i32::from(terrain.zone_x) - i32::from(mesh.zone.0)) * 64;
+
+        let dz = (i32::from(terrain.zone_y) - i32::from(mesh.zone.1)) * 64;
+
+        let start = zone_index * 64 * 64 * 4;
+
+        for (local, vertex) in mesh.vertices[start..start + 64 * 64 * 4]
+            .iter_mut()
+            .enumerate()
+        {
+            let x = (vertex.pos[0] as i32 - dx).clamp(0, 63) as usize;
+
+            let z = (vertex.pos[2] as i32 - dz).clamp(0, 63) as usize;
+
+            let colour = u32::from_le_bytes(terrain.cells[z * 64 + x].color);
+
+            if vertex.diffuse != colour {
+                vertex.diffuse = colour;
+
+                terrain_pages[(start + local) / 256] = revision;
+
+                changed = true;
+            }
+        }
+    }
+
+    if changed {
+        *terrain_revision = revision;
+    }
+
+    stitch_terrain_boundaries(mesh, terrain_revision, terrain_pages);
 }
 
 pub fn detail_layer_enabled(env_type: i32) -> bool {
@@ -1850,49 +1927,16 @@ impl World {
     }
 
     fn rebuild_terrain_colours(&mut self) {
-        let revision = self
-            .terrain_revision
-            .checked_add(1)
-            .expect("terrain revision exhausted");
-
-        self.terrain_pages
-            .resize(self.mesh.vertices.len().div_ceil(256), 0);
-
-        let mut changed = false;
-
-        for (zone_index, terrain) in std::iter::once(&self.terrain)
+        let terrains: Vec<_> = std::iter::once(&self.terrain)
             .chain(self.streamed.iter().map(|s| &s.terrain))
-            .enumerate()
-        {
-            let dx = (i32::from(terrain.zone_x) - i32::from(self.terrain.zone_x)) * 64;
+            .collect();
 
-            let dz = (i32::from(terrain.zone_y) - i32::from(self.terrain.zone_y)) * 64;
-
-            let start = zone_index * 64 * 64 * 4;
-
-            for (local, vertex) in self.mesh.vertices[start..start + 64 * 64 * 4]
-                .iter_mut()
-                .enumerate()
-            {
-                let x = (vertex.pos[0] as i32 - dx).clamp(0, 63) as usize;
-
-                let z = (vertex.pos[2] as i32 - dz).clamp(0, 63) as usize;
-
-                let colour = u32::from_le_bytes(terrain.cells[z * 64 + x].color);
-
-                if vertex.diffuse != colour {
-                    vertex.diffuse = colour;
-
-                    self.terrain_pages[(start + local) / 256] = revision;
-
-                    changed = true;
-                }
-            }
-        }
-
-        if changed {
-            self.terrain_revision = revision;
-        }
+        refresh_terrain_colours(
+            &mut self.mesh,
+            &terrains,
+            &mut self.terrain_revision,
+            &mut self.terrain_pages,
+        );
     }
 
     pub fn terrain_changes_since(
@@ -2518,6 +2562,12 @@ impl World {
         }
 
         self.mesh.append_neighbour(&mesh, dx, dz);
+
+        stitch_terrain_boundaries(
+            &mut self.mesh,
+            &mut self.terrain_revision,
+            &mut self.terrain_pages,
+        );
 
         for tile in tiles {
             if self.tiles.iter().all(|old| old.id != tile.id) {
