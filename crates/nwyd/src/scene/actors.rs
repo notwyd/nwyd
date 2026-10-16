@@ -107,6 +107,8 @@ pub const MATERIAL_AMBIENT: [f32; 4] = [0.0; 4];
 
 pub const MATERIAL_EMISSIVE: [f32; 4] = [0.3, 0.3, 0.3, 0.0];
 
+pub const MODEL_ALPHA_REFERENCE: f32 = 170.0 / 255.0;
+
 pub const HIGHLIGHT_DIFFUSE: [f32; 4] = [0.5, 0.5, 0.5, MATERIAL_DIFFUSE[3]];
 
 pub const RECENT_HIT_DIFFUSE: [f32; 4] = [0.7, 0.7, 0.9, MATERIAL_DIFFUSE[3]];
@@ -996,10 +998,19 @@ struct Draw<'a> {
     eye: Vec3,
     field_scene: bool,
     fog: SkinFog,
-    alpha_reference: f32,
+    class: i32,
+    body_texture: i16,
     highlight: bool,
     recent_hit: bool,
     invisible: bool,
+}
+
+fn character_alpha_reference(class: i32, body_texture: i16) -> f32 {
+    if class == 0x3B || (class == 0x20 && body_texture == 2) {
+        0.0
+    } else {
+        MODEL_ALPHA_REFERENCE
+    }
 }
 
 fn pose(tree: &mut FrameTree, model: &Model, now_ms: u32, world: &Matrix4, smoothing: Smoothing) {
@@ -1179,7 +1190,7 @@ fn emit_with_glow(
         let alpha_reference = if color_key || draw.invisible {
             0.0
         } else {
-            draw.alpha_reference
+            character_alpha_reference(draw.class, draw.body_texture)
         };
 
         let index = part.index;
@@ -1502,6 +1513,15 @@ pub(crate) mod texture_loading;
 
 #[cfg(test)]
 mod tree_tests;
+
+#[cfg(test)]
+mod character_alpha_tests;
+
+#[cfg(test)]
+mod test_support;
+
+#[cfg(test)]
+mod ambient_alpha_tests;
 
 impl ActorScene {
     pub(crate) fn set_evok_size(&mut self, size: u8) {
@@ -4692,7 +4712,8 @@ impl ActorScene {
                                 eye,
                                 field_scene,
                                 fog,
-                                alpha_reference,
+                                class: actor.class,
+                                body_texture: actor.parts[0].tex,
                                 highlight,
                                 recent_hit: false,
                                 invisible: actor.flags.invisible(),
@@ -4858,7 +4879,8 @@ impl ActorScene {
                         eye,
                         field_scene,
                         fog,
-                        alpha_reference,
+                        class: actor.class,
+                        body_texture: actor.parts[0].tex,
                         highlight,
                         recent_hit,
                         invisible: actor.flags.invisible(),
@@ -5046,7 +5068,8 @@ impl ActorScene {
                         eye,
                         field_scene,
                         fog,
-                        alpha_reference,
+                        class: actor.class,
+                        body_texture: actor.parts[0].tex,
                         highlight,
                         recent_hit: false,
                         invisible: actor.flags.invisible(),
@@ -5119,7 +5142,6 @@ impl ActorScene {
             reach,
             ground,
             fog,
-            alpha_reference,
             &mut objects,
             &mut palettes,
             &mut draws,
@@ -5130,7 +5152,6 @@ impl ActorScene {
             view,
             reach,
             fog,
-            alpha_reference,
             &mut objects,
             &mut palettes,
             &mut draws,
@@ -5553,7 +5574,6 @@ impl ActorScene {
         reach: Reach,
         ground: &[&Terrain],
         fog: SkinFog,
-        alpha_reference: f32,
         objects: &mut Vec<SkinObject>,
         palettes: &mut Vec<BonePalette>,
         draws: &mut Vec<SkinDraw>,
@@ -5606,7 +5626,7 @@ impl ActorScene {
                 objects.push(SkinObject::new(
                     &params,
                     part.mesh.header.num_matrices,
-                    alpha_reference,
+                    MODEL_ALPHA_REFERENCE,
                 ));
 
                 palettes.push(BonePalette::build(&part.mesh, view, |bone| {
@@ -5634,7 +5654,6 @@ impl ActorScene {
         view: &Matrix4,
         reach: Reach,
         fog: SkinFog,
-        alpha_reference: f32,
         objects: &mut Vec<SkinObject>,
         palettes: &mut Vec<BonePalette>,
         draws: &mut Vec<SkinDraw>,
@@ -5714,6 +5733,12 @@ impl ActorScene {
             let distance = ((at.x - reach.eye.x).powi(2) + (at.z - reach.eye.z).powi(2)).sqrt();
 
             let params = butterfly.params(distance, self.light0, self.light1, fog);
+
+            let alpha_reference = if butterflies::appearance_variant(butterfly.kind) == 0 {
+                MODEL_ALPHA_REFERENCE
+            } else {
+                0.0
+            };
 
             for part in &model.parts {
                 let texture = part.texture;

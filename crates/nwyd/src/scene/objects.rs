@@ -145,6 +145,13 @@ pub fn reflective_scenery(kind: u32) -> bool {
     matches!(kind, 1934 | 1976 | 1977)
 }
 
+fn static_mesh_pass(flag: FormatFlag) -> MeshPass {
+    match flag {
+        FormatFlag::Alpha | FormatFlag::AlphaLower | FormatFlag::ColorKey => MeshPass::Cutout,
+        _ => MeshPass::Opaque,
+    }
+}
+
 fn static_position(kind: u32, mut position: Vec3) -> Vec3 {
     if matches!(
         (kind, position.x as i32, position.z as i32),
@@ -289,6 +296,9 @@ pub struct ObjectScene {
 
 mod held_loading;
 pub(crate) mod resources;
+
+#[cfg(test)]
+mod alpha_tests;
 
 pub fn build(
     game: &GameDir,
@@ -972,8 +982,8 @@ impl ObjectScene {
         }
 
         let flag_pass = |t: Option<usize>| match t {
-            Some(t) if self.textures[t].flag.has_alpha() => MeshPass::Cutout,
-            _ => MeshPass::Opaque,
+            Some(t) => static_mesh_pass(self.textures[t].flag),
+            None => MeshPass::Opaque,
         };
 
         let subset_zero_pass = flag_pass(subset_textures.first().copied().flatten());
@@ -1930,11 +1940,7 @@ impl ObjectScene {
             };
 
             let pass = if bias != 0 {
-                if self.textures[texture].flag.has_alpha() {
-                    MeshPass::Cutout
-                } else {
-                    MeshPass::Opaque
-                }
+                static_mesh_pass(self.textures[texture].flag)
             } else {
                 mesh.subset_passes
                     .get(i)
