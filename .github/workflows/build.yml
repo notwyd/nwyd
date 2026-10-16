@@ -246,11 +246,11 @@ jobs:
           path: web-dist
       - name: Package browser bundle
         run: tar -czf release-dist/nwyd-web.tar.gz -C web-dist .
-      # Keep the existing tag so published relay download URLs continue to work.
       - name: Publish latest builds
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: nwyd-latest
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           cd release-dist
@@ -279,10 +279,10 @@ jobs:
 
           Commit: $SOURCE_COMMIT
           EOF
-          if gh release view relay-latest >/dev/null 2>&1; then
-            gh release upload relay-latest "${assets[@]}" SHA256SUMS LICENSE.txt --clobber
-            gh api --method PATCH "repos/$GH_REPO/git/refs/tags/relay-latest" -f sha="$SOURCE_COMMIT" -F force=true
-            gh release edit relay-latest --title 'NWYD' --notes-file release-notes.txt --latest
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" SHA256SUMS LICENSE.txt --clobber
+            gh api --method PATCH "repos/$GH_REPO/git/refs/tags/$RELEASE_TAG" -f sha="$SOURCE_COMMIT" -F force=true
+            gh release edit "$RELEASE_TAG" --title 'NWYD' --notes-file release-notes.txt --latest
           else
-            gh release create relay-latest "${assets[@]}" SHA256SUMS LICENSE.txt --target "$SOURCE_COMMIT" --title 'NWYD' --notes-file release-notes.txt --latest
+            gh release create "$RELEASE_TAG" "${assets[@]}" SHA256SUMS LICENSE.txt --target "$SOURCE_COMMIT" --title 'NWYD' --notes-file release-notes.txt --latest
           fi

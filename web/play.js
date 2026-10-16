@@ -37,7 +37,7 @@ export async function mountGame(root, {
             <p class="remote-relay-help">Use o relay remoto sem instalar nada.</p>
             <div class="local-relay-help" hidden>
               <ol>
-                <li><a href="https://github.com/notwyd/nwyd/releases/tag/relay-latest" target="_blank" rel="noopener noreferrer">Baixe o NWYD Relay no GitHub</a> para seu sistema.</li>
+                <li><a href="https://github.com/notwyd/nwyd/releases/latest" target="_blank" rel="noopener noreferrer">Baixe o NWYD Relay no GitHub</a> para seu sistema.</li>
                 <li>No Windows, abra <code>nwyd-relay-windows-x86_64.exe</code>. No Linux ou macOS, extraia o pacote e execute <code>./nwyd-relay</code>.</li>
                 <li>Aguarde “Pronto para jogar” e mantenha o relay aberto. Se o navegador pedir, permita o acesso à rede local.</li>
               </ol>

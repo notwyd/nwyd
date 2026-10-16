@@ -209,7 +209,7 @@ await test('Local relay selection works when the remote relay is unavailable and
   assert(local.runtime.loopbackRequests === 0, 'Default remote mode must not probe localhost.');
   local.selectRelay('local');
   await until(() => local.runtime.loopbackRequests > 0, 'local relay discovery after explicit selection');
-  const instructions = local.queries('a').find(anchor => anchor.href === 'https://github.com/notwyd/nwyd/releases/tag/relay-latest');
+  const instructions = local.queries('a').find(anchor => anchor.href === 'https://github.com/notwyd/nwyd/releases/latest');
   assert(visible(instructions), 'Local mode must show a link to the downloadable relay release.');
   assert(local.query('.relay-mode').value === 'local', 'The launcher must retain the chosen local mode.');
   assert(local.runtime.starts.length === 0, 'Choosing a relay must not launch the game automatically.');
