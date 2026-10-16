@@ -138,6 +138,10 @@ pub(crate) fn report_notice(message: &str) {
     dispatch_message("nwyd-notice", message);
 }
 
+pub(crate) fn report_closed() {
+    dispatch_message("nwyd-closed", "");
+}
+
 fn dispatch_message(event_name: &str, message: &str) {
     let init = web_sys::CustomEventInit::new();
 

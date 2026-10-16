@@ -154,6 +154,46 @@ pub const DEAD_ZONE: i32 = 4;
 
 pub const MIN_HEIGHT: i32 = 100;
 
+pub fn cancel_panel_pointer(panel: &mut Panel) {
+    fn cancel(element: &mut Element) {
+        crate::scrollbar::release_thumb(element);
+
+        crate::notepad::release_pointer(element);
+
+        if let Some((bar, _)) = crate::scrollbar::state_mut(element) {
+            bar.press = 0;
+
+            bar.hover = [false; 2];
+        }
+
+        if let Some(slider) = element.widget.slider_mut() {
+            slider.drag_offset = None;
+        }
+
+        if let Some(edit) = element.widget.edit_mut() {
+            edit.selection_held = false;
+        }
+
+        if let Some(list) = element.widget.list_mut() {
+            list.selection_held = false;
+
+            for row in &mut list.items {
+                for child in &mut row.children {
+                    cancel(child);
+                }
+            }
+        }
+    }
+
+    if let Some(close) = &mut panel.close_button {
+        cancel(close);
+    }
+
+    for element in &mut panel.elements {
+        cancel(element);
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -167,6 +207,93 @@ mod tests {
         element.height = 20;
 
         element
+    }
+
+    #[test]
+    fn pointer_cancellation_clears_nested_holds_and_preserves_values() {
+        let mut slider = control(ElementType::Slider, "slider");
+
+        let state = slider.widget.slider_mut().unwrap();
+
+        state.value = 42;
+
+        state.drag_offset = Some(4);
+
+        let mut edit = control(ElementType::ImeNotePad, "edit");
+
+        let state = edit.widget.edit_mut().unwrap();
+
+        state.text = "content".into();
+
+        state.caret = 5;
+
+        state.anchor = 2;
+
+        state.selection_held = true;
+
+        let pad = state.pad.as_mut().unwrap();
+
+        pad.selection_held = true;
+
+        pad.scrollbar.press = 1;
+
+        pad.scrollbar.drag_offset = Some(3);
+
+        let mut list = control(ElementType::ListView, "list");
+
+        let state = list.widget.list_mut().unwrap();
+
+        state.selection_held = true;
+
+        state.selected = 0;
+
+        state.scrollbar.press = 1;
+
+        state.scrollbar.drag_offset = Some(7);
+
+        state.add_item("row");
+
+        state.items[0].children = vec![slider, edit];
+
+        let mut panel = Panel {
+            focus: Some(0),
+            elements: vec![list],
+            ..Default::default()
+        };
+
+        cancel_panel_pointer(&mut panel);
+
+        assert_eq!(panel.focus, Some(0));
+
+        let list = panel.elements[0].widget.list().unwrap();
+
+        assert_eq!(list.selected, 0);
+
+        assert!(!list.selection_held);
+
+        assert_eq!(list.scrollbar.press, 0);
+
+        assert_eq!(list.scrollbar.drag_offset, None);
+
+        let slider = list.items[0].children[0].widget.slider().unwrap();
+
+        assert_eq!(slider.value, 42);
+
+        assert_eq!(slider.drag_offset, None);
+
+        let edit = list.items[0].children[1].widget.edit().unwrap();
+
+        assert_eq!((&*edit.text, edit.caret, edit.anchor), ("content", 5, 2));
+
+        assert!(!edit.selection_held);
+
+        let pad = edit.pad.as_ref().unwrap();
+
+        assert!(!pad.selection_held);
+
+        assert_eq!(pad.scrollbar.press, 0);
+
+        assert_eq!(pad.scrollbar.drag_offset, None);
     }
 
     #[test]

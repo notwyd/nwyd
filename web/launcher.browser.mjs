@@ -37,7 +37,7 @@ async function context() {
   const frames = [];
   return {
     cache,
-    async frame(options = {}) {
+    async frame(options = {}, whileLoading) {
       const url = new URL('./fixtures/launcher-frame.html', import.meta.url);
       url.searchParams.set('cacheName', name);
       for (const [key, value] of Object.entries(options)) url.searchParams.set(key, value);
@@ -46,11 +46,16 @@ async function context() {
       element.src = url;
       document.querySelector('#frames').append(element);
       frames.push(element);
+      if (whileLoading) {
+        const fixture = await until(() => element.contentWindow?.__launcherTest, 'launcher fixture');
+        await whileLoading(fixture);
+      }
       await until(() => element.contentWindow?.__launcherTest?.ready, 'launcher initialization');
       const fixture = element.contentWindow.__launcherTest;
       assert(!fixture.error, fixture.error);
       await until(() => !element.contentDocument.querySelector('input[type=file]').disabled ||
-        fixture.runtime.starts.length || fixture.runtime.releaseRead || fixture.runtime.releaseHealth, 'initial cache lookup');
+        fixture.runtime.starts.length || fixture.runtime.releaseRead || fixture.runtime.releaseHealth ||
+        element.contentDocument.querySelector('.status.error'), 'initial cache lookup');
       return {
         fixture,
         runtime: fixture.runtime,
@@ -99,17 +104,18 @@ async function test(name, run) {
   }
 }
 
-await test('An empty cache asks for a folder, successful startup saves it, and other page loads start automatically', async ({ cache, frame }) => {
+await test('Selecting a folder saves it before startup completes, and other page loads start automatically', async ({ cache, frame }) => {
   const first = await frame({ holdStart: '1' });
   assert(!first.query('input[type=file]').disabled, 'Folder selection should be enabled.');
   assert(visible(first.query('.folder-selection')), 'A page without saved files should offer folder selection.');
   assert(!first.query('.play-cache, .clear-cache, .new-session, .connect-relay'), 'The launcher should not require session-management or relay-connection controls.');
+  assert(!first.query('.launcher-header, .launcher-footer, .launcher-intro, .relay-setup, .relay-download, .relay-help'), 'The launcher should contain only file selection and connection status.');
   first.choose('First Game', 17);
   await until(() => first.runtime.starts.length === 1, 'initial WASM start');
-  assert(await cache.getInfo() === null, 'An unconfirmed runtime must not publish a cache.');
-  first.runtime.releaseStart();
-  const info = await until(() => cache.getInfo(), 'cache save after successful startup');
+  const info = await until(() => cache.getInfo(), 'cache save before successful startup');
   assert(info.root === 'First Game' && info.count === 3 && info.total === 3, 'The stored folder summary should match the imported files.');
+  first.runtime.releaseStart();
+  await until(() => first.query('.nwyd-launcher').hidden, 'successful startup');
   assert(first.query('.nwyd-launcher').hidden && !first.query('.nwyd-player').hidden, 'Successful startup should reveal the player.');
   assert(first.query('input[type=file]').files.length === 0, 'The launcher should release selected File references.');
 
@@ -125,21 +131,25 @@ await test('An empty cache asks for a folder, successful startup saves it, and o
   assert(third.runtime.starts[0].files.every(file => file.bytes[0] === 17), 'Multiple sessions should import the saved generation independently.');
 });
 
-await test('Failed runtime startup preserves the previous cache and never publishes a first cache', async ({ cache, frame }) => {
+await test('A runtime failure does not prevent structurally valid selected files from being shared with the editor', async ({ cache, frame }) => {
   const first = await frame({ failStart: '1' });
   first.choose('Rejected First Game', 21);
   await until(() => /Deliberate test runtime startup failure/.test(first.query('.status').textContent), 'failed first launch');
-  assert(await cache.getInfo() === null, 'A failed first startup must leave the cache empty.');
+  const firstSaved = await until(() => cache.getInfo(), 'selected folder saved despite failed runtime');
+  assert(firstSaved.root === 'Rejected First Game', 'Sharing files must not depend on a playable session.');
   assert(first.query('.nwyd-player').hidden, 'A failed runtime must return to the launcher.');
 
-  const original = await cache.save(plan('Known Good Game', 22));
+  await cache.save(plan('Known Good Game', 22));
   const replacement = await frame({ failStart: '1' });
   await until(() => replacement.runtime.starts.length === 1 && !replacement.query('input[type=file]').disabled, 'failed cached startup returning to folder selection');
   replacement.choose('Rejected Replacement', 23);
   await until(() => replacement.runtime.starts.length === 2 && !replacement.query('input[type=file]').disabled, 'failed replacement launch');
   assert(/Deliberate test runtime startup failure/.test(replacement.query('.status').textContent), 'The runtime error should remain visible.');
-  const after = await cache.getInfo();
-  assert(after.id === original.id && after.root === 'Known Good Game', 'Failed replacement must preserve the previous complete cache.');
+  const after = await until(async () => {
+    const saved = await cache.getInfo();
+    return saved?.root === 'Rejected Replacement' && saved;
+  }, 'replacement selected folder saved');
+  assert(after.count === 3, 'The replacement must still publish a complete cache.');
 });
 
 await test('Unavailable browser storage still permits direct folder play', async ({ cache, frame }) => {
@@ -159,6 +169,7 @@ await test('A cache quota failure preserves the previous installation while the 
   const original = await cache.save(plan('Saved Before Quota', 35));
   direct.choose('Running Despite Quota', 36);
   await until(() => /não puderam ser salvos/.test(direct.query('.session-status').textContent), 'cache quota warning');
+  await until(() => direct.runtime.completed === 1, 'direct startup despite quota failure');
   assert(direct.runtime.completed === 1 && !direct.query('.nwyd-player').hidden, 'Cache write failure must not stop the running game.');
   assert((await cache.getInfo()).id === original.id, 'Quota failure must leave the older cache intact.');
 });
@@ -191,7 +202,8 @@ await test('Disposing during local or cached file loading frees the owner and pr
   local.runtime.releaseRead();
   await until(() => local.runtime.freed === 1, 'local GameFiles owner release');
   assert(local.runtime.starts.length === 0, 'Disposal during local import must prevent late startup.');
-  assert(await cache.getInfo() === null, 'A disposed launcher must not save an unstarted installation.');
+  const completed = await cache.getInfo();
+  assert(!completed || (completed.root === 'Disposed Local Game' && completed.count === 3), 'Disposal may preserve a completed save but must never publish a partial installation.');
 
   const saved = await cache.save(plan('Disposed Cached Game', 52));
   const cached = await frame({ holdRead: '1' });
@@ -203,14 +215,16 @@ await test('Disposing during local or cached file loading frees the owner and pr
   assert((await cache.getInfo()).id === saved.id, 'Disposal should preserve the existing saved installation.');
 });
 
-await test('Unknown browser permission probes automatically and selected files survive until the relay is ready', async ({ cache, frame }) => {
-  const first = await frame({ permission: 'unsupported', relayMissing: '1' });
-  await until(() => /Não foi possível conectar/.test(first.query('.relay-status').textContent), 'automatic discovery with unsupported permission query');
-  assert(first.runtime.healthRequests === 1, 'An unavailable permission query must still allow an automatic initial relay probe.');
+await test('The remote connection retries automatically and selected files survive until it is ready', async ({ cache, frame }) => {
+  const first = await frame({ relayMissing: '1' });
+  await until(() => /Não foi possível conectar/.test(first.query('.relay-status').textContent), 'automatic remote discovery');
+  assert(first.runtime.healthRequests === 1, 'The page should start one remote health request automatically.');
+  assert(first.runtime.permissionQueries === 0 && first.runtime.loopbackRequests === 0, 'The remote connection must never request local access.');
   assert(!first.query('.connect-relay'), 'Relay detection must not require a connect button.');
   first.choose('Waiting For Relay', 61);
   assert(first.runtime.created === 0 && first.runtime.starts.length === 0, 'Selecting files must wait for relay readiness before creating WASM owners.');
-  assert(await cache.getInfo() === null, 'Waiting for the relay must not publish unstarted files.');
+  const shared = await until(() => cache.getInfo(), 'selected folder saved while waiting for relay');
+  assert(shared.root === 'Waiting For Relay', 'The editor must be able to reuse the folder before the relay is ready.');
   first.runtime.relayAvailable = true;
   first.runtime.holdNextHealth = true;
   const requestsBeforeDetection = first.runtime.healthRequests;
@@ -226,9 +240,26 @@ await test('Unknown browser permission probes automatically and selected files s
   assert(first.runtime.starts.length === 1, 'Overlapping detection events must never start a second runtime.');
   assert(first.runtime.healthRequests >= requestsBeforeDetection + 2, 'Startup must include successful discovery and a final pre-start health check.');
   const started = first.runtime.starts[0];
-  assert(new URL(started.gateway).origin === 'ws://127.0.0.1:8787', 'Game traffic must use the local relay.');
+  assert(new URL(started.gateway).origin === 'wss://relay.notwyd.app', 'Game traffic must use the encrypted remote relay.');
   assert(new URL(started.gateway).searchParams.get('token') === 'a'.repeat(64), 'WebSocket endpoint must carry the discovered token.');
   assert(new URL(started.httpProxy).searchParams.get('token') === 'a'.repeat(64), 'HTTP endpoint must carry the discovered token.');
+  assert(new URL(started.httpProxy).origin === 'https://relay.notwyd.app', 'HTTP traffic must use the remote relay.');
+});
+
+await test('Remote discovery starts while the GPU is loading and folder selection remains available during connection', async ({ cache, frame }) => {
+  const loading = await frame({ holdGpu: '1', holdHealth: '1' }, async fixture => {
+    await until(() => fixture.runtime.releaseGpu && fixture.runtime.releaseHealth, 'independent GPU and remote requests');
+    assert(fixture.runtime.healthRequests === 1 && fixture.runtime.firstHealthInitialized === 0, 'The remote request must begin before WASM initialization.');
+    fixture.runtime.releaseGpu();
+  });
+  assert(!loading.query('input[type=file]').disabled, 'A pending remote connection must not disable choosing files.');
+  loading.choose('Selected During Connection', 69);
+  const saved = await until(() => cache.getInfo(), 'folder saved while health response is pending');
+  assert(saved.root === 'Selected During Connection', 'Selected files must be saved independently of the remote connection.');
+  assert(loading.runtime.starts.length === 0, 'The game must wait for the remote connection.');
+  loading.runtime.releaseHealth();
+  await until(() => loading.runtime.completed === 1, 'automatic launch when the remote response arrives');
+  assert(loading.runtime.permissionQueries === 0 && loading.runtime.loopbackRequests === 0, 'Remote startup must not access local network permissions or endpoints.');
 });
 
 await test('Saved files wait through a missing relay and start once when the relay is detected automatically', async ({ cache, frame }) => {
@@ -246,23 +277,66 @@ await test('Saved files wait through a missing relay and start once when the rel
   assert((await cache.getInfo()).id === saved.id, 'Cached launch must leave the cache unchanged.');
 });
 
-await test('Denied permissions and incompatible relays prevent startup without discarding saved files', async ({ cache, frame }) => {
+await test('A folder selected without the relay is shared with an already-open idle launcher', async ({ cache, frame }) => {
+  const waiting = await frame({ relayMissing: '1' });
+  const selecting = await frame({ relayMissing: '1' });
+  selecting.choose('Shared Before Play', 66);
+  assert(selecting.fixture.beforeUnloadBlocked(), 'Navigating away during the save must request confirmation.');
+  const saved = await until(() => cache.getInfo(), 'offline folder publication');
+  await until(() => !selecting.fixture.beforeUnloadBlocked(), 'navigation unblocked after save');
+  await until(() => waiting.query('.file-summary').textContent.includes('Shared Before Play'), 'notification refresh in another open page');
+  assert(saved.root === 'Shared Before Play', 'The shared generation must retain its selected root.');
+  assert(!visible(waiting.query('.folder-selection')), 'An idle page should reuse the publication without a second folder picker.');
+  assert(selecting.runtime.starts.length === 0 && waiting.runtime.starts.length === 0, 'Sharing must not require a running game.');
+  waiting.runtime.relayAvailable = true;
+  waiting.detectRelay();
+  await until(() => waiting.runtime.completed === 1, 'launch from files published by another page');
+  assert(waiting.runtime.starts[0].files.every(file => file.bytes[0] === 66), 'The receiver must read the shared file bytes.');
+});
+
+await test('Focusing an idle page discovers shared files even without a notification', async ({ cache, frame }) => {
+  const waiting = await frame({ relayMissing: '1' });
+  await cache.save(plan('Editor Published', 67));
+  waiting.detectRelay();
+  await until(() => waiting.query('.file-summary').textContent.includes('Editor Published'), 'focus refresh of shared cache');
+  assert(waiting.query('input[type=file]').files.length === 0, 'Focus refresh must not require another folder selection.');
+  waiting.runtime.relayAvailable = true;
+  waiting.detectRelay();
+  await until(() => waiting.runtime.completed === 1, 'focused shared installation starts');
+  await cache.save(plan('A New Installation', 68));
+  const channel = new BroadcastChannel(`${cache.db.name}:changes`);
+  channel.postMessage({ type: 'changed' });
+  channel.close();
+  waiting.detectRelay();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert(waiting.runtime.starts.length === 1 && waiting.runtime.starts[0].root === 'Editor Published', 'Notifications must not replace a running session.');
+});
+
+await test('GPU failures distinguish HTTPS, the API, the adapter and texture support', async ({ frame }) => {
+  for (const [option, pattern] of [
+    ['insecure', /contexto seguro/],
+    ['noGpu', /WebGPU indisponível neste navegador/],
+    ['noAdapter', /Nenhuma placa de vídeo/],
+    ['noBC', /compressão de texturas BC/],
+  ]) {
+    const unsupported = await frame({ [option]: '1' });
+    assert(pattern.test(unsupported.query('.status').textContent), `Unexpected diagnostic for ${option}.`);
+    assert(unsupported.runtime.initialized === 0, 'Unavailable GPU support must not initialize WASM.');
+    unsupported.detectRelay();
+    await new Promise(resolve => setTimeout(resolve, 25));
+    assert(pattern.test(unsupported.query('.status').textContent), 'Focus must preserve the GPU failure diagnostic.');
+    assert(unsupported.runtime.healthRequests > 0, 'Remote connection should be independent of game initialization.');
+    assert(unsupported.runtime.permissionQueries === 0 && unsupported.runtime.loopbackRequests === 0, 'GPU diagnostics must not introduce local relay discovery.');
+  }
+});
+
+await test('An incompatible remote service prevents startup without discarding saved files', async ({ cache, frame }) => {
   const saved = await cache.save(plan('Protected Saved Files', 63));
-  const denied = await frame({ permission: 'denied' });
-  assert(denied.runtime.healthRequests === 0, 'Denied permission must not probe the relay automatically.');
-  await until(() => /configurações do site/.test(denied.query('.relay-status').textContent), 'permission denial instructions');
-  denied.detectRelay();
-  await new Promise(resolve => setTimeout(resolve, 30));
-  assert(denied.runtime.healthRequests === 0, 'A focus event must not bypass a denied permission.');
-  assert(denied.runtime.created === 0, 'Denied permission must not consume game memory or runtime.');
   const incompatible = await frame({ incompatibleRelay: '1' });
   await until(() => /incompatível/.test(incompatible.query('.relay-status').textContent), 'incompatible relay explanation');
   assert(incompatible.runtime.starts.length === 0 && incompatible.runtime.created === 0, 'An incompatible relay must not start the runtime.');
-  assert((await cache.getInfo()).id === saved.id, 'Permission or protocol failures must preserve saved files.');
-  denied.runtime.relayPermission = 'granted';
-  denied.detectRelay();
-  await until(() => denied.runtime.completed === 1, 'automatic launch after permission is restored');
-  assert(denied.runtime.starts.length === 1, 'Restoring permission should start the saved game without another control.');
+  assert((await cache.getInfo()).id === saved.id, 'Protocol failures must preserve saved files.');
+  assert(incompatible.runtime.permissionQueries === 0 && incompatible.runtime.loopbackRequests === 0, 'An incompatible service must not trigger local fallback.');
 });
 
 await test('A relay stopping during asset import frees the owner and retries the same files without another selection', async ({ cache, frame }) => {
@@ -270,7 +344,8 @@ await test('A relay stopping during asset import frees the owner and retries the
   local.choose('Retained Selection', 64);
   await until(() => local.runtime.freed === 1, 'owner freed after relay stopped');
   assert(local.runtime.starts.length === 0, 'A relay failure before start must not consume the runtime.');
-  assert(await cache.getInfo() === null, 'A relay failure must not publish the pending selection.');
+  const shared = await until(() => cache.getInfo(), 'selected folder saved despite relay interruption');
+  assert(shared.root === 'Retained Selection', 'Relay interruption must not prevent sharing selected assets.');
   local.runtime.failHealthAfter = 0;
   local.detectRelay();
   await until(() => local.runtime.completed === 1, 'retry after relay restarts');
@@ -298,7 +373,7 @@ await test('The running player shows the connected relay beside the fullscreen c
     return element?.dataset.state === 'connected' && visible(element) ? element : null;
   }, 'visible connected relay badge');
   const fullscreen = running.query('.fullscreen');
-  assert(badge.textContent.trim() === 'Relay conectado', 'The connected state should be displayed in Portuguese.');
+  assert(badge.textContent.trim() === 'Conectado', 'The connected state should be displayed in Portuguese.');
   assert(fullscreen.textContent.trim() === 'Tela cheia', 'The fullscreen button should be displayed in Portuguese.');
   assert(badge.parentElement === fullscreen.parentElement, 'The relay badge and fullscreen button should share the player toolbar.');
   assert(badge.getAttribute('role') === 'status', 'Assistive technology should receive relay status changes.');
@@ -311,8 +386,9 @@ await test('The relay badge detects disconnection and recovery without restartin
   await until(() => running.query('.relay-connection')?.dataset.state === 'connected', 'initial connected relay');
   running.runtime.relayAvailable = false;
   await until(() => running.query('.relay-connection').dataset.state === 'disconnected', 'automatic disconnected relay badge', 7500);
-  assert(running.query('.relay-connection').textContent.trim() === 'Relay desconectado', 'A failed health check should display a Portuguese disconnection label.');
-  assert(visible(running.query('.nwyd-player')), 'Loss of the local relay must leave the game visible.');
+  assert(running.query('.relay-connection').textContent.trim() === 'Sem conexão', 'A failed health check should display a Portuguese disconnection label.');
+  assert(visible(running.query('.nwyd-player')), 'Loss of the remote connection must leave the game visible.');
+  assert(!visible(running.query('.restart')), 'A temporary connection failure must not end the game session.');
 
   running.runtime.relayAvailable = true;
   running.fixture.focusRelayCheck();
@@ -320,16 +396,16 @@ await test('The relay badge detects disconnection and recovery without restartin
   assert(running.runtime.starts.length === 1 && running.runtime.completed === 1, 'Monitoring must never consume another one-shot runtime.');
 });
 
-await test('Revoking loopback permission updates the running badge without probing the relay', async ({ cache, frame }) => {
-  await cache.save(plan('Permission Revoked', 75));
+await test('Connection monitoring uses only the fixed remote service without browser permissions', async ({ cache, frame }) => {
+  await cache.save(plan('Remote Monitoring', 75));
   const running = await frame();
   await until(() => running.query('.relay-connection')?.dataset.state === 'connected', 'initial permitted relay');
-  const requestsBeforeRevocation = running.runtime.healthRequests;
-  running.runtime.relayPermission = 'denied';
+  const previousRequests = running.runtime.healthRequests;
   running.fixture.focusRelayCheck();
-  await until(() => running.query('.relay-connection').dataset.state === 'disconnected', 'revoked permission badge');
-  assert(running.runtime.healthRequests === requestsBeforeRevocation, 'Revoked permission must not trigger a background request or browser prompt.');
-  assert(running.runtime.starts.length === 1, 'Revoking permission must leave the current runtime alone.');
+  await until(() => running.runtime.healthRequests > previousRequests, 'remote monitor refresh');
+  assert(running.runtime.permissionQueries === 0 && running.runtime.loopbackRequests === 0, 'Monitoring must never query permissions or contact localhost.');
+  assert(running.runtime.healthUrls.every(url => url === 'https://relay.notwyd.app/health'), 'Every health request must use the fixed remote host.');
+  assert(running.runtime.starts.length === 1, 'Monitoring must leave the current runtime alone.');
 });
 
 await test('A relay restart requires a page reload and never replaces a running session token', async ({ cache, frame }) => {
@@ -339,7 +415,7 @@ await test('A relay restart requires a page reload and never replaces a running 
   running.runtime.relayToken = 'b'.repeat(64);
   running.fixture.focusRelayCheck();
   await until(() => running.query('.relay-connection').dataset.state === 'restarted', 'relay restart warning');
-  assert(running.query('.relay-connection').textContent.trim() === 'Relay reiniciado — recarregue a página', 'A changed relay token should explain that the page needs reloading.');
+  assert(running.query('.relay-connection').textContent.trim() === 'Conexão reiniciada — recarregue a página', 'A changed relay token should explain that the page needs reloading.');
   assert(new URL(running.runtime.starts[0].gateway).searchParams.get('token') === 'a'.repeat(64), 'The running game must retain the token with which it started.');
   assert(running.runtime.starts.length === 1, 'A relay restart must not start a second runtime.');
 
@@ -366,6 +442,110 @@ await test('Disposing a running player cancels health checks and stops its relay
   await new Promise(resolve => setTimeout(resolve, 5200));
   assert(running.runtime.healthRequests === requestsBeforeDisposal, 'Disposal must remove focus checks and cancel the recurring monitor.');
   assert(running.runtime.starts.length === 1, 'A late health result must not start another game.');
+});
+
+await test('Game closure shows a manual restart and reuses the cached folder after one reload request', async ({ cache, frame }) => {
+  const saved = await cache.save(plan('Restartable Game', 81));
+  const running = await frame();
+  await until(() => running.runtime.completed === 1, 'game ready before closure');
+  running.fixture.closeGame();
+  await until(() => running.query('h1').textContent === 'Jogo encerrado', 'closed game screen');
+  assert(visible(running.query('.nwyd-launcher')) && !visible(running.query('.nwyd-player')), 'Closing the game must return to the launcher.');
+  for (const selector of ['.folder-selection', '.file-summary', '.relay-status', 'progress']) {
+    assert(!visible(running.query(selector)), `The ended session must hide ${selector}.`);
+  }
+  const restart = running.query('.restart');
+  assert(visible(restart) && !restart.disabled && restart.textContent.trim() === 'Jogar novamente', 'The ended screen must offer a manual restart.');
+  const requests = running.runtime.healthRequests;
+  running.detectRelay();
+  const changed = new BroadcastChannel(`${cache.db.name}:changes`);
+  changed.postMessage({ type: 'changed' });
+  changed.close();
+  await running.fixture.controller.refreshCache();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert(running.runtime.starts.length === 1 && running.runtime.healthRequests === requests, 'Focus and shared-cache events must not restart a closed session.');
+  assert(running.runtime.reloads === 0, 'Closure must wait for the user before reloading.');
+  restart.click();
+  restart.click();
+  assert(running.runtime.reloads === 1 && restart.disabled, 'Repeated restart clicks must request exactly one reload.');
+  const next = await frame();
+  await until(() => next.runtime.completed === 1, 'new page reuses the saved installation');
+  assert(next.runtime.starts[0].root === saved.root && next.runtime.starts[0].files.every(file => file.bytes[0] === 81), 'A fresh runtime must reuse the cached files without choosing the folder again.');
+  assert(next.query('input[type=file]').files.length === 0, 'Restart must not require another folder selection.');
+});
+
+await test('Closing during startup keeps the ended screen when the pending start resolves', async ({ cache, frame }) => {
+  await cache.save(plan('Closing During Start', 82));
+  const starting = await frame({ holdStart: '1' });
+  await until(() => starting.runtime.releaseStart, 'held runtime startup');
+  starting.fixture.closeGame();
+  assert(starting.query('h1').textContent === 'Jogo encerrado', 'A closure before startup settles must still end the session.');
+  starting.runtime.releaseStart();
+  await until(() => starting.runtime.completed === 1, 'late startup resolution');
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert(visible(starting.query('.nwyd-launcher')) && !visible(starting.query('.nwyd-player')), 'A late startup result must not reveal the closed player.');
+  assert(visible(starting.query('.restart')) && starting.runtime.starts.length === 1, 'The closed session must continue to require manual restart.');
+});
+
+await test('An error followed by closure preserves the interruption message and restart action', async ({ cache, frame }) => {
+  await cache.save(plan('Interrupted Game', 83));
+  const running = await frame();
+  await until(() => running.runtime.completed === 1, 'game ready before interruption');
+  running.fixture.failGame('A sessão terminou por uma falha simulada.');
+  running.fixture.closeGame();
+  running.detectRelay();
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert(running.query('h1').textContent === 'Jogo interrompido', 'The close event must preserve the error state.');
+  assert(running.query('.status').textContent.includes('A sessão terminou por uma falha simulada.'), 'The original runtime failure must remain visible.');
+  assert(visible(running.query('.restart')) && !visible(running.query('.nwyd-player')), 'An interrupted session must offer manual restart.');
+});
+
+await test('Restart waits for an in-progress asset save, then becomes available without losing the cache', async ({ cache, frame }) => {
+  const running = await frame({ holdSave: '1' });
+  running.choose('Save Before Restart', 84);
+  await until(() => running.runtime.completed === 1 && running.runtime.releaseSave, 'running game with a held asset save');
+  running.fixture.closeGame();
+  const restart = running.query('.restart');
+  assert(visible(restart) && restart.disabled, 'Restart must remain disabled while selected files are being saved.');
+  restart.click();
+  assert(running.runtime.reloads === 0, 'A pending save must prevent reloading.');
+  running.runtime.releaseSave();
+  await until(() => !restart.disabled, 'restart enabled after asset save finishes');
+  assert((await cache.getInfo()).root === 'Save Before Restart', 'Closure must allow the complete save to finish.');
+  assert(running.query('h1').textContent === 'Jogo encerrado' && !visible(running.query('.folder-selection')), 'Finishing the save must not restore startup controls.');
+  restart.click();
+  assert(running.runtime.reloads === 1, 'Restart must reload after the shared files are safely saved.');
+});
+
+await test('Closure aborts a pending health request and stops further monitoring', async ({ cache, frame }) => {
+  await cache.save(plan('Closed Monitor', 85));
+  const running = await frame();
+  await until(() => running.runtime.completed === 1, 'game ready before held monitor');
+  running.runtime.holdNextHealth = true;
+  running.detectRelay();
+  await until(() => running.runtime.releaseHealth, 'held health request');
+  const requests = running.runtime.healthRequests;
+  running.fixture.closeGame();
+  await until(() => running.runtime.healthAborts === 1, 'closed session aborts discovery');
+  running.runtime.releaseHealth();
+  running.detectRelay();
+  await new Promise(resolve => setTimeout(resolve, 5200));
+  assert(running.runtime.healthRequests === requests, 'A closed session must stop interval and focus probes.');
+  assert(running.query('h1').textContent === 'Jogo encerrado' && !visible(running.query('.nwyd-player')), 'A late health response must not replace the ended screen.');
+  assert(running.runtime.starts.length === 1, 'Late connection work must not start another runtime.');
+});
+
+await test('Closure exits fullscreen only when the game owns it', async ({ cache, frame }) => {
+  await cache.save(plan('Fullscreen Game', 86));
+  for (const owner of ['player', 'other']) {
+    const running = await frame({ mockFullscreen: '1' });
+    await until(() => running.runtime.completed === 1, 'game ready before fullscreen closure');
+    running.fixture.setFullscreen(owner);
+    running.fixture.closeGame();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert(running.runtime.fullscreenExits === (owner === 'player' ? 1 : 0), 'The launcher must only leave fullscreen owned by its player.');
+    assert(visible(running.query('.restart')), 'Fullscreen cleanup must retain the restart action.');
+  }
 });
 
 window.launcherTestResults.complete = true;

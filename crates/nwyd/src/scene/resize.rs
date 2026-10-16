@@ -18,6 +18,8 @@ impl Scene {
     }
 
     pub(crate) fn cancel_pointer_input(&mut self) {
+        self.for_each_ui(|ui, _| ui::input::cancel_panel_pointer(&mut ui.panel));
+
         match self {
             Scene::LoginStatic(_) => {}
             Scene::LoginPanels(scene) => cancel_login_pointer(scene),

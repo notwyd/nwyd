@@ -108,8 +108,12 @@ export class AssetCache {
   }
 
   /** Stage File/Blob copies one at a time, then atomically publish the set. */
-  save(plan, progress = noProgress) {
+  save(plan, progress = noProgress, current = () => true) {
     return this.withLock('exclusive', async () => {
+      const checkCurrent = () => {
+        if (!current()) throw new AssetCacheError('Uma pasta mais recente foi selecionada.', 'cancelled');
+      };
+      checkCurrent();
       validatePlan(plan);
       // A terminated tab may leave a partial generation; never reuse its data.
       const active = await read(this.db, 'meta', 'active');
@@ -121,6 +125,7 @@ export class AssetCache {
       let written = 0;
       try {
         for (let order = 0; order < plan.selected.length; order++) {
+          checkCurrent();
           const { file, path } = plan.selected[order];
           // Persist a Blob, not a directory permission/handle or source path.
           const blob = file.slice(0, file.size);
@@ -131,6 +136,7 @@ export class AssetCache {
           written += blob.size;
           await progress(written, info.total, path);
         }
+        checkCurrent();
         await transaction(this.db, 'meta', 'readwrite', tx => {
           tx.objectStore('meta').put({ ...info, formatVersion: FORMAT_VERSION }, 'active');
         });

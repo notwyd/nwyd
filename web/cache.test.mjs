@@ -121,6 +121,17 @@ test('interrupted replacements preserve the complete previous generation', async
   assert.equal((await entries(cache, 'files')).length, 3);
 });
 
+test('superseded folder selections never publish or remove the previous complete installation', async t => {
+  const [cache] = await caches(t);
+  const previous = await cache.save(plan('Previous'));
+  let current = true;
+  await assert.rejects(cache.save(plan('Superseded'), () => { current = false; }, () => current), { code: 'cancelled' });
+  assert.deepEqual(await cache.getInfo(), previous);
+  assert.equal((await entries(cache, 'files')).length, previous.count);
+  await assert.rejects(cache.save(plan('Already superseded'), undefined, () => false), { code: 'cancelled' });
+  assert.deepEqual(await cache.getInfo(), previous);
+});
+
 test('quota errors and aborted commits cannot publish a partial installation', async t => {
   const [cache] = await caches(t);
   const previous = await cache.save(plan());

@@ -45,6 +45,10 @@ mod pacing;
 mod selection;
 mod session_packets;
 mod social_packets;
+#[cfg(any(target_arch = "wasm32", test))]
+mod touch;
+#[cfg(test)]
+mod touch_tests;
 mod update;
 
 pub use crate::runtime::screens::Screens;
@@ -121,6 +125,8 @@ pub struct Client {
     audio: Option<SceneAudio>,
     pointer: (f64, f64),
     pointer_location: crate::scene::cursor::Location,
+    #[cfg(any(target_arch = "wasm32", test))]
+    primary_touch: Option<(winit::event::DeviceId, u64)>,
     screens: Option<Box<dyn Screens>>,
     launcher_login: bool,
     launcher_credentials: Option<formats::launcher::Credentials>,
@@ -212,6 +218,8 @@ impl Client {
             audio: None,
             pointer: (0.0, 0.0),
             pointer_location: Default::default(),
+            #[cfg(any(target_arch = "wasm32", test))]
+            primary_touch: None,
             screens: None,
             launcher_login: false,
             launcher_credentials: None,
@@ -571,6 +579,24 @@ impl Client {
                 .on_move(self.settings.pointers.mode, emissive, inside);
 
         self.apply_pointer(choice);
+    }
+
+    fn pointer_left(&mut self) {
+        self.pointer_location = crate::scene::cursor::Location::Outside;
+
+        if let Scene::Field(scene) = &mut self.runtime.scene {
+            field::cancel_pointer_hold(scene);
+        }
+
+        if let Scene::SelectChar(scene) = &mut self.runtime.scene {
+            scene.pointer(None);
+        }
+
+        if let Some(scene) = self.scene_manager() {
+            scene.hovered = None;
+        }
+
+        self.redraw();
     }
 
     fn pointer_button(&mut self, state: ElementState, button: MouseButton) {
@@ -2658,6 +2684,15 @@ impl Client {
                     event.repeat,
                 );
             }
+            #[cfg(target_arch = "wasm32")]
+            WindowEvent::Touch(touch) => self.pointer_touch(touch),
+            // A finger owns the shared game pointer until it lifts or is cancelled.
+            #[cfg(target_arch = "wasm32")]
+            WindowEvent::CursorMoved { .. }
+            | WindowEvent::CursorLeft { .. }
+            | WindowEvent::MouseInput { .. }
+            | WindowEvent::MouseWheel { .. }
+                if self.primary_touch.is_some() => {}
             WindowEvent::CursorMoved { position, .. } => {
                 self.pointer_moved((position.x, position.y));
             }
@@ -2668,21 +2703,7 @@ impl Client {
                 self.pointer_wheel(delta);
             }
             WindowEvent::CursorLeft { .. } => {
-                self.pointer_location = crate::scene::cursor::Location::Outside;
-
-                if let Scene::Field(scene) = &mut self.runtime.scene {
-                    field::cancel_pointer_hold(scene);
-                }
-
-                if let Scene::SelectChar(scene) = &mut self.runtime.scene {
-                    scene.pointer(None);
-                }
-
-                if let Some(scene) = self.scene_manager() {
-                    scene.hovered = None;
-                }
-
-                self.redraw();
+                self.pointer_left();
             }
             WindowEvent::Focused(focused) => {
                 if !focused && let Some(panel) = &mut self.runtime.game_settings {
@@ -2692,6 +2713,9 @@ impl Client {
                 self.runtime.ime.focused = focused;
 
                 if !focused {
+                    #[cfg(target_arch = "wasm32")]
+                    self.cancel_touch();
+
                     if let Scene::Field(scene) = &mut self.runtime.scene {
                         field::cancel_pointer_hold(scene);
                     }
@@ -2711,6 +2735,9 @@ impl Client {
                 self.occluded = occluded;
 
                 if occluded {
+                    #[cfg(target_arch = "wasm32")]
+                    self.cancel_touch();
+
                     self.pacing.invalidate_visibility();
                 }
 
@@ -2740,6 +2767,8 @@ impl ApplicationHandler for Client {
         if let Some(audio) = self.audio.as_mut() {
             audio.leave();
         }
+
+        crate::web::report_closed();
     }
 
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, _cause: winit::event::StartCause) {
