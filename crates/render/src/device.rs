@@ -2,6 +2,13 @@ use crate::error::{Error, Result};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
+mod backend;
+
+pub use backend::RendererBackend;
+
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone)]
 pub struct Gpu {
     pub instance: wgpu::Instance,
@@ -10,6 +17,8 @@ pub struct Gpu {
     pub queue: Arc<wgpu::Queue>,
     pub breadcrumb: Arc<Breadcrumb>,
     lost: Arc<AtomicBool>,
+    backend: RendererBackend,
+    available_backends: Vec<RendererBackend>,
 }
 
 #[derive(Debug, Default)]
@@ -87,8 +96,8 @@ fn instance_descriptor() -> wgpu::InstanceDescriptor {
 
     if cfg!(target_arch = "wasm32") {
         descriptor.backends = wgpu::Backends::BROWSER_WEBGPU;
-    } else if cfg!(target_os = "windows") {
-        descriptor.backends = wgpu::Backends::VULKAN;
+    } else {
+        descriptor.backends = wgpu::Instance::enabled_backend_features() - wgpu::Backends::NOOP;
     }
 
     descriptor.with_env()
@@ -99,6 +108,15 @@ impl Gpu {
         instance: wgpu::Instance,
         surface: Option<&wgpu::Surface<'_>>,
     ) -> Result<Gpu> {
+        Self::open_with_backend(instance, surface, None).await
+    }
+
+    pub async fn open_with_backend(
+        instance: wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+        preferred: Option<RendererBackend>,
+    ) -> Result<Gpu> {
+        #[cfg(target_arch = "wasm32")]
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -109,36 +127,63 @@ impl Gpu {
             .await
             .map_err(|e| Error::NoAdapter(e.to_string()))?;
 
-        let missing = REQUIRED_FEATURES - adapter.features();
+        #[cfg(target_arch = "wasm32")]
+        let adapters = vec![adapter];
 
-        if !missing.is_empty() {
-            return Err(Error::MissingFeatures {
-                adapter: adapter.get_info().name,
-                missing: format!("{missing:?}"),
-            });
+        #[cfg(not(target_arch = "wasm32"))]
+        let adapters = instance
+            .enumerate_adapters(instance_descriptor().backends)
+            .await;
+
+        let mut candidates = adapters
+            .into_iter()
+            .filter_map(|adapter| backend::Candidate::new(adapter, surface))
+            .collect::<Vec<_>>();
+
+        candidates.sort_by(|left, right| left.rank(preferred).cmp(&right.rank(preferred)));
+
+        if candidates.is_empty() {
+            return Err(Error::NoAdapter(
+                "no renderer supports this display and the required graphics capabilities"
+                    .to_string(),
+            ));
         }
 
-        let profiling_features = if cfg!(target_arch = "wasm32") {
-            wgpu::Features::empty()
-        } else {
-            adapter.features()
-                & (wgpu::Features::TIMESTAMP_QUERY
-                    | wgpu::Features::TIMESTAMP_QUERY_INSIDE_ENCODERS)
-        };
+        let (selected, (device, queue)) = backend::first_available(&candidates, |candidate| {
+            let adapter = candidate.adapter.clone();
+            async move {
+                let profiling_features = if cfg!(target_arch = "wasm32") {
+                    wgpu::Features::empty()
+                } else {
+                    adapter.features()
+                        & (wgpu::Features::TIMESTAMP_QUERY
+                            | wgpu::Features::TIMESTAMP_QUERY_INSIDE_ENCODERS)
+                };
 
-        let descriptor = wgpu::DeviceDescriptor {
-            label: crate::gpu_label("nwyd"),
-            required_features: REQUIRED_FEATURES | profiling_features,
-            required_limits: adapter.limits(),
-            experimental_features: wgpu::ExperimentalFeatures::default(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        };
+                adapter
+                    .request_device(&wgpu::DeviceDescriptor {
+                        label: crate::gpu_label("nwyd"),
+                        required_features: REQUIRED_FEATURES | profiling_features,
+                        required_limits: adapter.limits(),
+                        experimental_features: wgpu::ExperimentalFeatures::default(),
+                        memory_hints: wgpu::MemoryHints::default(),
+                        trace: wgpu::Trace::Off,
+                    })
+                    .await
+                    .map_err(|error| format!("{}: {error}", adapter.get_info().name))
+            }
+        })
+        .await
+        .map_err(|errors| Error::NoDevice(errors.join("; ")))?;
 
-        let (device, queue) = adapter
-            .request_device(&descriptor)
-            .await
-            .map_err(|e| Error::NoDevice(e.to_string()))?;
+        let available_backends = backend::unique_backends(
+            candidates[selected..]
+                .iter()
+                .map(|candidate| candidate.backend),
+        );
+        let selected = candidates.swap_remove(selected);
+        let adapter = selected.adapter;
+        let backend = selected.backend;
 
         let breadcrumb = Arc::new(Breadcrumb::default());
 
@@ -182,11 +227,28 @@ impl Gpu {
             queue: Arc::new(queue),
             breadcrumb,
             lost,
+            backend,
+            available_backends,
         })
     }
 
     pub fn instance() -> wgpu::Instance {
         wgpu::Instance::new(instance_descriptor())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn instance_with_display(
+        display: Box<impl wgpu::rwh::HasDisplayHandle + std::fmt::Debug + Send + Sync + 'static>,
+    ) -> wgpu::Instance {
+        wgpu::Instance::new(instance_descriptor().with_display_handle(display))
+    }
+
+    pub fn backend(&self) -> RendererBackend {
+        self.backend
+    }
+
+    pub fn available_backends(&self) -> &[RendererBackend] {
+        &self.available_backends
     }
 
     pub fn info(&self) -> wgpu::AdapterInfo {

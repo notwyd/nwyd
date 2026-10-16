@@ -9,6 +9,7 @@ use crate::{
 };
 use assets::GameDir;
 use formats::{config::Language, ui::pane::ElementType};
+use render::device::RendererBackend;
 use ui::{
     draw::{Interaction, Owner},
     input::{EventId, Manager, Mouse, PanelMut},
@@ -148,6 +149,9 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
     }
 
     for (source, name, kind, y, height) in [
+        ("aMusLbl", "rendererLabel", ElementType::Static, 198, 14),
+        ("resDrop", "rendererDrop", ElementType::Button, 216, 20),
+        ("aMusLbl", "rendererNotice", ElementType::Static, 244, 18),
         ("aMusLbl", "languageLabel", ElementType::Static, 233, 14),
         ("resDrop", "languageDrop", ElementType::Button, 251, 20),
     ] {
@@ -213,6 +217,68 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
     Ok(())
 }
 
+fn renderer_choices(ui: &mut PanelUi, count: usize) {
+    ui.panel
+        .elements
+        .retain(|element| !element.name.starts_with("rendererItem"));
+
+    let Some(template) = ui.panel.element("resItem0", ElementType::Button).cloned() else {
+        return;
+    };
+
+    let top = 214 - count as i32 * 18;
+
+    for index in 0..count {
+        let mut element = template.clone_template();
+
+        element.name = format!("rendererItem{index}");
+
+        element.name_hash = ui::hash::name_hash(&element.name);
+
+        ui.panel.next_element_id += 1;
+
+        element.id = ui.panel.next_element_id;
+
+        element.x = 25;
+
+        element.y = top + index as i32 * 18;
+
+        element.width = 207;
+
+        element.height = 18;
+
+        element.multiline = false;
+
+        element.msg_receive = true;
+
+        element.set_display("");
+
+        ui.panel.elements.push(element);
+    }
+}
+
+fn renderer_caption(
+    renderer: Option<RendererBackend>,
+    active: Option<RendererBackend>,
+    portuguese: bool,
+) -> String {
+    match renderer {
+        Some(renderer) => renderer.label().into(),
+        None => {
+            let automatic = if portuguese {
+                "Automático"
+            } else {
+                "Automatic"
+            };
+
+            active.map_or_else(
+                || automatic.into(),
+                |active| format!("{automatic} ({})", active.label()),
+            )
+        }
+    }
+}
+
 pub struct Panel {
     pub(crate) chains: crate::fonts::Chains,
     placed: PlacedPanel,
@@ -221,6 +287,10 @@ pub struct Panel {
     scale: f32,
     tab: usize,
     resolutions_open: bool,
+    renderers_open: bool,
+    renderers: Vec<Option<RendererBackend>>,
+    startup_renderer: Option<RendererBackend>,
+    active_renderer: Option<RendererBackend>,
     languages_open: bool,
     languages: Vec<Language>,
     language: Language,
@@ -260,6 +330,10 @@ impl Panel {
             scale: 1.0,
             tab: 0,
             resolutions_open: false,
+            renderers_open: false,
+            renderers: vec![None],
+            startup_renderer: preferences.renderer,
+            active_renderer: None,
             languages_open: false,
             languages: vec![preferences.language],
             language: preferences.language,
@@ -329,6 +403,10 @@ impl Panel {
             },
             tab: 0,
             resolutions_open: false,
+            renderers_open: false,
+            renderers: vec![None],
+            startup_renderer: preferences.renderer,
+            active_renderer: None,
             languages_open: false,
             languages,
             language: game.language(),
@@ -348,10 +426,46 @@ impl Panel {
         Ok(panel)
     }
 
+    pub(crate) fn set_renderers(&mut self, available: &[RendererBackend], active: RendererBackend) {
+        self.renderers = vec![None];
+
+        for &renderer in available {
+            if !self.renderers.contains(&Some(renderer)) {
+                self.renderers.push(Some(renderer));
+            }
+        }
+
+        if !self.renderers.contains(&self.applied.renderer) {
+            self.applied.renderer = None;
+        }
+
+        if !self.renderers.contains(&self.draft.renderer) {
+            self.draft.renderer = None;
+        }
+
+        if !self.renderers.contains(&self.startup_renderer) {
+            self.startup_renderer = None;
+        }
+
+        self.active_renderer = Some(active);
+
+        self.renderers_open = false;
+
+        self.cancel_input();
+
+        renderer_choices(&mut self.placed.ui, self.renderers.len());
+
+        self.refresh();
+    }
+
     fn refresh(&mut self) {
         let portuguese = self.language == Language::Portuguese;
 
         let interface_visible = self.tab == 2 && !self.languages_open;
+
+        let video_visible = self.tab == 0 && !self.resolutions_open && !self.renderers_open;
+
+        let restart_required = self.draft.renderer != self.startup_renderer;
 
         for element in &mut self.placed.ui.panel.elements {
             let name = element.name.as_str();
@@ -359,19 +473,23 @@ impl Panel {
             element.visible = match name {
                 "TabVid" | "TabAud" | "TabIfc" | "" => true,
                 n if n.starts_with("resItem") => self.tab == 0 && self.resolutions_open,
-                "resDrop" | "vResLbl" => self.tab == 0,
+                "resDrop" | "vResLbl" => self.tab == 0 && !self.renderers_open,
+                n if n.starts_with("rendererItem") => self.tab == 0 && self.renderers_open,
+                "rendererLabel" => video_visible,
+                "rendererDrop" => self.tab == 0 && !self.resolutions_open,
+                "rendererNotice" => video_visible && restart_required,
                 n if n.starts_with("languageItem") => self.tab == 2 && self.languages_open,
                 "languageLabel" | "languageDrop" => self.tab == 2,
-                "windowMode" => self.tab == 0 && !self.resolutions_open && self.draft.fullscreen,
-                "windowModeOn" => self.tab == 0 && !self.resolutions_open && !self.draft.fullscreen,
-                "fsMode" => self.tab == 0 && !self.resolutions_open && !self.draft.fullscreen,
-                "fsModeOn" => self.tab == 0 && !self.resolutions_open && self.draft.fullscreen,
-                "effects" => self.tab == 0 && !self.resolutions_open && !self.draft.effects,
-                "effectsOn" => self.tab == 0 && !self.resolutions_open && self.draft.effects,
-                "vsync" => self.tab == 0 && !self.resolutions_open && !self.draft.vsync,
-                "vsyncOn" => self.tab == 0 && !self.resolutions_open && self.draft.vsync,
+                "windowMode" => video_visible && self.draft.fullscreen,
+                "windowModeOn" => video_visible && !self.draft.fullscreen,
+                "fsMode" => video_visible && !self.draft.fullscreen,
+                "fsModeOn" => video_visible && self.draft.fullscreen,
+                "effects" => video_visible && !self.draft.effects,
+                "effectsOn" => video_visible && self.draft.effects,
+                "vsync" => video_visible && !self.draft.vsync,
+                "vsyncOn" => video_visible && self.draft.vsync,
                 "vModeLbl" | "vEfxHdr" | "vWinLbl" | "vFsLbl" | "vEfx1Lbl" | "vVsyncLbl" => {
-                    self.tab == 0 && !self.resolutions_open
+                    video_visible
                 }
                 "aMusLbl" | "aSfxLbl" | "musFill" | "musBar" | "musMark" | "sfxFill" | "sfxBar"
                 | "sfxMark" => self.tab == 1,
@@ -399,6 +517,36 @@ impl Panel {
             }
 
             match name {
+                "rendererLabel" => {
+                    element.set_display(if portuguese {
+                        "Renderizador"
+                    } else {
+                        "Renderer"
+                    });
+                }
+                "rendererDrop" => {
+                    element.enabled = self.renderers.len() > 1;
+
+                    element.set_display(&renderer_caption(
+                        self.draft.renderer,
+                        self.active_renderer,
+                        portuguese,
+                    ));
+                }
+                "rendererNotice" => element.set_display(if portuguese {
+                    "Reinicie o jogo para aplicar."
+                } else {
+                    "Restart the game to apply."
+                }),
+                n if n.starts_with("rendererItem") => {
+                    if let Some(&renderer) = n
+                        .strip_prefix("rendererItem")
+                        .and_then(|index| index.parse::<usize>().ok())
+                        .and_then(|index| self.renderers.get(index))
+                    {
+                        element.set_display(&renderer_caption(renderer, None, portuguese));
+                    }
+                }
                 "evokLabel" => element.set_display(&format!(
                     "{}: {}%",
                     if portuguese {
@@ -511,6 +659,8 @@ impl Panel {
 
         self.resolutions_open = false;
 
+        self.renderers_open = false;
+
         self.languages_open = false;
 
         self.slider_drag = None;
@@ -598,6 +748,8 @@ impl Panel {
 
                     self.resolutions_open = false;
 
+                    self.renderers_open = false;
+
                     self.languages_open = false;
                 }
                 "TabAud" => {
@@ -605,12 +757,16 @@ impl Panel {
 
                     self.resolutions_open = false;
 
+                    self.renderers_open = false;
+
                     self.languages_open = false;
                 }
                 "TabIfc" => {
                     self.tab = 2;
 
                     self.resolutions_open = false;
+
+                    self.renderers_open = false;
 
                     self.languages_open = false;
                 }
@@ -626,7 +782,16 @@ impl Panel {
                 "capeRefine" | "capeRefineOn" => {
                     self.draft.interface.cape_refinement ^= true;
                 }
-                "resDrop" => self.resolutions_open = !self.resolutions_open,
+                "resDrop" => {
+                    self.resolutions_open = !self.resolutions_open;
+
+                    self.renderers_open = false;
+                }
+                "rendererDrop" => {
+                    self.renderers_open = !self.renderers_open;
+
+                    self.resolutions_open = false;
+                }
                 "languageDrop" => self.languages_open = !self.languages_open,
                 "windowMode" | "windowModeOn" => self.draft.fullscreen = false,
                 "fsMode" | "fsModeOn" => self.draft.fullscreen = true,
@@ -641,6 +806,14 @@ impl Panel {
                         self.draft.resolution = RESOLUTIONS[index];
 
                         self.resolutions_open = false;
+                    } else if let Some(&renderer) = name
+                        .strip_prefix("rendererItem")
+                        .and_then(|index| index.parse::<usize>().ok())
+                        .and_then(|index| self.renderers.get(index))
+                    {
+                        self.draft.renderer = renderer;
+
+                        self.renderers_open = false;
                     } else if let Some(&language) = name
                         .strip_prefix("languageItem")
                         .and_then(|n| n.parse::<usize>().ok())

@@ -20,6 +20,7 @@ fn preferences() -> Preferences {
         resolution: [800, 600],
         fullscreen: false,
         vsync: false,
+        renderer: None,
         music: 60,
         sound: 70,
         effects: true,
@@ -45,6 +46,7 @@ fn client() -> Client {
             backbuffer: (800, 600),
             fullscreen: false,
             present_mode: wgpu::PresentMode::Immediate,
+            renderer: None,
             overlay: false,
             pointers: Pointers::none(),
         },
@@ -469,6 +471,35 @@ fn saving_settings_preserves_session_identity_and_runtime_state() {
 }
 
 #[test]
+fn renderer_selection_is_saved_without_changing_the_running_configuration() {
+    use render::device::RendererBackend;
+
+    let directory = SettingsDirectory::new();
+    let mut client = client();
+    client.settings.renderer = Some(RendererBackend::Vulkan);
+    let panel = client.runtime.game_settings.as_mut().unwrap();
+    panel.path = directory.settings();
+    panel.set_renderers(
+        &[RendererBackend::Vulkan, RendererBackend::Dx12],
+        RendererBackend::Vulkan,
+    );
+    panel.draft.renderer = Some(RendererBackend::Dx12);
+    panel.apply_requested = true;
+
+    client.apply_game_settings();
+
+    let saved = Preferences::load(&directory.settings()).unwrap().unwrap();
+    assert_eq!(saved.renderer, Some(RendererBackend::Dx12));
+    assert_eq!(
+        client.runtime.game_settings.as_ref().unwrap().applied,
+        saved
+    );
+    assert_eq!(client.settings.renderer, Some(RendererBackend::Vulkan));
+    assert_eq!(client.settings.backbuffer, (800, 600));
+    assert!(matches!(client.runtime.scene, Scene::LoginStatic(_)));
+}
+
+#[test]
 fn failed_settings_save_rolls_back_draft_and_keeps_previous_file() {
     let directory = SettingsDirectory::new();
 
@@ -503,6 +534,8 @@ fn failed_settings_save_rolls_back_draft_and_keeps_previous_file() {
     panel.path = directory.0.join("missing/settings.json");
 
     panel.draft.language = formats::config::Language::English;
+
+    panel.draft.renderer = Some(render::device::RendererBackend::Dx12);
 
     assert!(panel.save_draft().is_err());
 

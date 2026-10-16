@@ -95,6 +95,380 @@ fn click(panel: &mut Panel, name: &str) {
     assert!(panel.button(0, false, point, (800, 600), 1.0));
 }
 
+fn video_panel(language: Language, renderers: &[RendererBackend]) -> Panel {
+    let mut panel = panel(language, &[Language::Portuguese, Language::English]);
+
+    panel.set_renderers(renderers, RendererBackend::Vulkan);
+
+    click(&mut panel, "TabVid");
+
+    panel
+}
+
+struct SettingsFile(std::path::PathBuf);
+
+impl SettingsFile {
+    fn new() -> Self {
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+
+        let directory = std::env::temp_dir().join(format!(
+            "nwyd-renderer-settings-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+
+        std::fs::create_dir(&directory).unwrap();
+
+        Self(directory)
+    }
+
+    fn path(&self) -> std::path::PathBuf {
+        self.0.join("settings.json")
+    }
+}
+
+impl Drop for SettingsFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+#[test]
+fn renderer_choices_only_include_unique_supported_backends_and_automatic() {
+    let mut panel = video_panel(
+        Language::Portuguese,
+        &[
+            RendererBackend::Vulkan,
+            RendererBackend::Gl,
+            RendererBackend::Vulkan,
+        ],
+    );
+
+    assert_eq!(
+        panel.renderers,
+        [
+            None,
+            Some(RendererBackend::Vulkan),
+            Some(RendererBackend::Gl)
+        ]
+    );
+
+    assert_eq!(element(&panel, "rendererLabel").display, "Renderizador");
+
+    assert_eq!(
+        element(&panel, "rendererDrop").display,
+        "Automático (Vulkan)"
+    );
+
+    assert_eq!(
+        panel
+            .placed
+            .ui
+            .panel
+            .elements
+            .iter()
+            .filter(|e| e.name.starts_with("rendererItem"))
+            .count(),
+        3
+    );
+
+    click(&mut panel, "rendererDrop");
+
+    assert_eq!(element(&panel, "rendererItem0").display, "Automático");
+
+    click(&mut panel, "rendererItem0");
+
+    assert!(!panel.apply_requested);
+
+    assert!(!panel.renderers_open);
+
+    assert!(!element(&panel, "rendererNotice").visible);
+}
+
+#[test]
+fn renderer_selection_is_saved_and_restart_notice_survives_reopening() {
+    let files = SettingsFile::new();
+
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+
+    panel.path = files.path();
+
+    click(&mut panel, "rendererDrop");
+
+    click(&mut panel, "rendererItem2");
+
+    assert_eq!(panel.draft.renderer, Some(RendererBackend::Gl));
+
+    assert_eq!(panel.applied.renderer, None);
+
+    assert!(panel.apply_requested);
+
+    assert!(element(&panel, "rendererNotice").visible);
+
+    panel.save_draft().unwrap();
+
+    assert_eq!(
+        Preferences::load(&files.path()).unwrap().unwrap().renderer,
+        Some(RendererBackend::Gl)
+    );
+
+    panel.close();
+
+    panel.open(Default::default());
+
+    assert_eq!(panel.applied.renderer, Some(RendererBackend::Gl));
+
+    assert_eq!(
+        element(&panel, "rendererDrop").display,
+        RendererBackend::Gl.label()
+    );
+
+    assert!(element(&panel, "rendererNotice").visible);
+
+    click(&mut panel, "rendererDrop");
+
+    click(&mut panel, "rendererItem0");
+
+    panel.save_draft().unwrap();
+
+    assert_eq!(
+        Preferences::load(&files.path()).unwrap().unwrap().renderer,
+        None
+    );
+
+    assert!(!element(&panel, "rendererNotice").visible);
+}
+
+#[test]
+fn failed_renderer_save_and_discard_restore_the_applied_choice() {
+    let files = SettingsFile::new();
+
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+
+    panel.path = files.0.join("missing/settings.json");
+
+    for save in [false, true] {
+        click(&mut panel, "rendererDrop");
+
+        click(&mut panel, "rendererItem2");
+
+        assert!(element(&panel, "rendererNotice").visible);
+
+        if save {
+            assert!(panel.save_draft().is_err());
+        } else {
+            panel.discard_draft();
+        }
+
+        assert_eq!(panel.draft.renderer, None);
+
+        assert_eq!(panel.applied.renderer, None);
+
+        assert!(!element(&panel, "rendererNotice").visible);
+    }
+}
+
+#[test]
+fn unsupported_saved_renderer_falls_back_without_writing_preferences() {
+    let files = SettingsFile::new();
+
+    let mut panel = panel(Language::English, &[]);
+
+    panel.path = files.path();
+
+    panel.applied.renderer = Some(RendererBackend::Dx12);
+
+    panel.draft = panel.applied;
+
+    panel.startup_renderer = panel.applied.renderer;
+
+    panel.applied.save(&files.path()).unwrap();
+
+    panel.set_renderers(&[RendererBackend::Vulkan], RendererBackend::Vulkan);
+
+    click(&mut panel, "TabVid");
+
+    assert_eq!(panel.applied.renderer, None);
+
+    assert_eq!(panel.draft.renderer, None);
+
+    assert!(!panel.apply_requested);
+
+    assert!(!element(&panel, "rendererNotice").visible);
+
+    assert_eq!(
+        Preferences::load(&files.path()).unwrap().unwrap().renderer,
+        Some(RendererBackend::Dx12)
+    );
+}
+
+#[test]
+fn renderer_popup_hides_overlapping_controls_and_does_not_toggle_vsync() {
+    let mut panel = video_panel(
+        Language::English,
+        &[
+            RendererBackend::Vulkan,
+            RendererBackend::Dx12,
+            RendererBackend::Metal,
+            RendererBackend::Gl,
+            RendererBackend::BrowserWebGpu,
+        ],
+    );
+
+    let checkbox = element(&panel, "vsync");
+
+    let point = Some((checkbox.x + 5, checkbox.y + 5));
+
+    click(&mut panel, "rendererDrop");
+
+    for name in [
+        "vsync",
+        "effects",
+        "resDrop",
+        "rendererLabel",
+        "rendererNotice",
+    ] {
+        assert!(!element(&panel, name).visible, "{name}");
+    }
+
+    let choices: Vec<_> = panel
+        .placed
+        .ui
+        .panel
+        .elements
+        .iter()
+        .filter(|element| element.name.starts_with("rendererItem"))
+        .collect();
+
+    assert_eq!(choices.len(), 6);
+
+    for choice in &choices {
+        assert!(choice.visible);
+
+        assert!(choice.y >= element(&panel, "TabVid").rect()[3]);
+
+        assert!(choice.rect()[3] <= element(&panel, "rendererDrop").y);
+
+        assert!(choice.rect()[2] <= panel.placed.ui.panel.right);
+    }
+
+    for adjacent in choices.windows(2) {
+        assert!(adjacent[0].rect()[3] <= adjacent[1].y);
+    }
+
+    let draws = panel.placed.ui.panel.draw_list(&Interaction::default());
+
+    for (index, choice) in panel
+        .placed
+        .ui
+        .panel
+        .elements
+        .iter()
+        .enumerate()
+        .filter(|(_, element)| element.name.starts_with("rendererItem"))
+    {
+        let text: Vec<_> = draws
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                Command::Text(text) if text.owner == Owner::Element(index) => Some(text),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(text.len(), 1, "{}", choice.name);
+
+        assert_eq!(text[0].text, choice.display);
+    }
+
+    assert!(panel.button(0, true, point, (800, 600), 1.0));
+
+    assert!(panel.button(0, false, point, (800, 600), 1.0));
+
+    assert_eq!(panel.draft.renderer, Some(RendererBackend::Metal));
+
+    assert!(!panel.draft.vsync);
+
+    assert!(!panel.renderers_open);
+
+    click(&mut panel, "rendererDrop");
+
+    click(&mut panel, "TabAud");
+
+    assert!(!panel.renderers_open);
+
+    assert!(!element(&panel, "rendererDrop").visible);
+
+    click(&mut panel, "TabVid");
+
+    click(&mut panel, "resDrop");
+
+    assert!(!element(&panel, "rendererDrop").visible);
+
+    panel.close();
+
+    panel.open(Default::default());
+
+    assert!(!panel.resolutions_open);
+
+    assert!(!panel.renderers_open);
+
+    assert!(element(&panel, "rendererDrop").visible);
+}
+
+#[test]
+fn renderer_labels_and_pending_restart_notice_follow_runtime_language_changes() {
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+
+    click(&mut panel, "rendererDrop");
+
+    click(&mut panel, "rendererItem2");
+
+    panel.applied = panel.draft;
+
+    let mut game = GameDir::from_files("synthetic-renderer-language", []).unwrap();
+
+    for (language, label, notice, automatic) in [
+        (
+            Language::Portuguese,
+            "Renderizador",
+            "Reinicie o jogo para aplicar.",
+            "Automático",
+        ),
+        (
+            Language::English,
+            "Renderer",
+            "Restart the game to apply.",
+            "Automatic",
+        ),
+    ] {
+        game.set_language(language);
+
+        panel.apply_language(&game, &ui::Strings::default());
+
+        assert_eq!(element(&panel, "rendererLabel").display, label);
+
+        assert_eq!(element(&panel, "rendererNotice").display, notice);
+
+        assert!(element(&panel, "rendererNotice").visible);
+
+        assert_eq!(element(&panel, "rendererItem0").display, automatic);
+
+        assert_eq!(panel.applied.renderer, Some(RendererBackend::Gl));
+    }
+}
+
 #[test]
 fn language_selection_requests_apply_without_a_restart_notice() {
     let mut panel = panel(
@@ -393,6 +767,8 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
     for language in [Language::Portuguese, Language::English] {
         let mut panel = panel(language, &[Language::Portuguese, Language::English]);
 
+        panel.set_renderers(&[RendererBackend::Dx12], RendererBackend::Dx12);
+
         panel.draft.language = if language == Language::Portuguese {
             Language::English
         } else {
@@ -401,7 +777,14 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
 
         panel.refresh();
 
-        for name in ["languageLabel", "evokLabel", "capeRefineLbl"] {
+        for name in [
+            "languageLabel",
+            "evokLabel",
+            "capeRefineLbl",
+            "rendererLabel",
+            "rendererDrop",
+            "rendererNotice",
+        ] {
             let label = element(&panel, name);
 
             let width: i32 = label

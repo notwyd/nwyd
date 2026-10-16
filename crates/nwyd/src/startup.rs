@@ -70,6 +70,7 @@ pub fn load_client(mut game: GameDir, analytics: crate::analytics::Analytics) ->
         backbuffer,
         fullscreen: preferences.fullscreen && !cfg!(target_arch = "wasm32"),
         present_mode: preferences.present_mode(),
+        renderer: preferences.renderer,
         overlay: false,
         pointers: scene::cursor::Pointers::load(&game, config.cursor_mode()),
     };

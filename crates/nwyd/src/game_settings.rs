@@ -34,6 +34,8 @@ pub const RESOLUTIONS: [[u32; 2]; 18] = [
 pub struct Preferences {
     #[serde(default = "language::default_language", with = "language::serde")]
     pub language: Language,
+    #[serde(default)]
+    pub renderer: Option<render::device::RendererBackend>,
     pub resolution: [u32; 2],
     pub fullscreen: bool,
     #[serde(default)]
@@ -53,6 +55,7 @@ impl Preferences {
 
         Self {
             language: language::default_language(),
+            renderer: None,
             resolution: [preset.width, preset.height],
             fullscreen: config.fullscreen().unwrap_or(false),
             vsync: false,
@@ -158,7 +161,6 @@ impl Preferences {
 
         Ok(())
     }
-
 
     pub fn load_for_game(game: &assets::GameDir) -> Result<Option<Self>> {
         let path = crate::user_paths::settings()?;
@@ -372,6 +374,8 @@ mod tests {
 
         object.remove("language");
 
+        object.remove("renderer");
+
         assert_eq!(
             serde_json::from_value::<Preferences>(json.clone()).unwrap(),
             prefs
@@ -411,6 +415,8 @@ mod tests {
         prefs.interface.zoom = true;
 
         prefs.language = Language::English;
+
+        prefs.renderer = Some(render::device::RendererBackend::Vulkan);
 
         prefs.save(&path).unwrap();
 

@@ -22,6 +22,7 @@ fn login_client(field: usize) -> Client {
             backbuffer: (800, 600),
             fullscreen: false,
             present_mode: wgpu::PresentMode::Immediate,
+            renderer: None,
             overlay: false,
             pointers: crate::scene::cursor::Pointers::none(),
         },

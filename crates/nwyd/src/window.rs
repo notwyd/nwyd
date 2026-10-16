@@ -61,6 +61,7 @@ pub struct Settings {
     pub backbuffer: (u32, u32),
     pub fullscreen: bool,
     pub present_mode: wgpu::PresentMode,
+    pub renderer: Option<render::device::RendererBackend>,
     pub overlay: bool,
     pub pointers: crate::scene::cursor::Pointers,
 }
@@ -1907,7 +1908,7 @@ impl Client {
             .create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
             .context(crate::error_context::Operation::Surface)?;
 
-        let gpu = Gpu::open(instance, Some(&surface))
+        let gpu = Gpu::open_with_backend(instance, Some(&surface), self.settings.renderer)
             .await
             .context(crate::error_context::Operation::Device)?;
 
@@ -1974,14 +1975,18 @@ impl Client {
                 .context(crate::error_context::Operation::Window)?,
         );
 
-        let instance = Gpu::instance();
+        let instance = Gpu::instance_with_display(Box::new(window.clone()));
 
         let surface = instance
             .create_surface(window.clone())
             .context(crate::error_context::Operation::Surface)?;
 
-        let gpu = pollster::block_on(Gpu::open(instance, Some(&surface)))
-            .context(crate::error_context::Operation::Device)?;
+        let gpu = pollster::block_on(Gpu::open_with_backend(
+            instance,
+            Some(&surface),
+            self.settings.renderer,
+        ))
+        .context(crate::error_context::Operation::Device)?;
 
         self.start_live(event_loop, window, surface, gpu)
     }
@@ -2011,7 +2016,7 @@ impl Client {
     }
 
     fn start_live(
-        &self,
+        &mut self,
         event_loop: &ActiveEventLoop,
         window: Arc<Window>,
         surface: wgpu::Surface<'static>,
@@ -2061,6 +2066,10 @@ impl Client {
 
         let source = blitter.source(&gpu, &back_buffer);
 
+        if let Some(panel) = &mut self.runtime.game_settings {
+            panel.set_renderers(gpu.available_backends(), gpu.backend());
+        }
+
         tracing::info!(
             "NWYD: {} ({:?}) — back buffer {}x{}, surface {}x{} {:?}, {:?}",
             gpu.info().name,
@@ -2109,14 +2118,18 @@ impl Client {
             "NWYD: rebuilding lost GPU device and rendering resources"
         );
 
-        let instance = Gpu::instance();
+        let instance = Gpu::instance_with_display(Box::new(live.window.clone()));
 
         let surface = instance
             .create_surface(live.window.clone())
             .context(crate::error_context::Operation::RecoverSurface)?;
 
-        let gpu = pollster::block_on(Gpu::open(instance, Some(&surface)))
-            .context(crate::error_context::Operation::RecoverDevice)?;
+        let gpu = pollster::block_on(Gpu::open_with_backend(
+            instance,
+            Some(&surface),
+            self.settings.renderer,
+        ))
+        .context(crate::error_context::Operation::RecoverDevice)?;
 
         self.restore_device(surface, gpu)
     }
@@ -2160,6 +2173,8 @@ impl Client {
 
         self.browser_recovery = Some(pending.clone());
 
+        let renderer = self.settings.renderer;
+
         wasm_bindgen_futures::spawn_local(async move {
             let result = async {
                 let instance = Gpu::instance();
@@ -2168,7 +2183,7 @@ impl Client {
                     .create_surface(wgpu::SurfaceTarget::Canvas(canvas))
                     .context(crate::error_context::Operation::RecoverSurface)?;
 
-                let gpu = Gpu::open(instance, Some(&surface))
+                let gpu = Gpu::open_with_backend(instance, Some(&surface), renderer)
                     .await
                     .context(crate::error_context::Operation::RecoverDevice)?;
 
@@ -2229,6 +2244,10 @@ impl Client {
         live.blitter = blitter;
 
         live.source = source;
+
+        if let Some(panel) = &mut self.runtime.game_settings {
+            panel.set_renderers(gpu.available_backends(), gpu.backend());
+        }
 
         live.gpu = gpu;
 
