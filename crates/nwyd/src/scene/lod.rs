@@ -51,6 +51,7 @@ pub struct EffectOptions {
     pub detail: super::aura::Detail,
     pub secondary: bool,
     pub grass: bool,
+    pub old_skill_vfx: bool,
 }
 
 impl Default for EffectOptions {
@@ -59,6 +60,7 @@ impl Default for EffectOptions {
             detail: Default::default(),
             secondary: true,
             grass: true,
+            old_skill_vfx: true,
         }
     }
 }
@@ -66,8 +68,6 @@ impl Default for EffectOptions {
 impl EffectOptions {
     pub fn toggle(&mut self, toggle_grass: bool) {
         self.detail.effects = !self.detail.effects;
-
-        self.secondary = !self.detail.effects;
 
         self.detail.glow = self.detail.effects;
 

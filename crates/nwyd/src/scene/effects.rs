@@ -1,4 +1,4 @@
-use super::effect_tree::{Base, Class, Cull, Effect, Pass, Sink, Submit, Tick, Tree};
+use super::effect_tree::{Base, Class, Cull, Effect, OwnedGroup, Pass, Sink, Submit, Tick, Tree};
 use super::objects::{BoundTexture, EFFECT_TEXTURE_LIST};
 use super::shade::Shade;
 use anyhow::{Context, Result};
@@ -13,6 +13,9 @@ use render::camera::Matrix4;
 use render::device::Gpu;
 use render::texture::AlphaPolicy;
 use rustc_hash::FxHashMap;
+
+#[cfg(test)]
+mod old_skill_vfx_tests;
 
 pub(crate) fn visible_in_scene(scene: u32, enabled: bool) -> bool {
     scene != 30000 || enabled
@@ -484,7 +487,14 @@ impl Effect for Billboard {
     }
 
     fn submit(&self, cx: &Submit<'_>, out: &mut Sink<'_>) {
-        if !self.drawn(cx.eye) || !self.quality_allows(cx.scene.detail) {
+        let group = self
+            .body_owned
+            .map(|(key, slot)| OwnedGroup::HumanAffect(key, slot));
+
+        if !cx.scene.skill_vfx_visible(group)
+            || !self.drawn(cx.eye)
+            || !self.quality_allows(cx.scene.detail)
+        {
             out.effect.culled += 1;
 
             return;
@@ -557,6 +567,7 @@ pub struct BillboardScene {
     pub detail: i32,
     pub environment: i32,
     pub scene_id: u32,
+    pub old_skill_vfx: bool,
     pub shades: Vec<Shade>,
     pub quads: Vec<super::quads::GroundQuad>,
     pub tree: Tree,
@@ -594,6 +605,7 @@ impl BillboardScene {
             detail: 0,
             environment: 0,
             scene_id: 0,
+            old_skill_vfx: true,
             shades: Vec::new(),
             quads: Vec::new(),
             tree: Tree::default(),
@@ -604,6 +616,13 @@ impl BillboardScene {
 
     pub fn spawn(&mut self, node: Box<dyn Effect>) {
         self.tree.spawn(node);
+    }
+
+    pub(crate) fn skill_vfx_visible(&self, group: Option<OwnedGroup>) -> bool {
+        visible_in_scene(
+            self.scene_id,
+            self.old_skill_vfx || group.is_none_or(|group| !group.uses_old_skill_vfx()),
+        )
     }
 
     pub fn bind_slot(&mut self, game: &GameDir, slot: usize) -> Option<usize> {

@@ -154,6 +154,34 @@ pub enum OwnedGroup {
     ),
 }
 
+impl OwnedGroup {
+    pub(crate) fn uses_old_skill_vfx(self) -> bool {
+        matches!(
+            self,
+            Self::HandAffect(..)
+                | Self::HumanAffect(
+                    _,
+                    0x80C
+                        | 0x810
+                        | 0x818
+                        | 0x820
+                        | 0x824
+                        | 0x830
+                        | 0x834
+                        | 0x850
+                        | 0x854
+                        | 0x858
+                        | 0x85C
+                        | 0x860
+                        | 0x8C4
+                        | 0x8C8
+                        | 0x8CC
+                        | 0x8D0
+                )
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Removal {
     Expired,
@@ -546,6 +574,10 @@ impl Tree {
 
     pub fn submit(&self, pass: Pass, cx: &Submit<'_>, out: &mut Sink<'_>) {
         for node in &self.nodes {
+            if !cx.scene.skill_vfx_visible(node.owned_group()) {
+                continue;
+            }
+
             if node.class().pass == pass {
                 node.submit(cx, out);
             } else if pass == Pass::Effect {

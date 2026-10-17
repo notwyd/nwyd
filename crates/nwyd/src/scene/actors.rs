@@ -1523,6 +1523,9 @@ mod test_support;
 #[cfg(test)]
 mod ambient_alpha_tests;
 
+#[cfg(test)]
+mod old_skill_vfx_tests;
+
 impl ActorScene {
     pub(crate) fn set_evok_size(&mut self, size: u8) {
         self.evok_size = size.clamp(50, 100);
@@ -1549,7 +1552,8 @@ impl ActorScene {
     }
 
     pub fn secondary_effects_enabled(&self) -> bool {
-        self.effect_options.is_none_or(|options| options.secondary)
+        self.effect_options
+            .is_none_or(|options| options.secondary && options.old_skill_vfx)
     }
 
     pub fn grass_effects_enabled(&self) -> bool {
@@ -4605,6 +4609,11 @@ impl ActorScene {
 
         let field_scene = self.scene_id == super::world::SCENE_FIELD;
 
+        let old_skill_vfx = !field_scene
+            || self
+                .effect_options
+                .is_none_or(|options| options.old_skill_vfx);
+
         let viewer_position = viewer
             .and_then(|entity| self.entity(entity))
             .and_then(|index| self.actors.get(index))
@@ -5003,7 +5012,13 @@ impl ActorScene {
                     fired: &mut fired,
                 };
 
-                swing.emit(detail, now_ms, &mut self.effect_rng, &mut sink);
+                swing.emit(
+                    detail,
+                    old_skill_vfx,
+                    now_ms,
+                    &mut self.effect_rng,
+                    &mut sink,
+                );
 
                 for particle in &mut spawned[first_particle..] {
                     particle.conceal_with = Some(swing_owner);

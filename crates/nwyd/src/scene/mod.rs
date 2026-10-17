@@ -264,6 +264,8 @@ impl Scene {
         };
 
         world.actors.set_effect_options(options);
+
+        world.effects.old_skill_vfx = options.old_skill_vfx;
     }
 
     pub fn set_render_lod(&mut self, inputs: lod::Inputs, quality: i16) {

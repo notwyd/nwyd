@@ -24,6 +24,7 @@ fn preferences() -> Preferences {
         music: 60,
         sound: 70,
         effects: true,
+        old_skill_vfx: true,
         grass: true,
         invert_mouse: false,
         interface: Default::default(),
@@ -299,6 +300,8 @@ fn prelogin_settings_use_retained_effect_preferences() {
 
     effects.grass = false;
 
+    effects.old_skill_vfx = false;
+
     client.runtime.retained.effect_options = Some(effects);
 
     assert!(client.runtime.scene.effect_options().is_none());
@@ -316,6 +319,10 @@ fn prelogin_settings_use_retained_effect_preferences() {
     assert!(!panel.applied.effects);
 
     assert!(!panel.applied.grass);
+
+    assert!(!panel.draft.old_skill_vfx);
+
+    assert!(!panel.applied.old_skill_vfx);
 
     assert_eq!(panel.draft.music, preferences().music);
 }
@@ -468,6 +475,99 @@ fn saving_settings_preserves_session_identity_and_runtime_state() {
     assert_eq!(scene.time.now_ms, 1000);
 
     assert_eq!(scene.layout.width, 800);
+}
+
+#[test]
+fn old_skill_vfx_applies_without_restarting_and_survives_scene_changes() {
+    let replacement = client().runtime.scene;
+
+    let directory = SettingsDirectory::new();
+
+    let mut client = client();
+
+    client.error_dialogs = false;
+
+    client.open_game_settings();
+
+    let initial = client.runtime.retained.effect_options.unwrap();
+
+    for enabled in [false, true, false] {
+        let panel = client.runtime.game_settings.as_mut().unwrap();
+
+        panel.path = directory.settings();
+
+        panel.draft.old_skill_vfx = enabled;
+
+        panel.apply_requested = true;
+
+        client.apply_game_settings();
+
+        let applied = client.runtime.retained.effect_options.unwrap();
+
+        assert_eq!(applied.old_skill_vfx, enabled);
+
+        assert_eq!(applied.detail, initial.detail);
+
+        assert_eq!(applied.grass, initial.grass);
+
+        assert_eq!(
+            Preferences::load(&directory.settings())
+                .unwrap()
+                .unwrap()
+                .old_skill_vfx,
+            enabled
+        );
+
+        assert!(!client.runtime.net.is_connected());
+    }
+
+    client.show(replacement);
+
+    client.runtime.game_settings.as_mut().unwrap().close();
+
+    client.open_game_settings();
+
+    let panel = client.runtime.game_settings.as_mut().unwrap();
+
+    assert!(!panel.applied.old_skill_vfx);
+
+    assert!(!panel.draft.old_skill_vfx);
+
+    panel.path = directory.0.join("missing/settings.json");
+
+    panel.draft.old_skill_vfx = true;
+
+    panel.apply_requested = true;
+
+    client.apply_game_settings();
+
+    assert!(
+        !client
+            .runtime
+            .retained
+            .effect_options
+            .unwrap()
+            .old_skill_vfx
+    );
+
+    assert!(client.settings_visible());
+
+    assert!(
+        !client
+            .runtime
+            .game_settings
+            .as_ref()
+            .unwrap()
+            .draft
+            .old_skill_vfx
+    );
+
+    assert!(
+        !Preferences::load(&directory.settings())
+            .unwrap()
+            .unwrap()
+            .old_skill_vfx
+    );
 }
 
 #[test]

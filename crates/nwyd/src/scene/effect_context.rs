@@ -25,6 +25,14 @@ pub(crate) fn next_incarnation() -> u64 {
 }
 
 impl ActorKey {
+    #[cfg(test)]
+    pub(crate) fn synthetic(entity: u16) -> Self {
+        Self {
+            entity,
+            incarnation: next_incarnation(),
+        }
+    }
+
     pub(crate) fn of(actor: &Actor) -> Self {
         Self {
             entity: actor.entity,

@@ -43,10 +43,16 @@ pub struct Preferences {
     pub music: u8,
     pub sound: u8,
     pub effects: bool,
+    #[serde(default = "default_old_skill_vfx")]
+    pub old_skill_vfx: bool,
     pub grass: bool,
     pub invert_mouse: bool,
     #[serde(default)]
     pub interface: Interface,
+}
+
+fn default_old_skill_vfx() -> bool {
+    true
 }
 
 impl Preferences {
@@ -62,6 +68,7 @@ impl Preferences {
             music: config.music_volume().clamp(0, 100) as u8,
             sound: config.sfx_volume().clamp(0, 100) as u8,
             effects: config.raw[slot::EFFECT_QUALITY] >= 2,
+            old_skill_vfx: true,
             grass: true,
             invert_mouse: config.invert_mouse(),
             interface: Interface::default(),
@@ -207,6 +214,8 @@ impl Preferences {
 
         current.grass = self.grass;
 
+        current.old_skill_vfx = self.old_skill_vfx;
+
         current
     }
 
@@ -310,6 +319,8 @@ mod tests {
 
         assert!(!prefs.effects);
 
+        assert!(prefs.old_skill_vfx);
+
         assert_eq!(prefs.interface, Interface::default());
 
         assert_eq!(prefs.language, Language::Portuguese);
@@ -376,6 +387,8 @@ mod tests {
 
         object.remove("renderer");
 
+        object.remove("old_skill_vfx");
+
         assert_eq!(
             serde_json::from_value::<Preferences>(json.clone()).unwrap(),
             prefs
@@ -418,11 +431,75 @@ mod tests {
 
         prefs.renderer = Some(render::device::RendererBackend::Vulkan);
 
+        prefs.old_skill_vfx = false;
+
         prefs.save(&path).unwrap();
 
         assert_eq!(Preferences::load(&path).unwrap(), Some(prefs));
 
         assert_eq!(std::fs::read_dir(&files.0).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn old_skill_vfx_changes_do_not_change_effect_quality_or_grass() {
+        let mut prefs = preferences();
+
+        let mut current = EffectOptions::default();
+
+        current.detail.effects = prefs.effects;
+
+        current.grass = false;
+
+        prefs.grass = false;
+
+        for enabled in [false, true] {
+            prefs.old_skill_vfx = enabled;
+
+            let next = prefs.effect_options(current);
+
+            assert_eq!(next.old_skill_vfx, enabled);
+
+            assert_eq!(next.detail, current.detail);
+
+            assert_eq!(next.secondary, current.secondary);
+
+            assert!(!next.grass);
+
+            let mut toggled = next;
+
+            toggled.toggle(true);
+
+            assert_eq!(toggled.old_skill_vfx, enabled);
+
+            assert_eq!(toggled.secondary, current.secondary);
+
+            current = next;
+        }
+    }
+
+    #[test]
+    fn changing_effect_quality_preserves_the_selected_skill_vfx_mode() {
+        for old_skill_vfx in [false, true] {
+            let mut prefs = preferences();
+
+            prefs.old_skill_vfx = old_skill_vfx;
+
+            let mut current = prefs.effect_options(EffectOptions::default());
+
+            for effects in [false, true, false, true] {
+                prefs.effects = effects;
+
+                current = prefs.effect_options(current);
+
+                assert_eq!(current.detail.effects, effects);
+
+                assert_eq!(current.detail.glow, effects);
+
+                assert_eq!(current.old_skill_vfx, old_skill_vfx);
+
+                assert!(current.secondary);
+            }
+        }
     }
 
     #[test]

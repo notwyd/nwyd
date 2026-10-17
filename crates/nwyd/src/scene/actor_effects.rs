@@ -1049,7 +1049,14 @@ fn retained_quads(actors: &ActorScene, effects: &mut BillboardScene, now: u32) {
 }
 
 pub fn update(actors: &mut ActorScene, effects: &mut BillboardScene, now: u32) {
-    let reduced = !actors.secondary_effects_enabled() || !actors.effects_detail.glow;
+    let reduced = actors
+        .effect_options
+        .is_some_and(|options| !options.secondary)
+        || !actors.effects_detail.glow;
+
+    effects.old_skill_vfx = actors
+        .effect_options
+        .is_none_or(|options| options.old_skill_vfx);
 
     for actor in &mut actors.actors {
         super::body_sprites::owner_tick(actor, effects.scene_id);

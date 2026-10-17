@@ -103,6 +103,23 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
             162,
             "VSync",
         ),
+        ("effects", "oldSkillVfx", ElementType::Button, 25, 180, ""),
+        (
+            "effectsOn",
+            "oldSkillVfxOn",
+            ElementType::Button,
+            25,
+            180,
+            "",
+        ),
+        (
+            "vEfx1Lbl",
+            "vOldSkillVfxLbl",
+            ElementType::Static,
+            46,
+            180,
+            "",
+        ),
         ("effects", "capeRefine", ElementType::Button, 25, 209, ""),
         (
             "effectsOn",
@@ -488,9 +505,10 @@ impl Panel {
                 "effectsOn" => video_visible && self.draft.effects,
                 "vsync" => video_visible && !self.draft.vsync,
                 "vsyncOn" => video_visible && self.draft.vsync,
-                "vModeLbl" | "vEfxHdr" | "vWinLbl" | "vFsLbl" | "vEfx1Lbl" | "vVsyncLbl" => {
-                    video_visible
-                }
+                "oldSkillVfx" => video_visible && !self.draft.old_skill_vfx,
+                "oldSkillVfxOn" => video_visible && self.draft.old_skill_vfx,
+                "vModeLbl" | "vEfxHdr" | "vWinLbl" | "vFsLbl" | "vEfx1Lbl" | "vVsyncLbl"
+                | "vOldSkillVfxLbl" => video_visible,
                 "aMusLbl" | "aSfxLbl" | "musFill" | "musBar" | "musMark" | "sfxFill" | "sfxBar"
                 | "sfxMark" => self.tab == 1,
                 "helmoChk" => interface_visible && !self.draft.interface.hide_helmet,
@@ -517,6 +535,11 @@ impl Panel {
             }
 
             match name {
+                "vOldSkillVfxLbl" => element.set_display(if portuguese {
+                    "Efeitos antigos de habilidades"
+                } else {
+                    "Old skill effects"
+                }),
                 "rendererLabel" => {
                     element.set_display(if portuguese {
                         "Renderizador"
@@ -628,6 +651,8 @@ impl Panel {
 
     pub(crate) fn open(&mut self, effects: EffectOptions) {
         self.applied.effects = effects.detail.effects;
+
+        self.applied.old_skill_vfx = effects.old_skill_vfx;
 
         self.applied.grass = effects.grass;
 
@@ -797,6 +822,9 @@ impl Panel {
                 "fsMode" | "fsModeOn" => self.draft.fullscreen = true,
                 "effects" | "effectsOn" => self.draft.effects = !self.draft.effects,
                 "vsync" | "vsyncOn" => self.draft.vsync = !self.draft.vsync,
+                "oldSkillVfx" | "oldSkillVfxOn" => {
+                    self.draft.old_skill_vfx = !self.draft.old_skill_vfx;
+                }
                 name => {
                     if let Some(index) = name
                         .strip_prefix("resItem")

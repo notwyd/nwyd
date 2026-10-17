@@ -143,21 +143,26 @@ impl Swing {
     pub fn emit(
         &mut self,
         detail: aura::Detail,
+        old_skill_vfx: bool,
         now_ms: u32,
         rng: &mut Lcg,
         out: &mut aura::Sink<'_>,
     ) {
         let blade = self.blade();
 
-        aura::frame(
-            &self.emitters,
-            detail,
-            &mut self.clock,
-            blade,
-            now_ms,
-            rng,
-            out,
-        );
+        let mut emitters = self.emitters;
+
+        if !old_skill_vfx {
+            emitters.aura_mode = 0;
+
+            emitters.spark = false;
+
+            emitters.weapon_effect = 0;
+
+            emitters.panel = false;
+        }
+
+        aura::frame(&emitters, detail, &mut self.clock, blade, now_ms, rng, out);
 
         self.end_swing(now_ms);
     }

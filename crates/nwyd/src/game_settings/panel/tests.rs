@@ -27,8 +27,8 @@ fn panel(language: Language, languages: &[Language]) -> Panel {
         ("musFill", ElementType::Image, 30, 94, 198, 4),
         ("musBar", ElementType::Image, 30, 92, 198, 8),
         ("musMark", ElementType::Image, 30, 90, 12, 12),
-        ("effects", ElementType::Button, 25, 140, 14, 14),
-        ("effectsOn", ElementType::Button, 25, 140, 14, 14),
+        ("effects", ElementType::Button, 25, 140, 16, 16),
+        ("effectsOn", ElementType::Button, 25, 140, 16, 16),
         ("vEfx1Lbl", ElementType::Static, 46, 140, 185, 10),
         ("iHelmoLbl", ElementType::Static, 46, 82, 185, 10),
     ] {
@@ -132,6 +132,213 @@ impl SettingsFile {
 impl Drop for SettingsFile {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+#[test]
+fn old_skill_effects_default_to_enabled_and_toggle_without_changing_other_video_settings() {
+    let files = SettingsFile::new();
+
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+
+    panel.path = files.path();
+
+    let initial = panel.draft;
+
+    assert!(initial.old_skill_vfx);
+
+    assert!(element(&panel, "oldSkillVfxOn").visible);
+
+    assert!(!element(&panel, "oldSkillVfx").visible);
+
+    click(&mut panel, "oldSkillVfxOn");
+
+    assert_eq!(
+        panel.draft,
+        Preferences {
+            old_skill_vfx: false,
+            ..initial
+        }
+    );
+
+    assert_eq!(panel.applied, initial);
+
+    assert!(panel.apply_requested);
+
+    assert!(!element(&panel, "oldSkillVfxOn").visible);
+
+    assert!(element(&panel, "oldSkillVfx").visible);
+
+    assert!(!element(&panel, "rendererNotice").visible);
+
+    panel.save_draft().unwrap();
+
+    assert!(
+        !Preferences::load(&files.path())
+            .unwrap()
+            .unwrap()
+            .old_skill_vfx
+    );
+
+    panel.close();
+
+    panel.open(EffectOptions {
+        old_skill_vfx: false,
+        ..Default::default()
+    });
+
+    assert!(!panel.draft.old_skill_vfx);
+
+    assert!(element(&panel, "oldSkillVfx").visible);
+
+    click(&mut panel, "oldSkillVfx");
+
+    panel.save_draft().unwrap();
+
+    assert!(
+        Preferences::load(&files.path())
+            .unwrap()
+            .unwrap()
+            .old_skill_vfx
+    );
+}
+
+#[test]
+fn old_skill_effects_failed_save_and_discard_restore_the_applied_state() {
+    let files = SettingsFile::new();
+
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+
+    panel.path = files.0.join("missing/settings.json");
+
+    for save in [false, true] {
+        click(&mut panel, "oldSkillVfxOn");
+
+        assert!(!panel.draft.old_skill_vfx);
+
+        if save {
+            assert!(panel.save_draft().is_err());
+        } else {
+            panel.discard_draft();
+        }
+
+        assert!(panel.draft.old_skill_vfx);
+
+        assert!(panel.applied.old_skill_vfx);
+
+        assert!(element(&panel, "oldSkillVfxOn").visible);
+
+        assert!(!element(&panel, "oldSkillVfx").visible);
+    }
+
+    panel.close();
+
+    panel.open(EffectOptions {
+        old_skill_vfx: false,
+        ..Default::default()
+    });
+
+    assert!(!panel.applied.old_skill_vfx);
+
+    assert!(!panel.draft.old_skill_vfx);
+
+    assert!(element(&panel, "oldSkillVfx").visible);
+}
+
+#[test]
+fn old_skill_effect_controls_hide_beneath_dropdowns_and_on_other_tabs() {
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+
+    let checkbox = element(&panel, "oldSkillVfxOn");
+
+    let point = Some((checkbox.x + 5, checkbox.y + 5));
+
+    for control in ["rendererDrop", "resDrop", "TabAud", "TabIfc"] {
+        click(&mut panel, control);
+
+        for name in ["oldSkillVfx", "oldSkillVfxOn", "vOldSkillVfxLbl"] {
+            assert!(!element(&panel, name).visible, "{control}: {name}");
+        }
+
+        assert!(panel.button(0, true, point, (800, 600), 1.0));
+
+        assert!(panel.button(0, false, point, (800, 600), 1.0));
+
+        assert!(panel.draft.old_skill_vfx);
+
+        click(&mut panel, "TabVid");
+
+        assert!(element(&panel, "oldSkillVfxOn").visible);
+
+        assert!(element(&panel, "vOldSkillVfxLbl").visible);
+    }
+}
+
+#[test]
+fn old_skill_effects_label_follows_runtime_language_and_fits_between_video_controls() {
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+
+    let mut game = GameDir::from_files("synthetic-old-skill-effects-language", []).unwrap();
+
+    for (language, caption) in [
+        (Language::Portuguese, "Efeitos antigos de habilidades"),
+        (Language::English, "Old skill effects"),
+    ] {
+        game.set_language(language);
+
+        panel.apply_language(&game, &ui::Strings::default());
+
+        assert_eq!(element(&panel, "vOldSkillVfxLbl").display, caption);
+
+        for name in ["oldSkillVfx", "oldSkillVfxOn", "vOldSkillVfxLbl"] {
+            let control = element(&panel, name);
+
+            assert!(control.y >= element(&panel, "vsync").rect()[3]);
+
+            assert!(control.y >= element(&panel, "vVsyncLbl").rect()[3]);
+
+            assert!(control.rect()[3] <= element(&panel, "rendererLabel").y);
+
+            assert!(control.rect()[2] <= panel.placed.ui.panel.right);
+
+            assert!(control.x >= panel.placed.ui.panel.left);
+        }
+
+        assert!(element(&panel, "rendererLabel").rect()[3] <= element(&panel, "rendererDrop").y);
+
+        assert!(element(&panel, "rendererDrop").rect()[3] <= element(&panel, "rendererNotice").y);
+
+        assert!(
+            element(&panel, "rendererNotice").rect()[3]
+                <= panel.placed.ui.panel.close_button_location[1]
+        );
+
+        let index = panel
+            .placed
+            .ui
+            .panel
+            .elements
+            .iter()
+            .position(|element| element.name == "vOldSkillVfxLbl")
+            .unwrap();
+
+        let draws = panel.placed.ui.panel.draw_list(&Interaction::default());
+
+        let labels: Vec<_> = draws
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                Command::Text(text) if text.owner == Owner::Element(index) => Some(&text.text),
+                _ => None,
+            })
+            .collect();
+
+        assert_eq!(labels, vec![caption]);
+
+        assert!(panel.draft.old_skill_vfx);
     }
 }
 
@@ -784,6 +991,7 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
             "rendererLabel",
             "rendererDrop",
             "rendererNotice",
+            "vOldSkillVfxLbl",
         ] {
             let label = element(&panel, name);
 
