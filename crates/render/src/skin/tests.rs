@@ -249,3 +249,187 @@ fn foliage_cutout_preserves_color_and_depth_below_its_alpha_threshold() {
     drop(mapped);
     readback.unmap();
 }
+
+#[test]
+#[ignore = "requires a compatible GPU adapter"]
+fn nearby_foliage_remains_rendered_when_palette_demand_grows_past_initial_capacity() {
+    let gpu = block_on(Gpu::open(Gpu::instance(), None)).expect("open a GPU adapter");
+    let validation = gpu.device.push_error_scope(wgpu::ErrorFilter::Validation);
+
+    for temporal in [false, true] {
+        let camera = temporal.then(|| crate::temporal::TemporalCamera::new(&gpu));
+        let outputs = temporal.then(|| {
+            [
+                Offscreen::with_format(&gpu, 1, 1, crate::temporal::MOTION_FORMAT),
+                Offscreen::with_format(&gpu, 1, 1, crate::temporal::BIAS_FORMAT),
+            ]
+        });
+        let mut renderer = SkinRenderer::with_temporal(
+            &gpu,
+            COLOR_FORMAT,
+            wgpu::TextureFormat::Depth32Float,
+            VendorClass::Nvidia,
+            camera.as_ref(),
+        );
+        let target = Offscreen::new(&gpu, 1, 1);
+        let depth = DepthBuffer::with_format(&gpu, 1, 1, wgpu::TextureFormat::Depth32Float);
+        let readback = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("nearby foliage capacity pixels"),
+            size: 256,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+        let mesh = foliage_card();
+        let mut arena = SkinArena::default();
+        let part = arena.push(&mesh);
+        let object = SkinObject::new(
+            &SkinParams {
+                diffuse: [0.0, 1.0, 0.0, 1.0],
+                ambient: [0.0; 4],
+                emissive: [0.0; 4],
+                unlit: true,
+                fog_start: 10.0,
+                fog_end: 20.0,
+                fog_enabled: true,
+                force_opaque: false,
+                modulate_alpha: true,
+                glow: None,
+            },
+            1,
+            SkinPass::Blended.alpha_reference(VendorClass::Nvidia),
+        );
+        let nearby = BonePalette::build(&mesh, &Matrix4::IDENTITY, |_| Matrix4::IDENTITY);
+        let distant = BonePalette::build(&mesh, &Matrix4::IDENTITY, |_| {
+            Matrix4::translation(100.0, 0.0, 0.0)
+        });
+        let frame = SkinFrame::new(&Matrix4::IDENTITY, &Matrix4::IDENTITY, [0.0; 4]);
+
+        renderer.upload_arena(&gpu, &arena);
+
+        let mut peak_capacity = PALETTE_CAPACITY;
+        for count in [
+            1,
+            PALETTE_CAPACITY,
+            PALETTE_CAPACITY + 1,
+            PALETTE_CAPACITY * 2 + 1,
+            1,
+            PALETTE_CAPACITY + 1,
+            PALETTE_CAPACITY * 2 + 1,
+        ] {
+            let mut palettes = vec![distant; count as usize];
+            palettes[count as usize - 1] = nearby;
+            let draws = (0..count)
+                .map(|palette| SkinDraw {
+                    pass: SkinPass::Blended,
+                    part,
+                    object: 0,
+                    palette,
+                    texture: None,
+                })
+                .collect::<Vec<_>>();
+            let keys = (0..count)
+                .map(|index| Some((0, u64::from(index))))
+                .collect::<Vec<_>>();
+
+            renderer.prepare_with_history(&gpu, &frame, &[object], &palettes, &draws, 0, &keys);
+
+            peak_capacity = peak_capacity.max(count.next_multiple_of(PALETTE_CAPACITY));
+            assert_eq!(renderer.palette_capacity(), peak_capacity);
+            assert_eq!(
+                renderer.palette_bytes(),
+                u64::from(peak_capacity) * u64::from(renderer.palette_stride)
+            );
+            if let Some(history) = &renderer.motion_history {
+                assert_eq!(history.previous.len(), count as usize);
+            }
+
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            let mut attachments = vec![Some(wgpu::RenderPassColorAttachment {
+                view: &target.view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })];
+            if let Some(outputs) = &outputs {
+                attachments.extend(outputs.iter().map(|output| {
+                    Some(wgpu::RenderPassColorAttachment {
+                        view: &output.view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })
+                }));
+            }
+            {
+                let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("nearby foliage capacity regression"),
+                    color_attachments: &attachments,
+                    depth_stencil_attachment: Some(depth.attachment()),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                    multiview_mask: None,
+                });
+                if let Some(camera) = &camera {
+                    pass.set_bind_group(4, &camera.binding, &[]);
+                }
+                renderer.draw(&mut pass, &[]);
+            }
+            encoder.copy_texture_to_buffer(
+                wgpu::TexelCopyTextureInfo {
+                    texture: &target.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &readback,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(256),
+                        rows_per_image: Some(1),
+                    },
+                },
+                wgpu::Extent3d {
+                    width: 1,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+            );
+            let submission = gpu.queue.submit([encoder.finish()]);
+            let slice = readback.slice(..);
+            let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+            slice.map_async(wgpu::MapMode::Read, move |result| {
+                sender.send(result).unwrap();
+            });
+            gpu.device
+                .poll(wgpu::PollType::Wait {
+                    submission_index: Some(submission),
+                    timeout: Some(Duration::from_secs(30)),
+                })
+                .unwrap();
+            receiver
+                .recv_timeout(Duration::from_secs(30))
+                .unwrap()
+                .unwrap();
+            let mapped = slice.get_mapped_range().unwrap();
+            assert_eq!(
+                &mapped[..4],
+                &[0, 255, 0, 255],
+                "nearby foliage disappeared at {count} palettes (temporal={temporal}); {:?}",
+                renderer.drops()
+            );
+            drop(mapped);
+            readback.unmap();
+            assert_eq!(renderer.draw_count(), count as usize);
+            assert!(!renderer.drops().any());
+        }
+    }
+
+    assert!(block_on(validation.pop()).is_none());
+}

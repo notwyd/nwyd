@@ -17,6 +17,9 @@ use rustc_hash::FxHashMap;
 #[cfg(test)]
 mod old_skill_vfx_tests;
 
+#[cfg(test)]
+mod view_distance_tests;
+
 pub(crate) fn visible_in_scene(scene: u32, enabled: bool) -> bool {
     scene != 30000 || enabled
 }
@@ -425,8 +428,12 @@ impl Billboard {
     }
 
     pub fn drawn(&self, eye: Vec3) -> bool {
+        self.drawn_with_distance(eye, CULL_DISTANCE)
+    }
+
+    fn drawn_with_distance(&self, eye: Vec3, distance: f32) -> bool {
         self.visible
-            && self.camera_distance_squared(eye) <= CULL_DISTANCE_SQUARED
+            && self.camera_distance_squared(eye) <= distance * distance
             && (self.lifetime_ms == 0 || self.age >= MIN_AGE)
             && self.ready
     }
@@ -492,7 +499,7 @@ impl Effect for Billboard {
             .map(|(key, slot)| OwnedGroup::HumanAffect(key, slot));
 
         if !cx.scene.skill_vfx_visible(group)
-            || !self.drawn(cx.eye)
+            || !self.drawn_with_distance(cx.eye, cx.scene.billboard_distance())
             || !self.quality_allows(cx.scene.detail)
         {
             out.effect.culled += 1;
@@ -567,6 +574,7 @@ pub struct BillboardScene {
     pub detail: i32,
     pub environment: i32,
     pub scene_id: u32,
+    pub view_distance: super::view_distance::ViewDistance,
     pub old_skill_vfx: bool,
     pub shades: Vec<Shade>,
     pub quads: Vec<super::quads::GroundQuad>,
@@ -605,6 +613,7 @@ impl BillboardScene {
             detail: 0,
             environment: 0,
             scene_id: 0,
+            view_distance: super::view_distance::ViewDistance::Retail,
             old_skill_vfx: true,
             shades: Vec::new(),
             quads: Vec::new(),
@@ -623,6 +632,15 @@ impl BillboardScene {
             self.scene_id,
             self.old_skill_vfx || group.is_none_or(|group| !group.uses_old_skill_vfx()),
         )
+    }
+
+    fn billboard_distance(&self) -> f32 {
+        CULL_DISTANCE
+            * if self.scene_id == super::world::SCENE_FIELD {
+                self.view_distance.multiplier()
+            } else {
+                1.0
+            }
     }
 
     pub fn bind_slot(&mut self, game: &GameDir, slot: usize) -> Option<usize> {
@@ -663,6 +681,7 @@ impl BillboardScene {
         };
 
         let index = self.push_texture(BoundTexture {
+            mip_policy_override: None,
             pending: false,
             effect_table: true,
             slot,

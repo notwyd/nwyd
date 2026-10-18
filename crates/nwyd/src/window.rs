@@ -74,6 +74,7 @@ struct Live {
     gpu: Gpu,
     back_buffer: Offscreen,
     renderer: SceneRenderer,
+    neural_failed: bool,
     blitter: Blitter,
     source: BlitSource,
     stale: bool,
@@ -82,8 +83,19 @@ struct Live {
     alternate_cursor: Option<CustomCursor>,
 }
 
-pub fn upload_scene_renderer(gpu: &Gpu, scene: &Scene, overlay: Option<&Overlay>) -> SceneRenderer {
-    let mut renderer = SceneRenderer::new(gpu, COLOR_FORMAT);
+pub fn upload_scene_renderer(
+    gpu: &Gpu,
+    scene: &Scene,
+    overlay: Option<&Overlay>,
+    size: (u32, u32),
+    neural: bool,
+) -> SceneRenderer {
+    let mut renderer =
+        if cfg!(feature = "neural-rendering") && neural && gpu.supports_neural_rendering() {
+            SceneRenderer::new_with_neural(gpu, COLOR_FORMAT, size)
+        } else {
+            SceneRenderer::new(gpu, COLOR_FORMAT)
+        };
 
     scene.upload(gpu, &mut renderer);
 
@@ -2060,7 +2072,20 @@ impl Client {
 
         let back_buffer = Offscreen::new(&gpu, width, height);
 
-        let renderer = upload_scene_renderer(&gpu, &self.runtime.scene, self.overlay.as_ref());
+        let neural_available =
+            cfg!(feature = "neural-rendering") && gpu.supports_neural_rendering();
+        let neural = self
+            .runtime
+            .game_settings
+            .as_ref()
+            .is_some_and(|panel| panel.applied.neural_rendering);
+        let renderer = upload_scene_renderer(
+            &gpu,
+            &self.runtime.scene,
+            self.overlay.as_ref(),
+            (width, height),
+            neural,
+        );
 
         let blitter = Blitter::new(&gpu, format);
 
@@ -2068,6 +2093,7 @@ impl Client {
 
         if let Some(panel) = &mut self.runtime.game_settings {
             panel.set_renderers(gpu.available_backends(), gpu.backend());
+            panel.set_neural_rendering_available(neural_available);
         }
 
         tracing::info!(
@@ -2090,6 +2116,7 @@ impl Client {
             gpu,
             back_buffer,
             renderer,
+            neural_failed: false,
             blitter,
             source,
             stale: false,
@@ -2227,7 +2254,21 @@ impl Client {
 
         let back_buffer = Offscreen::new(&gpu, width, height);
 
-        let renderer = upload_scene_renderer(&gpu, &self.runtime.scene, self.overlay.as_ref());
+        live.renderer.release_neural();
+        let neural_available =
+            cfg!(feature = "neural-rendering") && gpu.supports_neural_rendering();
+        let neural = self
+            .runtime
+            .game_settings
+            .as_ref()
+            .is_some_and(|panel| panel.applied.neural_rendering);
+        let renderer = upload_scene_renderer(
+            &gpu,
+            &self.runtime.scene,
+            self.overlay.as_ref(),
+            (width, height),
+            neural,
+        );
 
         let blitter = Blitter::new(&gpu, config.format);
 
@@ -2240,6 +2281,7 @@ impl Client {
         live.back_buffer = back_buffer;
 
         live.renderer = renderer;
+        live.neural_failed = false;
 
         live.blitter = blitter;
 
@@ -2247,6 +2289,7 @@ impl Client {
 
         if let Some(panel) = &mut self.runtime.game_settings {
             panel.set_renderers(gpu.available_backends(), gpu.backend());
+            panel.set_neural_rendering_available(neural_available);
         }
 
         live.gpu = gpu;
@@ -2437,6 +2480,25 @@ impl Client {
         self.render_rate.sample(self.runtime.clock.tick_ms());
 
         self.frames += 1;
+
+        let neural_failure = live.renderer.take_neural_failure();
+        if let Some(error) = neural_failure {
+            live.neural_failed = true;
+            live.renderer.release_neural();
+            if !live.gpu.is_lost() {
+                live.renderer = upload_scene_renderer(
+                    &live.gpu,
+                    &self.runtime.scene,
+                    self.overlay.as_ref(),
+                    self.settings.backbuffer,
+                    false,
+                );
+            }
+            if let Some(panel) = &mut self.runtime.game_settings {
+                panel.set_neural_rendering_available(false);
+            }
+            self.report_neural_failure(&error);
+        }
 
         Ok(())
     }

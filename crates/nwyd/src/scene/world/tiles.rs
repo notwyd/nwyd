@@ -4,6 +4,9 @@ use assets::GameDir;
 use formats::world::env_texture_list::EnvTextureList;
 use render::world::TerrainMesh;
 
+#[cfg(test)]
+mod tests;
+
 pub(super) fn load(
     game: &GameDir,
     list: &EnvTextureList,
@@ -38,6 +41,11 @@ pub(super) fn load_ids(
 
         let texture = formats::texture::decode(&bytes)
             .with_context(|| format!("decoding Env tile {id}: {}", entry.path))?;
+        let texture =
+            match render::texture::with_mipmaps(&texture, render::texture::MipPolicy::Opaque) {
+                std::borrow::Cow::Owned(prepared) => prepared,
+                std::borrow::Cow::Borrowed(_) => texture,
+            };
 
         Ok(Some(Tile {
             id,

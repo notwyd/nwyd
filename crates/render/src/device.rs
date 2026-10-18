@@ -19,6 +19,8 @@ pub struct Gpu {
     lost: Arc<AtomicBool>,
     backend: RendererBackend,
     available_backends: Vec<RendererBackend>,
+    #[cfg(all(windows, feature = "neural-rendering"))]
+    neural_supported: Arc<std::sync::OnceLock<bool>>,
 }
 
 #[derive(Debug, Default)]
@@ -160,15 +162,26 @@ impl Gpu {
                             | wgpu::Features::TIMESTAMP_QUERY_INSIDE_ENCODERS)
                 };
 
+                let descriptor = wgpu::DeviceDescriptor {
+                    label: crate::gpu_label("nwyd"),
+                    required_features: REQUIRED_FEATURES | profiling_features,
+                    required_limits: adapter.limits(),
+                    experimental_features: wgpu::ExperimentalFeatures::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: wgpu::Trace::Off,
+                };
+
+                #[cfg(all(windows, feature = "neural-rendering"))]
+                match crate::neural::request_device(&adapter, &descriptor) {
+                    Ok(Some(device)) => return Ok(device),
+                    Ok(None) => {}
+                    Err(error) => {
+                        tracing::warn!(%error, "Neural rendering device setup unavailable")
+                    }
+                }
+
                 adapter
-                    .request_device(&wgpu::DeviceDescriptor {
-                        label: crate::gpu_label("nwyd"),
-                        required_features: REQUIRED_FEATURES | profiling_features,
-                        required_limits: adapter.limits(),
-                        experimental_features: wgpu::ExperimentalFeatures::default(),
-                        memory_hints: wgpu::MemoryHints::default(),
-                        trace: wgpu::Trace::Off,
-                    })
+                    .request_device(&descriptor)
                     .await
                     .map_err(|error| format!("{}: {error}", adapter.get_info().name))
             }
@@ -229,6 +242,8 @@ impl Gpu {
             lost,
             backend,
             available_backends,
+            #[cfg(all(windows, feature = "neural-rendering"))]
+            neural_supported: Arc::new(std::sync::OnceLock::new()),
         })
     }
 
@@ -245,6 +260,19 @@ impl Gpu {
 
     pub fn backend(&self) -> RendererBackend {
         self.backend
+    }
+
+    pub fn supports_neural_rendering(&self) -> bool {
+        #[cfg(all(windows, feature = "neural-rendering"))]
+        {
+            *self
+                .neural_supported
+                .get_or_init(|| crate::neural::probe(self))
+        }
+        #[cfg(not(all(windows, feature = "neural-rendering")))]
+        {
+            false
+        }
     }
 
     pub fn available_backends(&self) -> &[RendererBackend] {

@@ -45,6 +45,10 @@ pub struct Preferences {
     pub effects: bool,
     #[serde(default = "default_old_skill_vfx")]
     pub old_skill_vfx: bool,
+    #[serde(default)]
+    pub neural_rendering: bool,
+    #[serde(default)]
+    pub view_distance: crate::scene::view_distance::ViewDistance,
     pub grass: bool,
     pub invert_mouse: bool,
     #[serde(default)]
@@ -69,6 +73,8 @@ impl Preferences {
             sound: config.sfx_volume().clamp(0, 100) as u8,
             effects: config.raw[slot::EFFECT_QUALITY] >= 2,
             old_skill_vfx: true,
+            neural_rendering: false,
+            view_distance: crate::scene::view_distance::ViewDistance::Retail,
             grass: true,
             invert_mouse: config.invert_mouse(),
             interface: Interface::default(),
@@ -106,8 +112,15 @@ impl Preferences {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let mut preferences: Self =
+        let mut json: serde_json::Value =
             serde_json::from_slice(bytes).context("reading game settings")?;
+
+        if let Some(object) = json.as_object_mut() {
+            object.remove("enhanced_lighting");
+        }
+
+        let mut preferences: Self =
+            serde_json::from_value(json).context("reading game settings")?;
 
         if (10..50).contains(&preferences.interface.evok_size) {
             preferences.interface.evok_size = 50;
@@ -321,6 +334,8 @@ mod tests {
 
         assert!(prefs.old_skill_vfx);
 
+        assert!(!prefs.neural_rendering);
+
         assert_eq!(prefs.interface, Interface::default());
 
         assert_eq!(prefs.language, Language::Portuguese);
@@ -389,6 +404,10 @@ mod tests {
 
         object.remove("old_skill_vfx");
 
+        object.remove("neural_rendering");
+
+        object.remove("view_distance");
+
         assert_eq!(
             serde_json::from_value::<Preferences>(json.clone()).unwrap(),
             prefs
@@ -403,6 +422,83 @@ mod tests {
         json["interface"]["unknown_setting"] = true.into();
 
         assert!(serde_json::from_value::<Preferences>(json).is_err());
+    }
+
+    #[test]
+    fn view_distance_settings_default_round_trip_and_reject_invalid_values() {
+        use crate::scene::view_distance::ViewDistance;
+
+        let files = TestSettings::new();
+        let mut prefs = preferences();
+        let mut legacy = serde_json::to_value(prefs).unwrap();
+        legacy.as_object_mut().unwrap().remove("view_distance");
+
+        assert_eq!(prefs.view_distance, ViewDistance::Retail);
+        assert_eq!(
+            Preferences::from_bytes(&serde_json::to_vec(&legacy).unwrap()).unwrap(),
+            prefs
+        );
+
+        for (choice, name) in [
+            (ViewDistance::Retail, "retail"),
+            (ViewDistance::Extended, "extended"),
+            (ViewDistance::Distant, "distant"),
+            (ViewDistance::Far, "far"),
+            (ViewDistance::Maximum, "maximum"),
+            (ViewDistance::FiveTimes, "five_times"),
+            (ViewDistance::SixTimes, "six_times"),
+            (ViewDistance::SevenTimes, "seven_times"),
+            (ViewDistance::EightTimes, "eight_times"),
+        ] {
+            prefs.view_distance = choice;
+            prefs.save(&files.path()).unwrap();
+            assert_eq!(Preferences::load(&files.path()).unwrap(), Some(prefs));
+            assert_eq!(serde_json::to_value(prefs).unwrap()["view_distance"], name);
+        }
+
+        for invalid in [
+            serde_json::json!("unknown"),
+            serde_json::json!("2"),
+            serde_json::json!(2),
+            serde_json::json!(-1),
+            serde_json::json!(null),
+        ] {
+            legacy["view_distance"] = invalid;
+            assert!(Preferences::from_bytes(&serde_json::to_vec(&legacy).unwrap()).is_err());
+        }
+    }
+
+    #[test]
+    fn retired_lighting_setting_loads_without_resetting_other_preferences() {
+        let files = TestSettings::new();
+        let path = files.path();
+        let mut prefs = preferences();
+        prefs.resolution = [2560, 1440];
+        prefs.language = Language::English;
+        prefs.renderer = Some(render::device::RendererBackend::Vulkan);
+        prefs.vsync = true;
+        prefs.music = 23;
+        prefs.old_skill_vfx = false;
+        prefs.neural_rendering = true;
+
+        for enabled in [false, true] {
+            let mut json = serde_json::to_value(prefs).unwrap();
+            json["enhanced_lighting"] = enabled.into();
+            std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+            let loaded = Preferences::load(&path).unwrap().unwrap();
+            assert_eq!(loaded, prefs);
+            loaded.save(&path).unwrap();
+            let saved: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+            assert_eq!(saved, serde_json::to_value(prefs).unwrap());
+
+            json["unknown_setting"] = true.into();
+            assert!(Preferences::from_bytes(&serde_json::to_vec(&json).unwrap()).is_err());
+            json.as_object_mut().unwrap().remove("unknown_setting");
+            json["interface"]["unknown_setting"] = true.into();
+            assert!(Preferences::from_bytes(&serde_json::to_vec(&json).unwrap()).is_err());
+        }
     }
 
     #[test]
@@ -432,6 +528,8 @@ mod tests {
         prefs.renderer = Some(render::device::RendererBackend::Vulkan);
 
         prefs.old_skill_vfx = false;
+
+        prefs.neural_rendering = true;
 
         prefs.save(&path).unwrap();
 

@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Default)]
 pub(super) struct PartCache {
     meshes: BTreeMap<String, Arc<SkinMesh>>,
@@ -107,10 +110,11 @@ impl ActorScene {
         let mut remap = Vec::with_capacity(textures.len());
 
         for texture in textures {
-            let existing = self
-                .textures
-                .iter()
-                .position(|t| t.slot == texture.slot && t.effect_table == texture.effect_table);
+            let existing = self.textures.iter().position(|t| {
+                t.slot == texture.slot
+                    && t.effect_table == texture.effect_table
+                    && t.mip_policy(true) == texture.mip_policy(true)
+            });
 
             let index = match existing {
                 Some(index) => {
@@ -215,16 +219,13 @@ impl Bundle {
             ));
         }
 
-        for (model, part) in
-            trees::Grove::build(records, terrain, heights, [0.0; 4], [0.0; 4]).specs()
-        {
-            specs.push(spec(
-                model,
-                part,
-                trees::TREE_SLOT,
-                trees::TREE_SUB_FRAME_MS,
-            ));
-        }
+        let tree_specs: Vec<_> = trees::Grove::build(records, terrain, heights, [0.0; 4], [0.0; 4])
+            .specs()
+            .into_iter()
+            .map(|(model, part)| spec(model, part, trees::TREE_SLOT, trees::TREE_SUB_FRAME_MS))
+            .collect();
+
+        specs.extend_from_slice(&tree_specs);
 
         for mesh in fish::School::build(records, zone, 0).meshes() {
             specs.push(spec(
@@ -290,7 +291,51 @@ impl Bundle {
             }
         }
 
+        bundle.prepare_tree_textures(&tree_specs);
+
         Ok(bundle)
+    }
+
+    fn prepare_tree_textures(&mut self, specs: &[ModelSpec]) {
+        for spec in specs {
+            let model = self.by_spec.get(spec).copied().flatten();
+
+            super::prepare_tree_textures(&mut self.models, &mut self.textures, model);
+        }
+
+        let mut used = vec![false; self.textures.len()];
+
+        for model in &self.models {
+            for part in &model.parts {
+                if let Some(index) = part.texture {
+                    used[index] = true;
+                }
+            }
+        }
+
+        let mut remap = vec![0; self.textures.len()];
+        let mut retained = 0;
+        let mut index = 0;
+
+        self.textures.retain(|_| {
+            let keep = used[index];
+
+            if keep {
+                remap[index] = retained;
+
+                retained += 1;
+            }
+
+            index += 1;
+
+            keep
+        });
+
+        for model in &mut self.models {
+            for part in &mut model.parts {
+                part.texture = part.texture.map(|index| remap[index]);
+            }
+        }
     }
 }
 
@@ -539,11 +584,9 @@ impl Loader<'_> {
         slot: usize,
         effect_table: bool,
     ) -> Option<usize> {
-        if let Some(i) = self
-            .textures
-            .iter()
-            .position(|t| t.slot == slot && t.effect_table == effect_table)
-        {
+        if let Some(i) = self.textures.iter().position(|t| {
+            t.slot == slot && t.effect_table == effect_table && t.mip_policy_override.is_none()
+        }) {
             return Some(i);
         }
 
@@ -551,6 +594,7 @@ impl Loader<'_> {
 
         if self.background_textures {
             self.textures.push(BoundTexture {
+                mip_policy_override: None,
                 pending: true,
                 effect_table,
                 slot,
@@ -567,6 +611,7 @@ impl Loader<'_> {
         let texture = { formats::texture::decode(&bytes).ok()? };
 
         self.textures.push(BoundTexture {
+            mip_policy_override: None,
             pending: false,
             effect_table,
             slot,

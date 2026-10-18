@@ -2165,6 +2165,8 @@ pub fn build(
 
         let loaded = scene.load_model(game, entries, valid, sounds, textures, &model)?;
 
+        scene.prepare_tree_textures(loaded);
+
         by_tree.insert(spec, loaded);
     }
 
@@ -2641,6 +2643,10 @@ impl ActorScene {
     ) -> Result<Option<usize>> {
         self.resource_loader()
             .load_model(game, entries, valid, sounds, textures, spec)
+    }
+
+    fn prepare_tree_textures(&mut self, model: Option<usize>) {
+        prepare_tree_textures(&mut self.models, &mut self.textures, model);
     }
 
     pub fn order(&mut self, record: usize, now_ms: u32) -> bool {
@@ -4246,6 +4252,8 @@ impl ActorScene {
 
             let loaded = self.load_model(game, entries, valid, sounds, textures, &model)?;
 
+            self.prepare_tree_textures(loaded);
+
             for tree in grove.trees.iter_mut() {
                 if (tree.model_id, trees::part_zero(tree.kind)) == spec {
                     tree.model = loaded;
@@ -4336,10 +4344,11 @@ impl ActorScene {
             .textures
             .iter()
             .map(|t| {
-                render::texture::upload(
+                render::texture::upload_material(
                     gpu,
                     &t.texture,
                     t.alpha_policy(),
+                    t.mip_policy(true),
                     &format!("skin texture {}", t.path),
                 )
             })
@@ -5396,11 +5405,14 @@ impl ActorScene {
                     ..params
                 };
 
-                objects.push(SkinObject::new(
-                    &params,
-                    part.mesh.header.num_matrices,
-                    trees::ALPHA_REFERENCE,
-                ));
+                objects.push(
+                    SkinObject::new(
+                        &params,
+                        part.mesh.header.num_matrices,
+                        trees::ALPHA_REFERENCE,
+                    )
+                    .with_neural_preservation(0.25),
+                );
 
                 palettes.push(BonePalette::build(&part.mesh, view, |bone| {
                     Matrix4(scratch.combined(bone as usize))
@@ -5484,6 +5496,8 @@ impl ActorScene {
                     None
                 }
             };
+
+            self.prepare_tree_textures(loaded);
 
             let tree = &mut self.grove.trees[i];
 
@@ -6022,5 +6036,54 @@ impl Frame {
         self.poison.clear();
 
         self.trails.clear();
+    }
+}
+
+fn prepare_tree_textures(
+    models: &mut [Model],
+    textures: &mut Vec<BoundTexture>,
+    model: Option<usize>,
+) {
+    let Some(model) = model else {
+        return;
+    };
+
+    let reference = (trees::ALPHA_REFERENCE * 255.0).round() as u8;
+
+    for part in &mut models[model].parts {
+        let Some(index) = part.texture else {
+            continue;
+        };
+        let source = &textures[index];
+        let policy = if source.flag.has_alpha() {
+            render::texture::MipPolicy::Cutout(reference)
+        } else {
+            render::texture::MipPolicy::Opaque
+        };
+
+        if source.mip_policy(true) == policy {
+            continue;
+        }
+
+        let existing = textures.iter().position(|texture| {
+            texture.slot == source.slot
+                && texture.effect_table == source.effect_table
+                && texture.path == source.path
+                && texture.flag == source.flag
+                && texture.mip_policy_override == Some(policy)
+        });
+
+        part.texture = Some(match existing {
+            Some(existing) => existing,
+            None => {
+                let mut texture = source.clone();
+
+                texture.mip_policy_override = Some(policy);
+
+                textures.push(texture);
+
+                textures.len() - 1
+            }
+        });
     }
 }

@@ -12,6 +12,8 @@ publish = false
 [features]
 default = ["analytics"]
 analytics = ["dep:getrandom", "dep:time", "windows/Win32_System_SystemInformation"]
+neural-rendering = ["render/neural-rendering"]
+bundled-neural-runtime = ["neural-rendering", "render/bundled-neural-runtime"]
 
 [dependencies]
 assets.workspace = true

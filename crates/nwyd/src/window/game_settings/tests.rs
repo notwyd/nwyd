@@ -25,6 +25,8 @@ fn preferences() -> Preferences {
         sound: 70,
         effects: true,
         old_skill_vfx: true,
+        neural_rendering: false,
+        view_distance: Default::default(),
         grass: true,
         invert_mouse: false,
         interface: Default::default(),
@@ -600,6 +602,100 @@ fn renderer_selection_is_saved_without_changing_the_running_configuration() {
 }
 
 #[test]
+fn view_distance_applies_live_and_survives_scene_changes_and_failed_saves() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let replacement = client().runtime.scene;
+    let directory = SettingsDirectory::new();
+    let mut client = client();
+    client.error_dialogs = false;
+    client.open_game_settings();
+
+    assert_eq!(client.runtime.retained.view_distance, ViewDistance::Retail);
+
+    for distance in ViewDistance::ALL
+        .into_iter()
+        .chain([ViewDistance::Retail, ViewDistance::EightTimes])
+    {
+        let panel = client.runtime.game_settings.as_mut().unwrap();
+        panel.path = directory.settings();
+        panel.draft.view_distance = distance;
+        panel.apply_requested = true;
+
+        client.apply_game_settings();
+
+        assert_eq!(client.runtime.retained.view_distance, distance);
+        assert_eq!(
+            Preferences::load(&directory.settings())
+                .unwrap()
+                .unwrap()
+                .view_distance,
+            distance
+        );
+        assert!(!client.runtime.net.is_connected());
+    }
+
+    client.show(replacement);
+    client.open_game_settings();
+
+    assert_eq!(
+        client.runtime.retained.view_distance,
+        ViewDistance::EightTimes
+    );
+    let panel = client.runtime.game_settings.as_mut().unwrap();
+    assert_eq!(panel.applied.view_distance, ViewDistance::EightTimes);
+    assert_eq!(panel.draft.view_distance, ViewDistance::EightTimes);
+    panel.path = directory.0.join("missing/settings.json");
+    panel.draft.view_distance = ViewDistance::Retail;
+    panel.apply_requested = true;
+
+    client.apply_game_settings();
+
+    assert_eq!(
+        client.runtime.retained.view_distance,
+        ViewDistance::EightTimes
+    );
+    assert_eq!(
+        client
+            .runtime
+            .game_settings
+            .as_ref()
+            .unwrap()
+            .draft
+            .view_distance,
+        ViewDistance::EightTimes
+    );
+    assert_eq!(
+        Preferences::load(&directory.settings())
+            .unwrap()
+            .unwrap()
+            .view_distance,
+        ViewDistance::EightTimes
+    );
+}
+
+#[test]
+fn startup_applies_view_distance_even_when_settings_panel_assets_are_missing() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let directory = SettingsDirectory::new();
+    let game = assets::GameDir::from_files("empty-settings-test", Vec::<(String, Vec<u8>)>::new())
+        .unwrap();
+    let mut preferences = preferences();
+    preferences.view_distance = ViewDistance::EightTimes;
+
+    let mut client = client();
+    client.runtime.game_settings = None;
+    let client = client.with_game_settings(preferences, directory.settings(), &game);
+
+    assert_eq!(
+        client.runtime.retained.view_distance,
+        ViewDistance::EightTimes
+    );
+    assert!(client.runtime.game_settings.is_none());
+}
+
+#[test]
 fn failed_settings_save_rolls_back_draft_and_keeps_previous_file() {
     let directory = SettingsDirectory::new();
 
@@ -642,6 +738,45 @@ fn failed_settings_save_rolls_back_draft_and_keeps_previous_file() {
     assert_eq!(panel.applied, previous);
 
     assert_eq!(panel.draft, previous);
+}
+
+#[test]
+fn neural_rendering_can_be_saved_with_resolution_changes_before_a_window_exists() {
+    let directory = SettingsDirectory::new();
+    let mut client = client();
+    let panel = client.runtime.game_settings.as_mut().unwrap();
+    panel.path = directory.settings();
+    panel.set_neural_rendering_available(true);
+    panel.draft.neural_rendering = true;
+    panel.draft.resolution = [1280, 720];
+    panel.apply_requested = true;
+
+    client.apply_game_settings();
+
+    assert!(client.live.is_none());
+    assert_eq!(client.settings.backbuffer, (1280, 720));
+    assert!(
+        Preferences::load(&directory.settings())
+            .unwrap()
+            .unwrap()
+            .neural_rendering
+    );
+    assert!(matches!(client.runtime.scene, Scene::LoginStatic(_)));
+
+    let panel = client.runtime.game_settings.as_mut().unwrap();
+    panel.draft.neural_rendering = false;
+    panel.apply_requested = true;
+
+    client.apply_game_settings();
+
+    assert!(
+        !Preferences::load(&directory.settings())
+            .unwrap()
+            .unwrap()
+            .neural_rendering
+    );
+    assert_eq!(client.settings.backbuffer, (1280, 720));
+    assert!(matches!(client.runtime.scene, Scene::LoginStatic(_)));
 }
 
 struct LanguageScreens {

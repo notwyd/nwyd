@@ -1,3 +1,4 @@
+pub mod antialias;
 pub mod billboard;
 pub mod blit;
 pub mod camera;
@@ -6,7 +7,10 @@ pub mod device;
 pub mod error;
 pub mod font;
 pub mod geometry;
+pub mod light_shafts;
 pub mod mesh;
+#[cfg(feature = "neural-rendering")]
+pub mod neural;
 pub mod pack;
 pub mod preset;
 pub mod quirk;

@@ -1,7 +1,11 @@
+use super::view_distance::ViewDistance;
 use formats::world::objects::{ObjRecord, ObjectClass};
 use formats::world::trn::Terrain;
 use glam::Vec3;
 use render::skin::{SkinFog, SkinParams};
+
+#[cfg(test)]
+mod tests;
 
 pub const LEAF_MODEL: u32 = 0x3D;
 
@@ -66,6 +70,7 @@ pub struct Field {
     pub blades: Vec<Blade>,
     pub enabled: bool,
     pub inner_zone: bool,
+    pub view_distance: ViewDistance,
 }
 
 impl Field {
@@ -115,6 +120,7 @@ impl Field {
             blades,
             enabled,
             inner_zone,
+            view_distance: ViewDistance::Retail,
         }
     }
 
@@ -141,13 +147,16 @@ impl Field {
     }
 
     pub fn visible(&self, eye: Vec3) -> impl Iterator<Item = (usize, &Blade, f32)> {
+        let multiplier = self.view_distance.multiplier();
+        let cull_radius_squared = CULL_RADIUS_SQUARED * multiplier * multiplier;
+
         self.blades
             .iter()
             .enumerate()
             .filter_map(move |(i, blade)| {
                 let d2 = blade.distance_squared(eye);
 
-                (self.enabled && d2 <= CULL_RADIUS_SQUARED).then_some((i, blade, d2))
+                (self.enabled && d2 <= cull_radius_squared).then_some((i, blade, d2))
             })
     }
 
@@ -178,6 +187,9 @@ impl Field {
     }
 
     pub fn params(&self, blade: &Blade, distance_squared: f32, fog: SkinFog) -> SkinParams {
+        let multiplier = self.view_distance.multiplier();
+        let distance_squared = distance_squared / (multiplier * multiplier);
+
         SkinParams {
             diffuse: [0.0, 0.0, 0.0, Blade::alpha(distance_squared)],
             ambient: [0.0; 4],

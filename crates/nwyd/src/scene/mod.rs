@@ -112,6 +112,7 @@ pub mod landmarks;
 mod language;
 pub mod leave_world;
 pub mod legacy_message_box;
+mod light_shafts;
 pub mod lights;
 pub mod listener;
 pub mod live;
@@ -210,6 +211,7 @@ pub mod transformation;
 pub mod trees;
 pub mod vanish;
 pub mod vfx;
+pub mod view_distance;
 pub mod walk;
 pub mod warehouse;
 pub mod weapon_glow;
@@ -246,6 +248,26 @@ fn report(actions: Vec<panels::Action>) {
 }
 
 impl Scene {
+    pub(crate) fn view_distance(&self) -> Option<view_distance::ViewDistance> {
+        match self {
+            Scene::ServerSelect(scene) => Some(scene.world.view_distance),
+            Scene::SelectChar(scene) => Some(scene.world.view_distance),
+            Scene::Field(scene) => Some(scene.world.view_distance),
+            Scene::LoginStatic(_) | Scene::LoginPanels(_) => None,
+        }
+    }
+
+    pub(crate) fn set_view_distance(&mut self, distance: view_distance::ViewDistance) {
+        let world = match self {
+            Scene::ServerSelect(scene) => &mut scene.world,
+            Scene::SelectChar(scene) => &mut scene.world,
+            Scene::Field(scene) => &mut scene.world,
+            Scene::LoginStatic(_) | Scene::LoginPanels(_) => return,
+        };
+
+        world.set_view_distance(distance);
+    }
+
     pub(crate) fn effect_options(&self) -> Option<lod::EffectOptions> {
         match self {
             Scene::ServerSelect(scene) => scene.world.actors.effect_options,

@@ -8,7 +8,11 @@ rust-version.workspace = true
 repository.workspace = true
 readme = false
 publish = ["crates-io"]
-include = ["/src/**", "/Cargo.toml", "/LICENSE", "/NOTICE", "!**/*.md"]
+include = ["/src/**", "/build.rs", "/build_support/**", "/Cargo.toml", "/LICENSE", "/NOTICE", "!**/*.md"]
+
+[features]
+neural-rendering = ["dep:ash", "dep:libloading"]
+bundled-neural-runtime = ["neural-rendering", "dep:flate2", "dep:sha2", "dep:dirs"]
 
 [dependencies]
 formats.workspace = true
@@ -19,3 +23,14 @@ serde.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 wgpu.workspace = true
+flate2 = { version = "1", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+[build-dependencies]
+flate2 = { version = "1", optional = true }
+sha2 = { version = "0.10", optional = true }
+
+[target.'cfg(windows)'.dependencies]
+ash = { version = "0.38", optional = true }
+libloading = { version = "0.8", optional = true }
+dirs = { version = "7", optional = true }

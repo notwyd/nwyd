@@ -108,6 +108,7 @@ pub(super) fn add_model(scene: &mut ActorScene, model_id: u32, flags: &[FormatFl
         let texture = scene.textures.len();
 
         scene.textures.push(BoundTexture {
+            mip_policy_override: None,
             pending: false,
             effect_table: false,
             slot: texture,

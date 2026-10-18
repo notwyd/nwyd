@@ -4,19 +4,21 @@ use render::mesh::{MeshRenderer, MeshTexture};
 use render::skin::{SkinRenderer, SkinTexture};
 use render::texture;
 
-type Key = (bool, String, bool);
+type Key = (bool, String, bool, texture::MipPolicy);
 
 fn key(t: &BoundTexture, skin: bool) -> Key {
     (
         skin,
         t.path.clone(),
         t.alpha_policy() == texture::AlphaPolicy::Opaque,
+        t.mip_policy(skin),
     )
 }
 
 #[derive(Default)]
 pub(super) struct WorldTextures {
     pub meshes: Vec<MeshTexture>,
+    pub mesh_views: Vec<wgpu::TextureView>,
     pub skins: Vec<SkinTexture>,
     skin_views: Vec<wgpu::TextureView>,
     pub uploads: (usize, usize),
@@ -27,6 +29,8 @@ pub(super) struct WorldTextures {
 impl WorldTextures {
     pub fn clear(&mut self) {
         self.meshes.clear();
+
+        self.mesh_views.clear();
 
         self.skins.clear();
 
@@ -48,10 +52,11 @@ impl WorldTextures {
     }
 
     pub fn stage(&mut self, gpu: &Gpu, t: &BoundTexture, skin: bool) {
-        let view = texture::upload(
+        let view = texture::upload_material(
             gpu,
             &t.texture,
             t.alpha_policy(),
+            t.mip_policy(skin),
             "unpublished zone texture",
         )
         .view;
@@ -78,7 +83,14 @@ impl WorldTextures {
                     self.uploads.0 += 1;
                 }
 
-                texture::upload(gpu, &t.texture, t.alpha_policy(), &t.path).view
+                texture::upload_material(
+                    gpu,
+                    &t.texture,
+                    t.alpha_policy(),
+                    t.mip_policy(skin),
+                    &t.path,
+                )
+                .view
             });
 
         if !t.pending {
@@ -141,6 +153,8 @@ impl WorldTextures {
             let view = self.view(gpu, &textures[index], false);
 
             self.meshes[index] = renderer.bind_texture(gpu, &view);
+
+            self.mesh_views[index] = view;
         }
     }
 
@@ -149,6 +163,8 @@ impl WorldTextures {
             let view = self.view(gpu, t, false);
 
             self.meshes.push(renderer.bind_texture(gpu, &view));
+
+            self.mesh_views.push(view);
         }
     }
 

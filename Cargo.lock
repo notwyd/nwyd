@@ -2603,11 +2603,16 @@ dependencies = [
 name = "nwyd-render"
 version = "0.1.0"
 dependencies = [
+ "ash",
  "bytemuck",
+ "dirs",
+ "flate2",
  "fontdue",
  "glam",
+ "libloading",
  "nwyd-formats",
  "serde",
+ "sha2",
  "thiserror 2.0.19",
  "tracing",
  "wgpu 30.0.0",

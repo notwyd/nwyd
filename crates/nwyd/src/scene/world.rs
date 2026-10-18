@@ -18,6 +18,7 @@ use crate::scene::skill_anim;
 use crate::scene::sky;
 use crate::scene::snow;
 use crate::scene::sun;
+use crate::scene::view_distance::ViewDistance;
 use crate::scene::weather;
 use anyhow::{Context, Result};
 use assets::GameDir;
@@ -36,9 +37,13 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 pub(crate) mod loading;
 mod tiles;
+pub(crate) mod view_stream;
 
 #[cfg(test)]
 mod terrain_tests;
+
+#[cfg(test)]
+mod fog_tests;
 
 pub const CAMERA_PAIR_UNBUILT: (f32, f32) = (0.0, 0.0);
 
@@ -442,6 +447,33 @@ impl Environment {
             ..Fog::from_sky(self.sky_color, self.fog.0, self.fog.1, camera_distance)
         }
     }
+
+    fn visual_fog(
+        &self,
+        scene: u32,
+        camera_distance: f32,
+        underwater: bool,
+        view_distance: ViewDistance,
+    ) -> Fog {
+        let mut fog = self.fog_at(camera_distance);
+
+        if scene == SCENE_FIELD && !underwater {
+            fog.start *= view_distance.multiplier();
+
+            fog.end *= view_distance.multiplier();
+        }
+
+        fog
+    }
+
+    fn view_far_plane(&self, scene: u32, view_distance: ViewDistance) -> f32 {
+        self.far_plane
+            * if scene == SCENE_FIELD {
+                view_distance.multiplier()
+            } else {
+                1.0
+            }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -511,6 +543,8 @@ pub struct World {
     terrain_pages: Vec<u64>,
     background_loader: Option<loading::Loader>,
     background_retry: Option<web_time::Instant>,
+    visual_zone: Option<(u8, u8)>,
+    visual_collision_dirty: bool,
     pub variant: u32,
     pub scene: u32,
     pub name: String,
@@ -526,6 +560,7 @@ pub struct World {
     pub missing: Vec<i32>,
     pub path: CameraPath,
     pub environment: Environment,
+    pub view_distance: ViewDistance,
     pub env_type: i32,
     pub env_global: i32,
     pub sky: sky::Sky,
@@ -1014,6 +1049,8 @@ pub fn build_spec(game: &GameDir, spec: &WorldSpec, calendar: &Calendar) -> Resu
         terrain_pages: Vec::new(),
         background_loader: None,
         background_retry: None,
+        visual_zone: None,
+        visual_collision_dirty: false,
         variant,
         scene: spec.scene,
         name: name.to_string(),
@@ -1043,6 +1080,7 @@ pub fn build_spec(game: &GameDir, spec: &WorldSpec, calendar: &Calendar) -> Resu
         },
         camera_distance: CUTSCENE_DISTANCE,
         environment,
+        view_distance: ViewDistance::Retail,
         env_type,
         env_global: env_type,
         sky: sky::Sky::at(day),
@@ -1491,8 +1529,26 @@ impl World {
         }
     }
 
+    pub fn set_view_distance(&mut self, view_distance: ViewDistance) {
+        if self.view_distance != view_distance {
+            self.view_distance = view_distance;
+
+            self.projected = None;
+        }
+    }
+
+    pub fn view_far_plane(&self) -> f32 {
+        self.environment
+            .view_far_plane(self.scene, self.view_distance)
+    }
+
     pub fn fog(&self) -> render::world::Fog {
-        self.camera_environment().fog_at(self.camera_distance)
+        self.camera_environment().visual_fog(
+            self.scene,
+            self.camera_distance,
+            self.camera_under_water(),
+            self.view_distance,
+        )
     }
 
     pub fn camera_under_water(&self) -> bool {
@@ -1521,8 +1577,20 @@ impl World {
 
     pub fn camera_environment(&self) -> Environment {
         let mut environment = self.environment;
+        let underwater = self.camera_under_water();
 
-        if self.camera_under_water() {
+        if !underwater
+            && draws_sky(self.scene, environment.env_type)
+            && let Some(color) = self
+                .objects
+                .sky_horizon
+                .as_ref()
+                .and_then(|horizon| horizon.current)
+        {
+            environment.sky_color = color;
+        }
+
+        if underwater {
             environment.fog = (1.0, 10.0 + (self.camera_distance - 10.0).max(0.0));
 
             environment.sky_color = if matches!(environment.env_type, 1 | 2) {
@@ -1550,6 +1618,15 @@ impl World {
 
         self.pose = pose;
 
+        if let Some(horizon) = &mut self.objects.sky_horizon {
+            horizon.update(
+                self.sky,
+                now_ms,
+                self.environment.uses_day_cycle(),
+                pose.eye.y,
+            );
+        }
+
         self.objects.update_motion(now_ms);
 
         for glow in &mut self.lights.glows {
@@ -1574,6 +1651,14 @@ impl World {
         self.effects.environment = self.environment.env_type;
 
         self.effects.scene_id = self.scene;
+
+        self.effects.view_distance = self.view_distance;
+
+        self.actors.grass.field.view_distance = if self.scene == SCENE_FIELD {
+            self.view_distance
+        } else {
+            ViewDistance::Retail
+        };
 
         super::transformation::update(self, now_ms);
 
@@ -1691,7 +1776,7 @@ impl World {
 
         let view = self.pose.view();
 
-        let projection = Projection::new(backbuffer, (0, 0), self.environment.far_plane);
+        let projection = Projection::new(backbuffer, (0, 0), self.view_far_plane());
 
         let uniforms = FrameUniforms::new(
             self.mesh.world,
@@ -1710,7 +1795,7 @@ impl World {
                 forward: view.at - view.eye,
                 clip: Matrix4::multiply(&view.matrix(), &projection.matrix()),
                 viewport: backbuffer,
-                fog_end: self.camera_environment().fog.1,
+                fog_end: self.fog().end,
             };
 
             for actor in &mut self.actors.actors {
@@ -1882,6 +1967,7 @@ impl World {
             &rotate_lit,
             now_ms,
             sky,
+            super::light_shafts::enabled(self.scene, &self.name),
             frustum,
         );
 
@@ -1906,7 +1992,7 @@ impl World {
             eye: self.pose.eye,
             far: match self.scene {
                 SCENE_SELECT_CHAR | SCENE_BUDGET | SCENE_LOGIN => None,
-                _ => Some(self.environment.far_plane),
+                _ => Some(self.view_far_plane()),
             },
         };
 
@@ -2356,6 +2442,8 @@ impl World {
     fn restore_stream_collision(&mut self, dir: Direction, zone: (u8, u8), loaded: bool) {
         if loaded {
             self.actors.rewindow(window_anchor(self.current, dir));
+
+            self.visual_collision_dirty = false;
         } else if self.holds(zone) {
             let old = self.actors.zone;
 
@@ -2376,13 +2464,36 @@ impl World {
                 axis(old.1, self.current.1, zone.1),
             );
 
-            if anchor != old {
+            if anchor != old || self.visual_collision_dirty {
                 self.actors.rewindow(anchor);
+
+                self.visual_collision_dirty = false;
             }
         }
     }
 
     pub(crate) fn load_zone_background(
+        &mut self,
+        game: &GameDir,
+        zone: (u8, u8),
+        stage: &mut impl FnMut(u64, &loading::Prepared) -> bool,
+    ) -> Result<bool> {
+        if self.visual_zone.is_some() {
+            return Ok(false);
+        }
+
+        let loaded = self.load_visual_zone_background(game, zone, stage)?;
+
+        if loaded && self.force_load == Some(zone) {
+            self.actors.rewindow(self.actors.zone);
+
+            self.visual_collision_dirty = false;
+        }
+
+        Ok(loaded)
+    }
+
+    fn load_visual_zone_background(
         &mut self,
         game: &GameDir,
         zone: (u8, u8),
@@ -2451,10 +2562,6 @@ impl World {
             format!("Field{:02}{:02}", zone.0, zone.1),
             prepared,
         )?;
-
-        if self.force_load == Some(zone) {
-            self.actors.rewindow(self.actors.zone);
-        }
 
         tracing::debug!(
             ?zone,
@@ -2716,9 +2823,11 @@ impl World {
 
         if !inside {
             self.actors.rewindow(zone);
-        } else if loaded {
+        } else if loaded || self.visual_collision_dirty {
             self.actors.rewindow(anchor);
         }
+
+        self.visual_collision_dirty = false;
 
         self.environment = Environment::for_day(FIELD_DAY, zone.0, zone.1).for_scene(self.scene);
 
@@ -2759,6 +2868,8 @@ impl World {
         if !self.holds(zone) {
             return false;
         }
+
+        self.restore_stream_collision(dir, zone, false);
 
         self.current = zone;
 
@@ -2944,6 +3055,7 @@ impl World {
 
     pub fn skin_frame(&self, frame: &WorldFrame) -> render::skin::SkinFrame {
         let fog = self.fog();
+        let original = self.camera_environment().fog_at(self.camera_distance);
 
         let [r, g, b, _] = render::world::argb_to_rgba_f32(fog.color);
 
@@ -2952,6 +3064,7 @@ impl World {
             &frame.view.matrix(),
             [r, g, b, 1.0],
         )
+        .with_fog_limit((fog.end > original.end).then_some(fog.end))
     }
 
     pub fn tile_layers(&self) -> HashMap<i32, u32> {
@@ -2965,7 +3078,13 @@ impl World {
     pub fn upload_tiles(&self, gpu: &Gpu) -> Option<render::texture::GpuTexture> {
         let textures: Vec<&Texture> = self.tiles.iter().map(|t| &t.texture).collect();
 
-        render::texture::upload_array(gpu, &textures, AlphaPolicy::Opaque, "Env tiles")
+        render::texture::upload_material_array(
+            gpu,
+            &textures,
+            AlphaPolicy::Opaque,
+            render::texture::MipPolicy::Opaque,
+            "Env tiles",
+        )
     }
 
     pub fn world_matrix(&self) -> Matrix4 {

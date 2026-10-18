@@ -66,7 +66,7 @@ impl RotateLitDraw {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoundTexture {
     pub pending: bool,
     pub effect_table: bool,
@@ -74,11 +74,26 @@ pub struct BoundTexture {
     pub path: String,
     pub flag: FormatFlag,
     pub texture: Texture,
+    pub mip_policy_override: Option<render::texture::MipPolicy>,
 }
 
 impl BoundTexture {
     pub fn alpha_policy(&self) -> AlphaPolicy {
         AlphaPolicy::for_flag(self.flag)
+    }
+
+    pub fn mip_policy(&self, skin: bool) -> render::texture::MipPolicy {
+        use render::texture::MipPolicy;
+
+        if let Some(policy) = self.mip_policy_override {
+            policy
+        } else if self.alpha_policy() == AlphaPolicy::Opaque {
+            MipPolicy::Opaque
+        } else if !skin && !self.effect_table {
+            MipPolicy::Cutout(render::mesh::ALPHAREF_MESH_ALPHA_32BPP as u8)
+        } else {
+            MipPolicy::Blend
+        }
     }
 }
 
@@ -286,6 +301,7 @@ pub struct ObjectScene {
     pub missing_by_id: Vec<u32>,
     pub arena: MeshArena,
     pub sky: Option<Sky>,
+    pub sky_horizon: Option<super::sky::Horizon>,
     pub missing_meshes: Vec<u32>,
     pub missing_textures: Vec<String>,
     pub registries: Arc<Registries>,
@@ -425,6 +441,23 @@ pub fn build(
             height: SKY_HEIGHT,
             texture_slot: slot,
         });
+
+        let sky = scene.sky.unwrap();
+        let textures = std::array::from_fn(|row| {
+            scene
+                .textures
+                .iter()
+                .find(|texture| {
+                    texture.effect_table && texture.slot == 67 + row && !texture.pending
+                })
+                .map(|texture| &texture.texture)
+        });
+
+        scene.sky_horizon = Some(super::sky::Horizon::new(
+            &scene.meshes[mesh].mesh,
+            &sky.world(Vec3::ZERO),
+            textures,
+        ));
     }
 
     Ok(scene)
@@ -1054,6 +1087,7 @@ impl ObjectScene {
         let texture = texture.unwrap_or_else(super::actors::texture_loading::placeholder);
 
         self.textures.push(BoundTexture {
+            mip_policy_override: None,
             pending,
             effect_table,
             slot,
@@ -1069,10 +1103,11 @@ impl ObjectScene {
         self.textures
             .iter()
             .map(|t| {
-                let uploaded = render::texture::upload(
+                let uploaded = render::texture::upload_material(
                     gpu,
                     &t.texture,
                     t.alpha_policy(),
+                    t.mip_policy(false),
                     &format!("mesh texture {}", t.path),
                 );
 
@@ -1092,6 +1127,7 @@ impl ObjectScene {
         rotate_lit: &[RotateLitDraw],
         now_ms: u32,
         sky_enabled: bool,
+        window_light_shafts: bool,
         frustum: &render::cull::Frustum,
     ) -> Frame {
         let mut objects = Vec::with_capacity(
@@ -1099,6 +1135,8 @@ impl ObjectScene {
         );
 
         let mut draws = Vec::new();
+
+        let mut light_shafts = Vec::new();
 
         if let Some(sky) = self.sky.filter(|_| sky_enabled) {
             self.push_instance(
@@ -1578,6 +1616,15 @@ impl ObjectScene {
 
             let world = glow.world();
 
+            if window_light_shafts
+                && let Some(shafts) =
+                    super::light_shafts::from_glow(&self.meshes[mesh], &self.textures, glow, now_ms)
+            {
+                light_shafts.extend(shafts);
+
+                continue;
+            }
+
             if !self.visible(mesh, &world, frustum) {
                 continue;
             }
@@ -1627,7 +1674,11 @@ impl ObjectScene {
             );
         }
 
-        Frame { objects, draws }
+        Frame {
+            objects,
+            draws,
+            light_shafts,
+        }
     }
 
     pub fn append_textured_effects(
@@ -2080,4 +2131,5 @@ impl ObjectScene {
 pub struct Frame {
     pub objects: Vec<ObjectUniforms>,
     pub draws: Vec<MeshDraw>,
+    pub light_shafts: Vec<render::light_shafts::LightShaft>,
 }

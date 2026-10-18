@@ -37,7 +37,7 @@ struct VsOut {
     @location(1) uv0: vec2<f32>,
     @location(2) uv1: vec2<f32>,
     
-    @location(3) fog: f32,
+    @location(3) view_depth: f32,
 };
 
 @vertex
@@ -79,7 +79,7 @@ fn vs(
 
     out.diffuse = vec4<f32>(clamp(lit, vec3<f32>(0.0), vec3<f32>(1.0)), vertex_color.a);
 
-    out.fog = clamp((frame.fog_params.y - view_pos.z) * frame.fog_params.z, 0.0, 1.0);
+    out.view_depth = view_pos.z;
     out.uv0 = uv0;
     out.uv1 = uv1;
     if (draw.scroll >= 1.0) { out.uv0.x += draw.scroll - 1.0; }
@@ -103,7 +103,8 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         }
     }
 
-    let fogged = mix(frame.fog_color.rgb, color.rgb, in.fog);
+    let visibility = distance_fog_visibility(in.view_depth, frame.fog_params.y, frame.fog_params.z);
+    let fogged = mix(frame.fog_color.rgb, color.rgb, visibility);
     color = vec4<f32>(mix(color.rgb, fogged, frame.fog_params.w), color.a);
     return color;
 }

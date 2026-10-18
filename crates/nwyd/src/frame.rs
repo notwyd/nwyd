@@ -16,6 +16,8 @@ use render::world::{FrameUniforms, TerrainRenderer, TileCache, TileUploadStats};
 use std::collections::HashMap;
 use ui::draw::Owner;
 
+mod antialias;
+mod light_shafts;
 mod world_textures;
 mod zone_upload;
 
@@ -160,6 +162,10 @@ pub struct SceneRenderer {
     vendor: VendorClass,
     world_frame: Option<(FrameUniforms, bool)>,
     temporal: Option<crate::temporal::TemporalFrame>,
+    antialias: Option<antialias::AntialiasFrame>,
+    light_shafts: Option<light_shafts::LightShaftFrame>,
+    queued_light_shafts: Vec<render::light_shafts::LightShaft>,
+    neural_failure: Option<String>,
     terrain_clock: Option<u32>,
     terrain_queued: bool,
     depth: Option<DepthBuffer>,
@@ -195,6 +201,44 @@ impl SceneRenderer {
 
     pub fn motion_vectors(&self) -> Option<&wgpu::TextureView> {
         self.temporal.as_ref().map(|state| &state.motion)
+    }
+
+    pub fn new_with_neural(
+        gpu: &Gpu,
+        target_format: wgpu::TextureFormat,
+        size: (u32, u32),
+    ) -> SceneRenderer {
+        #[cfg(feature = "neural-rendering")]
+        {
+            match crate::temporal::TemporalFrame::new_neural(gpu, size, target_format) {
+                Ok(frame) => Self::with_temporal(gpu, target_format, Some(frame)),
+                Err(error) => {
+                    let mut renderer = Self::new(gpu, target_format);
+                    renderer.neural_failure = Some(error);
+                    renderer
+                }
+            }
+        }
+
+        #[cfg(not(feature = "neural-rendering"))]
+        {
+            let _ = size;
+            Self::new(gpu, target_format)
+        }
+    }
+
+    pub fn release_neural(&mut self) {
+        if let Some(temporal) = &mut self.temporal {
+            temporal.release_neural();
+        }
+    }
+
+    pub fn take_neural_failure(&mut self) -> Option<String> {
+        self.neural_failure.take().or_else(|| {
+            self.temporal
+                .as_mut()
+                .and_then(|temporal| temporal.take_failure())
+        })
     }
 
     pub fn reactive_mask(&self) -> Option<&wgpu::TextureView> {
@@ -267,6 +311,10 @@ impl SceneRenderer {
             depth: None,
             clear: CLEAR,
             temporal,
+            antialias: antialias::AntialiasFrame::new(gpu, target_format),
+            light_shafts: None,
+            queued_light_shafts: Vec::new(),
+            neural_failure: None,
         };
 
         let white = formats::texture::Texture {
@@ -554,6 +602,10 @@ impl SceneRenderer {
         if have.is_none() {
             self.world_textures.clear();
 
+            self.light_shafts = None;
+
+            self.queued_light_shafts.clear();
+
             self.tiles.clear();
 
             self.zone_staging = zone_upload::Staging::default();
@@ -749,6 +801,8 @@ impl SceneRenderer {
     ) {
         self.world_frame = Some((uniforms, stage1_enabled));
 
+        self.queued_light_shafts.clone_from(&objects.light_shafts);
+
         self.terrain_clock = None;
 
         self.terrain_queued = true;
@@ -778,6 +832,8 @@ impl SceneRenderer {
         held: &[crate::scene::actors::HeldDraw],
     ) {
         self.world_frame = Some((uniforms, false));
+
+        self.queued_light_shafts.clone_from(&objects.light_shafts);
 
         self.terrain_clock = Some(now_ms);
 
@@ -845,12 +901,13 @@ impl SceneRenderer {
             self.skin_drops = drops;
 
             tracing::info!(
-                "NWYD: skinned pass dropped {} draw(s) over palette capacity ({} wanted of {}), \
+                "NWYD: skinned pass dropped {} draw(s) with invalid palette/object references \
+                 ({} palettes, capacity {}), \
                  {} for an unbound part and {} for an unbound texture — \
                  those bodies draw nothing and keep their nameplates",
                 drops.over_capacity,
                 drops.palette_demand,
-                render::skin::PALETTE_CAPACITY,
+                self.skins.palette_capacity(),
                 drops.unbound_part,
                 drops.unbound_texture,
             );
@@ -982,6 +1039,12 @@ impl SceneRenderer {
         }
 
         self.world_frame = None;
+
+        self.queued_light_shafts.clear();
+
+        if let Some(shafts) = &mut self.light_shafts {
+            shafts.clear();
+        }
 
         self.terrain_clock = None;
 
@@ -1166,6 +1229,19 @@ impl SceneRenderer {
                     .prepare(gpu, mesh, tiles, &uniforms, stage1_enabled);
             }
         }
+
+        if !self.queued_light_shafts.is_empty() || self.light_shafts.is_some() {
+            let shafts = self
+                .light_shafts
+                .get_or_insert_with(|| light_shafts::LightShaftFrame::new(gpu, self.target_format));
+            shafts.prepare(
+                gpu,
+                &uniforms,
+                &self.queued_light_shafts,
+                &self.depth.as_ref().unwrap().view,
+                &self.world_textures.mesh_views,
+            );
+        }
     }
 
     pub fn render(&self, gpu: &Gpu, view: &wgpu::TextureView) {
@@ -1190,23 +1266,44 @@ impl SceneRenderer {
     }
 
     pub fn render_frame(&mut self, gpu: &Gpu, view: &wgpu::TextureView) {
-        if self.temporal.is_none() {
-            self.render(gpu, view);
-
-            return;
-        }
-
-        if self.has_world() {
-            let state = self.temporal.as_ref().unwrap();
-
-            self.render_scene(gpu, &state.scene.view);
-
-            self.temporal.as_mut().unwrap().finish(gpu, view);
+        let has_world = self.has_world();
+        let mut encoder = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: render::gpu_label("scene composition and interface"),
+            });
+        if has_world {
+            if let Some(antialias) = &mut self.antialias {
+                antialias.resize(
+                    gpu,
+                    view.texture().width(),
+                    view.texture().height(),
+                    self.temporal.as_ref().map(|state| &state.bias),
+                );
+            }
+            let scene_target = self
+                .antialias
+                .as_ref()
+                .map_or(view, |antialias| antialias.view());
+            if let Some(state) = &self.temporal {
+                self.render_scene(gpu, &state.scene.view);
+                self.temporal.as_mut().unwrap().finish(
+                    gpu,
+                    scene_target,
+                    self.depth.as_ref().map(|depth| &depth.view),
+                );
+            } else {
+                self.encode_scene(&mut encoder, scene_target, true);
+            }
+            if let Some(antialias) = &self.antialias {
+                antialias.encode(&mut encoder, view);
+            }
         } else {
             self.reset_temporal_history();
         }
 
-        self.render_2d(gpu, view);
+        self.encode_2d(&mut encoder, view, has_world);
+        gpu.queue.submit([encoder.finish()]);
     }
 
     pub fn reset_temporal_history(&mut self) {
@@ -1346,6 +1443,36 @@ impl SceneRenderer {
                         MeshPass::Reflective,
                     ],
                 );
+            }
+
+            if let Some(shafts) = self.light_shafts.as_ref().filter(|shafts| shafts.ready()) {
+                drop(pass);
+
+                shafts.encode(enc, view, self.temporal.as_ref().map(|state| &state.bias));
+
+                for attachment in colors.iter_mut().flatten() {
+                    attachment.ops.load = wgpu::LoadOp::Load;
+                }
+
+                pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: render::gpu_label("transparent scene effects"),
+                    color_attachments: &colors,
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &depth.view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                    multiview_mask: None,
+                });
+
+                if let Some(state) = &self.temporal {
+                    pass.set_bind_group(4, &state.camera.binding, &[]);
+                }
             }
 
             if self.skin_queued {

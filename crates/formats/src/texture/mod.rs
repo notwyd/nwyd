@@ -50,6 +50,16 @@ pub struct Texture {
     pub source_len: usize,
 }
 
+impl Texture {
+    pub fn into_rgba8(self) -> Result<Self> {
+        match self.format {
+            PixelFormat::Bc1RgbaUnorm => dxt::expand(self, 1),
+            PixelFormat::Bc2RgbaUnorm => dxt::expand(self, 3),
+            PixelFormat::Rgba8Unorm => Ok(self),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CubeTexture {
     pub faces: [Texture; 6],
@@ -252,5 +262,48 @@ pub fn decode_image(bytes: &[u8]) -> Result<Texture> {
         raw::decode(bytes, format)
     } else {
         wyt::decode_tga(bytes)
+    }
+}
+
+#[cfg(test)]
+mod sampling_tests;
+
+impl Texture {
+    pub fn sample_rgba8(&self, x: u32, y: u32) -> Option<[u8; 4]> {
+        let mip = self.mips.first()?;
+
+        if x >= mip.width || y >= mip.height {
+            return None;
+        }
+
+        let bytes = self
+            .data
+            .get(mip.offset..mip.offset.checked_add(mip.len)?)?;
+
+        match self.format {
+            PixelFormat::Rgba8Unorm => {
+                let offset = (y as usize)
+                    .checked_mul(mip.width as usize)?
+                    .checked_add(x as usize)?
+                    .checked_mul(4)?;
+
+                bytes.get(offset..offset.checked_add(4)?)?.try_into().ok()
+            }
+            PixelFormat::Bc1RgbaUnorm | PixelFormat::Bc2RgbaUnorm => {
+                let stride = self.format.block_bytes()?;
+                let index = (y as usize / 4)
+                    .checked_mul(mip.width.div_ceil(4) as usize)?
+                    .checked_add(x as usize / 4)?;
+                let offset = index.checked_mul(stride)?;
+                let block = bytes.get(offset..offset.checked_add(stride)?)?;
+
+                Some(dxt::pixel(
+                    block,
+                    if stride == 8 { 1 } else { 3 },
+                    x % 4,
+                    y % 4,
+                ))
+            }
+        }
     }
 }

@@ -2,6 +2,10 @@ use crate::device::Gpu;
 use formats::texture::texture_list::FormatFlag;
 use formats::texture::{PixelFormat, Texture};
 
+mod mipmaps;
+
+pub use mipmaps::{MipPolicy, with_mipmaps};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AlphaPolicy {
     Stored,
@@ -115,6 +119,45 @@ pub struct GpuTexture {
     pub height: u32,
     pub mip_levels: u32,
     pub alpha: AlphaPolicy,
+}
+
+pub fn upload_material(
+    gpu: &Gpu,
+    texture: &Texture,
+    alpha: AlphaPolicy,
+    mips: MipPolicy,
+    label: &str,
+) -> GpuTexture {
+    upload(gpu, &with_mipmaps(texture, mips), alpha, label)
+}
+
+pub fn upload_material_array(
+    gpu: &Gpu,
+    textures: &[&Texture],
+    alpha: AlphaPolicy,
+    mips: MipPolicy,
+    label: &str,
+) -> Option<GpuTexture> {
+    let mut prepared: Vec<_> = textures
+        .iter()
+        .map(|texture| with_mipmaps(texture, mips))
+        .collect();
+    let first_format = prepared.first()?.format;
+
+    if prepared
+        .iter()
+        .any(|texture| texture.format != first_format)
+    {
+        for texture in &mut prepared {
+            if texture.format.is_block_compressed() {
+                *texture = std::borrow::Cow::Owned(texture.clone().into_owned().into_rgba8().ok()?);
+            }
+        }
+    }
+
+    let textures: Vec<_> = prepared.iter().map(|texture| texture.as_ref()).collect();
+
+    upload_array(gpu, &textures, alpha, label)
 }
 
 pub fn upload(gpu: &Gpu, texture: &Texture, alpha: AlphaPolicy, label: &str) -> GpuTexture {

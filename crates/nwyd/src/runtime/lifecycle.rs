@@ -15,6 +15,7 @@ enum EntryEpoch {
 pub struct Retained {
     pub(crate) selection_body: i16,
     pub(crate) effect_options: Option<scene::lod::EffectOptions>,
+    pub(crate) view_distance: scene::view_distance::ViewDistance,
     pub(crate) memo_inbox: scene::memo::Inbox,
     pub(crate) saved_tab: scene::chat::SavedTab,
     pub(crate) item_prices: scene::item_prices::Retained,
@@ -33,6 +34,7 @@ impl Retained {
                 _ => 0,
             },
             effect_options: initial.effect_options(),
+            view_distance: initial.view_distance().unwrap_or_default(),
             memo_inbox: Default::default(),
             saved_tab: Default::default(),
             item_prices: Default::default(),
@@ -124,6 +126,13 @@ pub fn replace(host: &mut impl SceneHost, mut next: Scene) {
         if let Some(options) = state.retained.effect_options {
             next.set_effect_options(options);
         }
+
+        state.retained.view_distance = state
+            .scene
+            .view_distance()
+            .unwrap_or(state.retained.view_distance);
+
+        next.set_view_distance(state.retained.view_distance);
 
         state.retained.item_prices.apply(&mut next);
 

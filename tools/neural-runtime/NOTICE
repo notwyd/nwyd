@@ -1,0 +1,23 @@
+NWYD experimental Windows neural runtime adapter
+Copyright 2026 memset <tip@memset.wtf>
+https://notwyd.app
+
+This separately built adapter is licensed under AGPL-3.0-only. It is not
+relicensed under the Apache-2.0 license used by NWYD's Rust crates.
+
+It links against separately obtained DLSS5VKLayer source by bmitch87 and its
+contributors, pinned to commit 117c9530834d37ef8dc7b371e36cc3fb507e6b6b:
+https://github.com/bmitch87/DLSS5VKLayer
+
+The build uses core/ngx_snippet.cpp, core/guard.cpp and their headers. The
+upstream source is not bundled here. Its LICENSE and ATTRIBUTION.md must
+accompany distribution of the adapter and its corresponding source.
+
+The adapter corrects the upstream exception-success predicate and tracks
+the upstream exception-handler registration, pinning its code for the process
+lifetime because exception unwinding can retain dispatcher references. It
+destroys GPU contexts independently and supplies engine resources directly
+and does not use the upstream presentation layer, transport or optical flow.
+
+NVIDIA runtime binaries are not included. NVIDIA, DLSS and NGX are NVIDIA
+trademarks. This adapter's license grants no rights to NVIDIA binaries.

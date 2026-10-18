@@ -4,6 +4,7 @@ use crate::{
     scene::{
         login_panels::{GuiTexture, PlacedPanel},
         panels,
+        view_distance::ViewDistance,
     },
     ui::PanelUi,
 };
@@ -25,17 +26,17 @@ enum Slider {
 }
 
 fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
-    ui.panel.bottom = ui.panel.top + 315;
+    ui.panel.bottom = ui.panel.top + 365;
 
-    ui.panel.close_button_location[1] = 283;
+    ui.panel.close_button_location[1] = 333;
 
     if let Some(close) = &mut ui.panel.close_button {
-        close.y = 283;
+        close.y = 333;
     }
 
     for element in &mut ui.panel.elements {
         if element.name.is_empty() && element.element_type == ElementType::Image {
-            element.height = 314;
+            element.height = 364;
         }
     }
 
@@ -120,6 +121,30 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
             180,
             "",
         ),
+        (
+            "effects",
+            "neuralRendering",
+            ElementType::Button,
+            25,
+            198,
+            "",
+        ),
+        (
+            "effectsOn",
+            "neuralRenderingOn",
+            ElementType::Button,
+            25,
+            198,
+            "",
+        ),
+        (
+            "vEfx1Lbl",
+            "vNeuralRenderingLbl",
+            ElementType::Static,
+            46,
+            198,
+            "",
+        ),
         ("effects", "capeRefine", ElementType::Button, 25, 209, ""),
         (
             "effectsOn",
@@ -169,6 +194,8 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
         ("aMusLbl", "rendererLabel", ElementType::Static, 198, 14),
         ("resDrop", "rendererDrop", ElementType::Button, 216, 20),
         ("aMusLbl", "rendererNotice", ElementType::Static, 244, 18),
+        ("aMusLbl", "viewDistanceLabel", ElementType::Static, 284, 14),
+        ("resDrop", "viewDistanceDrop", ElementType::Button, 302, 20),
         ("aMusLbl", "languageLabel", ElementType::Static, 233, 14),
         ("resDrop", "languageDrop", ElementType::Button, 251, 20),
     ] {
@@ -198,6 +225,35 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
 
         element.set_display("");
 
+        ui.panel.elements.push(element);
+    }
+
+    let view_distance_choices_top = ui
+        .panel
+        .element("viewDistanceDrop", ElementType::Button)
+        .context("missing view distance selector")?
+        .y
+        - ViewDistance::ALL.len() as i32 * 18
+        - 2;
+
+    for index in 0..ViewDistance::ALL.len() {
+        let mut element = ui
+            .panel
+            .element("resItem0", ElementType::Button)
+            .context("missing view distance choice template")?
+            .clone_template();
+
+        element.name = format!("viewDistanceItem{index}");
+        element.name_hash = ui::hash::name_hash(&element.name);
+        ui.panel.next_element_id += 1;
+        element.id = ui.panel.next_element_id;
+        element.x = 25;
+        element.y = view_distance_choices_top + index as i32 * 18;
+        element.width = 207;
+        element.height = 18;
+        element.multiline = false;
+        element.msg_receive = true;
+        element.set_display("");
         ui.panel.elements.push(element);
     }
 
@@ -234,7 +290,7 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
     Ok(())
 }
 
-fn renderer_choices(ui: &mut PanelUi, count: usize) {
+fn renderer_choices(ui: &mut PanelUi, count: usize, neural_rendering_available: bool) {
     ui.panel
         .elements
         .retain(|element| !element.name.starts_with("rendererItem"));
@@ -243,7 +299,7 @@ fn renderer_choices(ui: &mut PanelUi, count: usize) {
         return;
     };
 
-    let top = 214 - count as i32 * 18;
+    let top = 214 + i32::from(neural_rendering_available) * 18 - count as i32 * 18;
 
     for index in 0..count {
         let mut element = template.clone_template();
@@ -296,6 +352,24 @@ fn renderer_caption(
     }
 }
 
+fn view_distance_caption(distance: ViewDistance, portuguese: bool) -> &'static str {
+    match (distance, portuguese) {
+        (ViewDistance::Retail, true) => "Original (1×)",
+        (ViewDistance::Retail, false) => "Retail (1×)",
+        (ViewDistance::Extended, true) => "Ampliada (1,5×)",
+        (ViewDistance::Extended, false) => "Extended (1.5×)",
+        (ViewDistance::Distant, true) => "Distante (2×)",
+        (ViewDistance::Distant, false) => "Distant (2×)",
+        (ViewDistance::Far, true) => "Muito distante (3×)",
+        (ViewDistance::Far, false) => "Far (3×)",
+        (ViewDistance::Maximum, _) => "4×",
+        (ViewDistance::FiveTimes, _) => "5×",
+        (ViewDistance::SixTimes, _) => "6×",
+        (ViewDistance::SevenTimes, _) => "7×",
+        (ViewDistance::EightTimes, _) => "8×",
+    }
+}
+
 pub struct Panel {
     pub(crate) chains: crate::fonts::Chains,
     placed: PlacedPanel,
@@ -305,9 +379,11 @@ pub struct Panel {
     tab: usize,
     resolutions_open: bool,
     renderers_open: bool,
+    view_distance_open: bool,
     renderers: Vec<Option<RendererBackend>>,
     startup_renderer: Option<RendererBackend>,
     active_renderer: Option<RendererBackend>,
+    neural_rendering_available: bool,
     languages_open: bool,
     languages: Vec<Language>,
     language: Language,
@@ -348,9 +424,11 @@ impl Panel {
             tab: 0,
             resolutions_open: false,
             renderers_open: false,
+            view_distance_open: false,
             renderers: vec![None],
             startup_renderer: preferences.renderer,
             active_renderer: None,
+            neural_rendering_available: false,
             languages_open: false,
             languages: vec![preferences.language],
             language: preferences.language,
@@ -421,9 +499,11 @@ impl Panel {
             tab: 0,
             resolutions_open: false,
             renderers_open: false,
+            view_distance_open: false,
             renderers: vec![None],
             startup_renderer: preferences.renderer,
             active_renderer: None,
+            neural_rendering_available: false,
             languages_open: false,
             languages,
             language: game.language(),
@@ -468,9 +548,35 @@ impl Panel {
 
         self.renderers_open = false;
 
+        self.view_distance_open = false;
+
         self.cancel_input();
 
-        renderer_choices(&mut self.placed.ui, self.renderers.len());
+        renderer_choices(
+            &mut self.placed.ui,
+            self.renderers.len(),
+            self.neural_rendering_available,
+        );
+
+        self.refresh();
+    }
+
+    pub(crate) fn set_neural_rendering_available(&mut self, available: bool) {
+        if self.neural_rendering_available == available {
+            return;
+        }
+
+        self.neural_rendering_available = available;
+
+        self.renderers_open = false;
+
+        self.resolutions_open = false;
+
+        self.view_distance_open = false;
+
+        self.cancel_input();
+
+        renderer_choices(&mut self.placed.ui, self.renderers.len(), available);
 
         self.refresh();
     }
@@ -480,7 +586,14 @@ impl Panel {
 
         let interface_visible = self.tab == 2 && !self.languages_open;
 
-        let video_visible = self.tab == 0 && !self.resolutions_open && !self.renderers_open;
+        let video_visible = self.tab == 0
+            && !self.resolutions_open
+            && !self.renderers_open
+            && !self.view_distance_open;
+
+        let neural_rendering_visible = video_visible && self.neural_rendering_available;
+
+        let renderer_offset = i32::from(self.neural_rendering_available) * 18;
 
         let restart_required = self.draft.renderer != self.startup_renderer;
 
@@ -490,11 +603,20 @@ impl Panel {
             element.visible = match name {
                 "TabVid" | "TabAud" | "TabIfc" | "" => true,
                 n if n.starts_with("resItem") => self.tab == 0 && self.resolutions_open,
-                "resDrop" | "vResLbl" => self.tab == 0 && !self.renderers_open,
+                "resDrop" | "vResLbl" => {
+                    self.tab == 0 && !self.renderers_open && !self.view_distance_open
+                }
                 n if n.starts_with("rendererItem") => self.tab == 0 && self.renderers_open,
                 "rendererLabel" => video_visible,
-                "rendererDrop" => self.tab == 0 && !self.resolutions_open,
+                "rendererDrop" => {
+                    self.tab == 0 && !self.resolutions_open && !self.view_distance_open
+                }
                 "rendererNotice" => video_visible && restart_required,
+                "viewDistanceLabel" => video_visible,
+                "viewDistanceDrop" => {
+                    self.tab == 0 && !self.resolutions_open && !self.renderers_open
+                }
+                n if n.starts_with("viewDistanceItem") => self.tab == 0 && self.view_distance_open,
                 n if n.starts_with("languageItem") => self.tab == 2 && self.languages_open,
                 "languageLabel" | "languageDrop" => self.tab == 2,
                 "windowMode" => video_visible && self.draft.fullscreen,
@@ -507,6 +629,9 @@ impl Panel {
                 "vsyncOn" => video_visible && self.draft.vsync,
                 "oldSkillVfx" => video_visible && !self.draft.old_skill_vfx,
                 "oldSkillVfxOn" => video_visible && self.draft.old_skill_vfx,
+                "neuralRendering" => neural_rendering_visible && !self.draft.neural_rendering,
+                "neuralRenderingOn" => neural_rendering_visible && self.draft.neural_rendering,
+                "vNeuralRenderingLbl" => neural_rendering_visible,
                 "vModeLbl" | "vEfxHdr" | "vWinLbl" | "vFsLbl" | "vEfx1Lbl" | "vVsyncLbl"
                 | "vOldSkillVfxLbl" => video_visible,
                 "aMusLbl" | "aSfxLbl" | "musFill" | "musBar" | "musMark" | "sfxFill" | "sfxBar"
@@ -540,7 +665,27 @@ impl Panel {
                 } else {
                     "Old skill effects"
                 }),
+                "vNeuralRenderingLbl" => element.set_display("DLSS 5 (experimental)"),
+                "viewDistanceLabel" => element.set_display(if portuguese {
+                    "Distância de visão"
+                } else {
+                    "View distance"
+                }),
+                "viewDistanceDrop" => {
+                    element.set_display(view_distance_caption(self.draft.view_distance, portuguese))
+                }
+                n if n.starts_with("viewDistanceItem") => {
+                    if let Some(&distance) = n
+                        .strip_prefix("viewDistanceItem")
+                        .and_then(|index| index.parse::<usize>().ok())
+                        .and_then(|index| ViewDistance::ALL.get(index))
+                    {
+                        element.set_display(view_distance_caption(distance, portuguese));
+                    }
+                }
                 "rendererLabel" => {
+                    element.y = 198 + renderer_offset;
+
                     element.set_display(if portuguese {
                         "Renderizador"
                     } else {
@@ -548,6 +693,8 @@ impl Panel {
                     });
                 }
                 "rendererDrop" => {
+                    element.y = 216 + renderer_offset;
+
                     element.enabled = self.renderers.len() > 1;
 
                     element.set_display(&renderer_caption(
@@ -556,11 +703,15 @@ impl Panel {
                         portuguese,
                     ));
                 }
-                "rendererNotice" => element.set_display(if portuguese {
-                    "Reinicie o jogo para aplicar."
-                } else {
-                    "Restart the game to apply."
-                }),
+                "rendererNotice" => {
+                    element.y = 244 + renderer_offset;
+
+                    element.set_display(if portuguese {
+                        "Reinicie o jogo para aplicar."
+                    } else {
+                        "Restart the game to apply."
+                    });
+                }
                 n if n.starts_with("rendererItem") => {
                     if let Some(&renderer) = n
                         .strip_prefix("rendererItem")
@@ -686,6 +837,8 @@ impl Panel {
 
         self.renderers_open = false;
 
+        self.view_distance_open = false;
+
         self.languages_open = false;
 
         self.slider_drag = None;
@@ -775,6 +928,8 @@ impl Panel {
 
                     self.renderers_open = false;
 
+                    self.view_distance_open = false;
+
                     self.languages_open = false;
                 }
                 "TabAud" => {
@@ -784,6 +939,8 @@ impl Panel {
 
                     self.renderers_open = false;
 
+                    self.view_distance_open = false;
+
                     self.languages_open = false;
                 }
                 "TabIfc" => {
@@ -792,6 +949,8 @@ impl Panel {
                     self.resolutions_open = false;
 
                     self.renderers_open = false;
+
+                    self.view_distance_open = false;
 
                     self.languages_open = false;
                 }
@@ -811,11 +970,20 @@ impl Panel {
                     self.resolutions_open = !self.resolutions_open;
 
                     self.renderers_open = false;
+
+                    self.view_distance_open = false;
                 }
                 "rendererDrop" => {
                     self.renderers_open = !self.renderers_open;
 
                     self.resolutions_open = false;
+
+                    self.view_distance_open = false;
+                }
+                "viewDistanceDrop" => {
+                    self.view_distance_open = !self.view_distance_open;
+                    self.resolutions_open = false;
+                    self.renderers_open = false;
                 }
                 "languageDrop" => self.languages_open = !self.languages_open,
                 "windowMode" | "windowModeOn" => self.draft.fullscreen = false,
@@ -824,6 +992,9 @@ impl Panel {
                 "vsync" | "vsyncOn" => self.draft.vsync = !self.draft.vsync,
                 "oldSkillVfx" | "oldSkillVfxOn" => {
                     self.draft.old_skill_vfx = !self.draft.old_skill_vfx;
+                }
+                "neuralRendering" | "neuralRenderingOn" if self.neural_rendering_available => {
+                    self.draft.neural_rendering = !self.draft.neural_rendering;
                 }
                 name => {
                     if let Some(index) = name
@@ -842,6 +1013,13 @@ impl Panel {
                         self.draft.renderer = renderer;
 
                         self.renderers_open = false;
+                    } else if let Some(&distance) = name
+                        .strip_prefix("viewDistanceItem")
+                        .and_then(|index| index.parse::<usize>().ok())
+                        .and_then(|index| ViewDistance::ALL.get(index))
+                    {
+                        self.draft.view_distance = distance;
+                        self.view_distance_open = false;
                     } else if let Some(&language) = name
                         .strip_prefix("languageItem")
                         .and_then(|n| n.parse::<usize>().ok())

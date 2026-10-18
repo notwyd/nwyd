@@ -120,6 +120,8 @@ const WORLD_WGSL: &str = include_str!("world.wgsl");
 
 const POINT_LIGHT_WGSL: &str = include_str!("point_light.wgsl");
 
+const FOG_WGSL: &str = include_str!("fog.wgsl");
+
 const SKIN_WGSL: &str = include_str!("skin.wgsl");
 
 const MESH_WGSL: &str = include_str!("mesh.wgsl");
@@ -131,12 +133,13 @@ const BILLBOARD_WGSL: &str = include_str!("billboard.wgsl");
 const BLIT_WGSL: &str = include_str!("blit.wgsl");
 
 fn lit_shader(body: &str) -> String {
-    format!("{POINT_LIGHT_WGSL}{body}")
+    format!("{POINT_LIGHT_WGSL}{FOG_WGSL}{body}")
 }
 
 fn skin(temporal: bool) -> String {
+    let source = format!("{FOG_WGSL}{SKIN_WGSL}");
     if temporal {
-        let source = SKIN_WGSL
+        let source = source
             .replace(
                 "bones: array<mat4x4<f32>, 40>,",
                 "bones: array<mat4x4<f32>, 40>,\n previous_bones: array<mat4x4<f32>, 40>,\n previous_projection: mat4x4<f32>,\n history: vec4<f32>,",
@@ -157,10 +160,10 @@ fn skin(temporal: bool) -> String {
             &source,
             true,
             "vec4<f32>(previous_view_pos,1.0) * palette.previous_projection",
-            "palette.history.x",
+            "max(palette.history.x, object.stage.y)",
         )
     } else {
-        SKIN_WGSL.to_owned()
+        source
     }
 }
 
@@ -176,7 +179,7 @@ fn mesh(temporal: bool) -> String {
         shader_with_history(
             &source,
             true,
-            "vec4<f32>(pos,1.0) * object.previous_clip",
+            "mesh_clip(vec4<f32>(pos,1.0) * object.previous_clip)",
             "object.history.x",
         )
     } else {

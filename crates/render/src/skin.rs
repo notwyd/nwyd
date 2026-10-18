@@ -12,6 +12,12 @@ use formats::mesh::msh::{MAX_BONE_PALETTE, SkinMesh};
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod fog_tests;
+
+#[cfg(test)]
+mod neural_tests;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
 pub struct SkinVertexGpu {
@@ -163,6 +169,8 @@ struct TemporalPalette {
     previous_projection: [f32; 16],
     history: [f32; 4],
 }
+
+pub(crate) const TEMPORAL_PALETTE_SIZE: u64 = std::mem::size_of::<TemporalPalette>() as u64;
 
 #[derive(Default)]
 struct PaletteHistory {
@@ -319,6 +327,14 @@ impl SkinFrame {
 
         self
     }
+
+    pub fn with_fog_limit(mut self, limit: Option<f32>) -> SkinFrame {
+        self.scroll[1] = limit
+            .filter(|end| end.is_finite() && *end > 0.0)
+            .unwrap_or(0.0);
+
+        self
+    }
 }
 
 #[repr(C)]
@@ -415,6 +431,11 @@ impl SkinParams {
 }
 
 impl SkinObject {
+    pub fn with_neural_preservation(mut self, amount: f32) -> Self {
+        self.stage[1] = preservation_weight(amount);
+        self
+    }
+
     pub fn new(params: &SkinParams, palette_len: u32, alpha_reference: f32) -> SkinObject {
         let end = params.effective_fog_end();
 
@@ -550,13 +571,42 @@ pub struct SkinTexture {
     pub bind_group: wgpu::BindGroup,
 }
 
+fn preservation_weight(amount: f32) -> f32 {
+    if amount.is_finite() {
+        amount.clamp(0.0, 1.0)
+    } else {
+        1.0
+    }
+}
+
+fn neural_objects(objects: &[SkinObject], draws: &[SkinDraw], output: &mut Vec<SkinObject>) {
+    output.clear();
+    output.extend_from_slice(objects);
+    for object in output.iter_mut() {
+        object.stage[1] = preservation_weight(object.stage[1]);
+    }
+    for draw in draws {
+        if draw.pass != SkinPass::Opaque {
+            if let Some(object) = output.get_mut(draw.object as usize) {
+                object.stage[1] = 1.0;
+            }
+        }
+    }
+}
+
 pub const PALETTE_CAPACITY: u32 = 2048;
+
+struct PalettePage {
+    buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+}
 
 pub struct SkinRenderer {
     pipelines: Vec<(SkinPass, bool, wgpu::RenderPipeline)>,
     null_texture: SkinTexture,
     frame_layout: wgpu::BindGroupLayout,
     object_layout: wgpu::BindGroupLayout,
+    palette_layout: wgpu::BindGroupLayout,
     texture_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
     glow_sampler: wgpu::Sampler,
@@ -567,13 +617,14 @@ pub struct SkinRenderer {
     object_bind_group: wgpu::BindGroup,
     object_stride: u32,
     object_capacity: u32,
-    palette_buffer: wgpu::Buffer,
-    palette_bind_group: wgpu::BindGroup,
+    palette_pages: Vec<PalettePage>,
+    palette_size: u64,
     palette_stride: u32,
     geometry: crate::geometry::GeometryBuffers,
     allocs: Vec<SkinAlloc>,
     scratch: Vec<u8>,
     palette_scratch: Vec<u8>,
+    neural_scratch: Vec<SkinObject>,
     draws: Vec<SkinDraw>,
     drops: SkinDrops,
     motion_history: Option<PaletteHistory>,
@@ -783,17 +834,15 @@ impl SkinRenderer {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::MipmapFilterMode::Linear,
-            ..preset.sampler_descriptor()
+            ..preset.material_sampler_descriptor(gpu.adapter.get_downlevel_capabilities().flags)
         });
 
         let glow_sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             label: crate::gpu_label("skinned mesh (SAMP1)"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 0.0,
-            ..preset.sampler_descriptor()
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
+            ..preset.material_sampler_descriptor(gpu.adapter.get_downlevel_capabilities().flags)
         });
 
         let frame_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -893,6 +942,7 @@ impl SkinRenderer {
             null_texture,
             frame_layout,
             object_layout,
+            palette_layout,
             texture_layout,
             sampler,
             glow_sampler,
@@ -903,14 +953,18 @@ impl SkinRenderer {
             object_bind_group,
             object_stride,
             object_capacity,
-            palette_buffer,
-            palette_bind_group,
+            palette_pages: vec![PalettePage {
+                buffer: palette_buffer,
+                bind_group: palette_bind_group,
+            }],
+            palette_size: palette_size as u64,
             palette_stride,
             geometry,
             allocs: Vec::new(),
             draws: Vec::new(),
             scratch: Vec::new(),
             palette_scratch: Vec::new(),
+            neural_scratch: Vec::new(),
             drops: SkinDrops::default(),
             motion_history: temporal.map(|_| PaletteHistory::default()),
         }
@@ -1026,6 +1080,14 @@ impl SkinRenderer {
             .write_buffer(&self.frame_buffer, 0, bytemuck::bytes_of(frame));
 
         self.grow_objects(gpu, objects.len() as u32);
+        self.grow_palettes(gpu, palettes.len());
+
+        let objects = if self.motion_history.is_some() {
+            neural_objects(objects, draws, &mut self.neural_scratch);
+            self.neural_scratch.as_slice()
+        } else {
+            objects
+        };
 
         pack::upload(
             gpu,
@@ -1035,36 +1097,43 @@ impl SkinRenderer {
             objects,
         );
 
-        let capped = &palettes[..palettes.len().min(PALETTE_CAPACITY as usize)];
-
         if let Some(history) = &mut self.motion_history {
-            let blocks = { history.pack(capped, keys, frame.projection) };
+            let blocks = history.pack(palettes, keys, frame.projection);
 
-            pack::upload(
-                gpu,
-                &self.palette_buffer,
-                &mut self.palette_scratch,
-                self.palette_stride,
-                &blocks,
-            );
+            for (page, blocks) in self
+                .palette_pages
+                .iter()
+                .zip(blocks.chunks(PALETTE_CAPACITY as usize))
+            {
+                pack::upload(
+                    gpu,
+                    &page.buffer,
+                    &mut self.palette_scratch,
+                    self.palette_stride,
+                    blocks,
+                );
+            }
         } else {
-            pack::upload(
-                gpu,
-                &self.palette_buffer,
-                &mut self.palette_scratch,
-                self.palette_stride,
-                capped,
-            );
+            for (page, blocks) in self
+                .palette_pages
+                .iter()
+                .zip(palettes.chunks(PALETTE_CAPACITY as usize))
+            {
+                pack::upload(
+                    gpu,
+                    &page.buffer,
+                    &mut self.palette_scratch,
+                    self.palette_stride,
+                    blocks,
+                );
+            }
         }
 
         self.draws.clear();
 
-        self.draws.extend(
-            draws
-                .iter()
-                .copied()
-                .filter(|d| d.palette < PALETTE_CAPACITY && (d.object) < self.object_capacity),
-        );
+        self.draws.extend(draws.iter().copied().filter(|d| {
+            (d.palette as usize) < palettes.len() && (d.object as usize) < objects.len()
+        }));
 
         let count =
             |f: &dyn Fn(&SkinDraw) -> bool| self.draws.iter().filter(|d| f(d)).count() as u32;
@@ -1155,8 +1224,8 @@ impl SkinRenderer {
             if palette_changed {
                 render.set_bind_group(
                     3,
-                    &self.palette_bind_group,
-                    &[draw.palette * self.palette_stride],
+                    &self.palette_pages[(draw.palette / PALETTE_CAPACITY) as usize].bind_group,
+                    &[(draw.palette % PALETTE_CAPACITY) * self.palette_stride],
                 );
             }
 
@@ -1181,11 +1250,32 @@ impl SkinRenderer {
     }
 
     pub fn palette_bytes(&self) -> u64 {
-        u64::from(self.palette_stride) * u64::from(PALETTE_CAPACITY)
+        u64::from(self.palette_stride) * u64::from(self.palette_capacity())
+    }
+
+    pub fn palette_capacity(&self) -> u32 {
+        self.palette_pages.len() as u32 * PALETTE_CAPACITY
     }
 
     pub fn frame_layout(&self) -> &wgpu::BindGroupLayout {
         &self.frame_layout
+    }
+
+    fn grow_palettes(&mut self, gpu: &Gpu, count: usize) {
+        let pages = count.div_ceil(PALETTE_CAPACITY as usize);
+
+        while self.palette_pages.len() < pages {
+            let (buffer, bind_group) = dynamic_uniform(
+                gpu,
+                "skin palette",
+                &self.palette_layout,
+                self.palette_stride,
+                PALETTE_CAPACITY,
+                self.palette_size,
+            );
+
+            self.palette_pages.push(PalettePage { buffer, bind_group });
+        }
     }
 
     fn grow_objects(&mut self, gpu: &Gpu, count: u32) {

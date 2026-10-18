@@ -6162,6 +6162,19 @@ fn stream_zones_mode(
         return false;
     };
 
+    let visual_loaded = if background {
+        match scene.world.poll_visual_zone(game, stage) {
+            Ok(loaded) => loaded,
+            Err(error) => {
+                tracing::warn!(% error, "visual terrain preparation failed; will retry");
+
+                false
+            }
+        }
+    } else {
+        false
+    };
+
     if background && let Some(zone) = scene.world.force_load {
         if !scene.world.holds(zone) {
             let path = format!("Env/Field{:02}{:02}.trn", zone.0, zone.1);
@@ -6175,7 +6188,7 @@ fn stream_zones_mode(
                 }
 
                 if !scene.world.holds(zone) {
-                    return false;
+                    return visual_loaded;
                 }
             }
         }
@@ -6184,12 +6197,12 @@ fn stream_zones_mode(
             scene.minimap.recentre_background(game, zone);
 
             if scene.minimap.zone != zone {
-                return false;
+                return visual_loaded;
             }
         }
     }
 
-    let mut loaded = force_load(scene, game);
+    let mut loaded = force_load(scene, game) | visual_loaded;
 
     if background {
         loaded |= scene.minimap.recentre_background(game, scene.world.current);
@@ -6221,6 +6234,10 @@ fn stream_zones_mode(
                 world::Proximity::Load(dir) => {
                     match if background {
                         if committed {
+                            if visual_loaded {
+                                scene.world.restore_cached_stream_collision(dir);
+                            }
+
                             Ok(false)
                         } else {
                             scene.world.stream_background_staged(game, dir, stage)
@@ -6281,6 +6298,21 @@ fn stream_zones_mode(
 
     for (row, arrival) in super::init_place::pass(scene, game).unwrap_or_default() {
         tracing::info!("{}", super::init_place::describe(row, &arrival));
+    }
+
+    if background && !committed {
+        match scene.world.prefetch_visual_zones(
+            game,
+            glam::Vec2::new(position.x, position.z),
+            scene.camera.dist * camera::ORBIT_STRETCH + scene.camera.target_x_offset.abs(),
+            (scene.layout.width, scene.layout.height),
+            stage,
+        ) {
+            Ok(added) => loaded |= added,
+            Err(error) => {
+                tracing::warn!(% error, "visual terrain preparation failed; will retry");
+            }
+        }
     }
 
     loaded

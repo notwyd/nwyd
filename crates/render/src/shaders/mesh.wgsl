@@ -1,3 +1,12 @@
+override sky_background: bool = false;
+
+fn mesh_clip(clip: vec4<f32>) -> vec4<f32> {
+    if sky_background {
+        return vec4<f32>(clip.xy, clip.w, clip.w);
+    }
+    return clip;
+}
+
 struct Frame {
     world: mat4x4<f32>,
     view: mat4x4<f32>,
@@ -41,7 +50,7 @@ struct VsOut {
     @builtin(position) clip: vec4<f32>,
     @location(0) diffuse: vec4<f32>,
     @location(1) uv: vec2<f32>,
-    @location(2) fog: f32,
+    @location(2) view_depth: f32,
     @location(3) uv1: vec2<f32>,
 };
 
@@ -56,7 +65,7 @@ fn vs(
     
     let world_pos = vec4<f32>(pos, 1.0) * object.world;
     let view_pos = world_pos * frame.view;
-    out.clip = view_pos * frame.projection;
+    out.clip = mesh_clip(view_pos * frame.projection);
 
     let vertex_color = color.zyxw;
 
@@ -82,7 +91,7 @@ fn vs(
     let rgb = mix(diffuse_material.rgb, clamp(lit, vec3<f32>(0.0), vec3<f32>(1.0)), object.flags.x);
     out.diffuse = vec4<f32>(rgb, diffuse_material.a);
 
-    out.fog = clamp((frame.fog_params.y - view_pos.z) * frame.fog_params.z, 0.0, 1.0);
+    out.view_depth = view_pos.z;
     out.uv = uv * object.uv0.xy + object.uv0.zw;
     out.uv1 = uv * object.uv1.xy + object.uv1.zw;
     if (object.refine.w > 0.5) {
@@ -149,7 +158,8 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         discard;
     }
 
-    let fogged = mix(frame.fog_color.rgb, color.rgb, in.fog);
+    let visibility = distance_fog_visibility(in.view_depth, frame.fog_params.y, frame.fog_params.z);
+    let fogged = mix(frame.fog_color.rgb, color.rgb, visibility);
     color = vec4<f32>(mix(color.rgb, fogged, frame.fog_params.w * object.flags.y), color.a);
     return color;
 }

@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 #[allow(dead_code)]
 pub mod d3d {
 
@@ -432,6 +435,27 @@ impl Preset {
             polygon_mode: wgpu::PolygonMode::Fill,
             conservative: false,
         }
+    }
+
+    pub fn material_sampler_descriptor(
+        &self,
+        capabilities: wgpu::DownlevelFlags,
+    ) -> wgpu::SamplerDescriptor<'static> {
+        let mut descriptor = self.sampler_descriptor();
+
+        if matches!(self.mode, RenderMode::Lit3d | RenderMode::Unlit3d) {
+            descriptor.mag_filter = wgpu::FilterMode::Linear;
+            descriptor.min_filter = wgpu::FilterMode::Linear;
+            descriptor.mipmap_filter = wgpu::MipmapFilterMode::Linear;
+            descriptor.anisotropy_clamp =
+                if capabilities.contains(wgpu::DownlevelFlags::ANISOTROPIC_FILTERING) {
+                    16
+                } else {
+                    1
+                };
+        }
+
+        descriptor
     }
 
     pub fn color_op_uniform(&self) -> f32 {

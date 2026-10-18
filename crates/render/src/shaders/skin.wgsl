@@ -36,7 +36,7 @@ struct VsOut {
     @builtin(position) clip: vec4<f32>,
     @location(0) diffuse: vec4<f32>,
     @location(1) uv: vec2<f32>,
-    @location(2) fog: f32,
+    @location(2) view_depth: f32,
     
     @location(3) glow_uv: vec2<f32>,
 };
@@ -83,20 +83,29 @@ fn vs(
     
     out.diffuse = min(mix(lit, unlit, object.flags.x), vec4<f32>(1.0));
 
-    out.fog = min(
-        max((object.fog_params.y - view_pos.z) * object.fog_params.z, object.fog_params.w),
-        object.fog_params.x,
-    );
+    out.view_depth = view_pos.z;
     out.uv = uv;
 
     out.glow_uv = vec2<f32>(view_n.x + frame.scroll.x, view_pos.y + frame.scroll.x);
     return out;
 }
 
+fn skin_fog_visibility(view_depth: f32) -> f32 {
+    var end = object.fog_params.y;
+    var inverse_range = object.fog_params.z;
+    if (frame.scroll.y > 0.0 && frame.scroll.y < end && inverse_range > 0.0) {
+        let start = end - 1.0 / inverse_range;
+        end = frame.scroll.y;
+        inverse_range = 1.0 / max(end - start, 0.00001);
+    }
+    return min(max(distance_fog_visibility(view_depth, end, inverse_range), object.fog_params.w), object.fog_params.x);
+}
+
 @fragment
 fn fs_untextured(in: VsOut) -> @location(0) vec4<f32> {
     if (in.diffuse.a<object.flags.y) {discard;}
-    return vec4<f32>(mix(frame.fog_color.rgb,in.diffuse.rgb,in.fog),in.diffuse.a);
+    let visibility = skin_fog_visibility(in.view_depth);
+    return vec4<f32>(mix(frame.fog_color.rgb,in.diffuse.rgb,visibility),in.diffuse.a);
 }
 
 @fragment
@@ -145,5 +154,6 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         discard;
     }
 
-    return vec4<f32>(mix(frame.fog_color.rgb, color.rgb, in.fog), color.a);
+    let visibility = skin_fog_visibility(in.view_depth);
+    return vec4<f32>(mix(frame.fog_color.rgb, color.rgb, visibility), color.a);
 }

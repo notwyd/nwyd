@@ -136,6 +136,455 @@ impl Drop for SettingsFile {
 }
 
 #[test]
+fn view_distance_choices_apply_save_and_cancel_without_changing_other_settings() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let files = SettingsFile::new();
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+    panel.path = files.path();
+    let initial = panel.draft;
+
+    assert_eq!(initial.view_distance, ViewDistance::Retail);
+
+    for (index, choice) in ViewDistance::ALL.into_iter().enumerate() {
+        panel.apply_requested = false;
+        click(&mut panel, "viewDistanceDrop");
+        click(&mut panel, &format!("viewDistanceItem{index}"));
+        assert_eq!(
+            panel.draft,
+            Preferences {
+                view_distance: choice,
+                ..initial
+            }
+        );
+        assert_eq!(panel.apply_requested, panel.draft != panel.applied);
+        assert!(!element(&panel, "viewDistanceItem0").visible);
+        assert!(!element(&panel, "rendererNotice").visible);
+        panel.save_draft().unwrap();
+        assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.draft));
+
+        panel.close();
+        panel.open(Default::default());
+        assert_eq!(panel.draft.view_distance, choice);
+        assert!(!element(&panel, "viewDistanceItem0").visible);
+
+        click(&mut panel, "viewDistanceDrop");
+        click(
+            &mut panel,
+            &format!("viewDistanceItem{}", (index + 1) % ViewDistance::ALL.len()),
+        );
+        panel.discard_draft();
+        assert_eq!(panel.draft.view_distance, choice);
+        assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.draft));
+    }
+
+    click(&mut panel, "viewDistanceDrop");
+    click(&mut panel, "viewDistanceItem0");
+    panel.discard_draft();
+    assert_eq!(panel.draft.view_distance, ViewDistance::EightTimes);
+    assert_eq!(element(&panel, "viewDistanceDrop").display, "8×");
+
+    panel.path = files.0.join("missing/settings.json");
+    click(&mut panel, "viewDistanceDrop");
+    click(&mut panel, "viewDistanceItem1");
+    assert!(panel.save_draft().is_err());
+    assert_eq!(panel.draft, panel.applied);
+    assert_eq!(panel.draft.view_distance, ViewDistance::EightTimes);
+    panel.close();
+    panel.open(Default::default());
+    assert_eq!(panel.draft.view_distance, ViewDistance::EightTimes);
+}
+
+#[test]
+fn view_distance_dropdown_localizes_fits_and_owns_its_video_clicks() {
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+    let mut game = GameDir::from_files("synthetic-view-distance-language", []).unwrap();
+
+    panel.resize((800, 600));
+    assert!(panel.placed.origin.0 >= 0 && panel.placed.origin.1 >= 0);
+    assert!(panel.placed.origin.0 + panel.placed.ui.panel.width() <= 800);
+    assert!(panel.placed.origin.1 + panel.placed.ui.panel.height() <= 600);
+
+    for neural in [false, true] {
+        panel.set_neural_rendering_available(neural);
+
+        for (language, label, captions) in [
+            (
+                Language::Portuguese,
+                "Distância de visão",
+                [
+                    "Original (1×)",
+                    "Ampliada (1,5×)",
+                    "Distante (2×)",
+                    "Muito distante (3×)",
+                    "4×",
+                    "5×",
+                    "6×",
+                    "7×",
+                    "8×",
+                ],
+            ),
+            (
+                Language::English,
+                "View distance",
+                [
+                    "Retail (1×)",
+                    "Extended (1.5×)",
+                    "Distant (2×)",
+                    "Far (3×)",
+                    "4×",
+                    "5×",
+                    "6×",
+                    "7×",
+                    "8×",
+                ],
+            ),
+        ] {
+            game.set_language(language);
+            panel.apply_language(&game, &ui::Strings::default());
+            assert_eq!(element(&panel, "viewDistanceLabel").display, label);
+            assert_eq!(element(&panel, "viewDistanceDrop").display, captions[0]);
+            assert!(
+                element(&panel, "rendererNotice").rect()[3]
+                    <= element(&panel, "viewDistanceLabel").y
+            );
+            assert!(
+                element(&panel, "viewDistanceLabel").rect()[3]
+                    <= element(&panel, "viewDistanceDrop").y
+            );
+            assert!(
+                element(&panel, "viewDistanceDrop").rect()[3]
+                    <= panel.placed.ui.panel.close_button_location[1]
+            );
+            assert!(panel.placed.ui.panel.height() <= 600);
+
+            click(&mut panel, "viewDistanceDrop");
+            for element in &panel.placed.ui.panel.elements {
+                let name = element.name.as_str();
+                if !matches!(
+                    name,
+                    "" | "TabVid" | "TabAud" | "TabIfc" | "viewDistanceDrop"
+                ) && !name.starts_with("viewDistanceItem")
+                {
+                    assert!(!element.visible, "{name} must hide beneath choices");
+                }
+            }
+            for (index, caption) in captions.into_iter().enumerate() {
+                let choice = element(&panel, &format!("viewDistanceItem{index}"));
+                assert!(choice.visible);
+                assert_eq!(choice.display, caption);
+                assert!(choice.x >= panel.placed.ui.panel.left);
+                assert!(choice.rect()[2] <= panel.placed.ui.panel.right);
+                assert!(choice.y >= element(&panel, "TabVid").rect()[3]);
+                assert!(choice.rect()[3] <= element(&panel, "viewDistanceDrop").y);
+                if index > 0 {
+                    assert!(
+                        element(&panel, &format!("viewDistanceItem{}", index - 1)).rect()[3]
+                            <= choice.y
+                    );
+                }
+            }
+            let before = panel.draft;
+            let choice = element(&panel, "viewDistanceItem0");
+            let point = Some((
+                panel.placed.origin.0 + choice.x + 4,
+                panel.placed.origin.1 + choice.y + 4,
+            ));
+            assert!(panel.button(0, true, point, (800, 600), 1.0));
+            assert!(panel.button(0, false, point, (800, 600), 1.0));
+            assert_eq!(panel.draft, before);
+            assert!(!panel.view_distance_open);
+            assert!(!panel.apply_requested);
+        }
+    }
+
+    for name in ["resDrop", "rendererDrop", "TabAud", "TabIfc"] {
+        click(&mut panel, name);
+        assert!(!element(&panel, "viewDistanceDrop").visible);
+        click(&mut panel, "TabVid");
+        click(&mut panel, "viewDistanceDrop");
+        click(&mut panel, "TabAud");
+        assert!(!element(&panel, "viewDistanceItem0").visible);
+        click(&mut panel, "TabVid");
+        assert!(element(&panel, "viewDistanceDrop").visible);
+        assert!(!element(&panel, "viewDistanceItem0").visible);
+    }
+}
+
+#[test]
+fn view_distance_selection_survives_language_changes_and_escape_releases_popup_input() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+    let mut game = GameDir::from_files("synthetic-selected-view-distance-language", []).unwrap();
+
+    for (index, (distance, captions)) in ViewDistance::ALL
+        .into_iter()
+        .zip([
+            ["Original (1×)", "Retail (1×)"],
+            ["Ampliada (1,5×)", "Extended (1.5×)"],
+            ["Distante (2×)", "Distant (2×)"],
+            ["Muito distante (3×)", "Far (3×)"],
+            ["4×", "4×"],
+            ["5×", "5×"],
+            ["6×", "6×"],
+            ["7×", "7×"],
+            ["8×", "8×"],
+        ])
+        .enumerate()
+    {
+        click(&mut panel, "viewDistanceDrop");
+        click(&mut panel, &format!("viewDistanceItem{index}"));
+        panel.applied = panel.draft;
+        panel.apply_requested = false;
+
+        for (language, caption) in [Language::Portuguese, Language::English]
+            .into_iter()
+            .zip(captions)
+        {
+            game.set_language(language);
+            panel.apply_language(&game, &ui::Strings::default());
+            assert_eq!(panel.draft.view_distance, distance);
+            assert_eq!(element(&panel, "viewDistanceDrop").display, caption);
+            assert!(!panel.apply_requested);
+        }
+    }
+
+    click(&mut panel, "viewDistanceDrop");
+    let item = element(&panel, "viewDistanceItem2");
+    let point = Some((
+        panel.placed.origin.0 + item.x + 4,
+        panel.placed.origin.1 + item.y + 4,
+    ));
+    assert!(panel.button(0, true, point, (800, 600), 1.0));
+    let escape = winit::keyboard::Key::Named(winit::keyboard::NamedKey::Escape);
+    assert!(panel.key(&escape, true));
+    assert!(panel.key(&escape, false));
+    assert!(!panel.visible);
+    assert!(!panel.view_distance_open);
+    assert!(panel.button(0, false, point, (800, 600), 1.0));
+    assert_eq!(panel.draft.view_distance, ViewDistance::EightTimes);
+    panel.open(Default::default());
+    assert!(!element(&panel, "viewDistanceItem2").visible);
+    assert_eq!(element(&panel, "viewDistanceDrop").display, "8×");
+}
+
+#[test]
+fn neural_rendering_requires_runtime_support_and_preserves_saved_opt_in_when_unavailable() {
+    let files = SettingsFile::new();
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+    panel.path = files.path();
+
+    assert!(!panel.draft.neural_rendering);
+    for name in [
+        "neuralRendering",
+        "neuralRenderingOn",
+        "vNeuralRenderingLbl",
+    ] {
+        assert!(!element(&panel, name).visible);
+    }
+    assert_eq!(element(&panel, "rendererLabel").y, 198);
+
+    panel.set_neural_rendering_available(true);
+    assert!(element(&panel, "neuralRendering").visible);
+    assert!(!element(&panel, "neuralRenderingOn").visible);
+    assert!(!panel.apply_requested);
+
+    click(&mut panel, "neuralRendering");
+    panel.save_draft().unwrap();
+    let saved = std::fs::read(&panel.path).unwrap();
+    panel.apply_requested = false;
+    panel.set_neural_rendering_available(false);
+
+    for name in [
+        "neuralRendering",
+        "neuralRenderingOn",
+        "vNeuralRenderingLbl",
+    ] {
+        assert!(!element(&panel, name).visible);
+    }
+    assert!(panel.draft.neural_rendering);
+    assert!(panel.applied.neural_rendering);
+    assert!(!panel.apply_requested);
+    assert_eq!(element(&panel, "rendererLabel").y, 198);
+    assert_eq!(std::fs::read(&panel.path).unwrap(), saved);
+
+    panel.set_neural_rendering_available(true);
+    assert!(element(&panel, "neuralRenderingOn").visible);
+    assert!(!element(&panel, "neuralRendering").visible);
+}
+
+#[test]
+fn neural_rendering_toggles_and_persists_without_changing_other_preferences() {
+    let files = SettingsFile::new();
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+    panel.path = files.path();
+    panel.set_neural_rendering_available(true);
+    let initial = panel.draft;
+
+    click(&mut panel, "neuralRendering");
+
+    assert_eq!(
+        panel.draft,
+        Preferences {
+            neural_rendering: true,
+            ..initial
+        }
+    );
+    assert_eq!(panel.applied, initial);
+    assert!(panel.apply_requested);
+    assert!(element(&panel, "neuralRenderingOn").visible);
+    assert!(!element(&panel, "neuralRendering").visible);
+    assert!(!element(&panel, "rendererNotice").visible);
+
+    panel.save_draft().unwrap();
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.draft));
+    panel.close();
+    panel.open(Default::default());
+    assert!(panel.draft.neural_rendering);
+
+    click(&mut panel, "neuralRenderingOn");
+    panel.save_draft().unwrap();
+    assert_eq!(panel.applied, initial);
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(initial));
+}
+
+#[test]
+fn neural_rendering_failed_save_and_discard_restore_the_applied_state() {
+    let files = SettingsFile::new();
+    let mut panel = video_panel(Language::English, &[RendererBackend::Vulkan]);
+    panel.path = files.0.join("missing/settings.json");
+    panel.set_neural_rendering_available(true);
+
+    for save in [false, true] {
+        click(&mut panel, "neuralRendering");
+        assert!(panel.draft.neural_rendering);
+
+        if save {
+            assert!(panel.save_draft().is_err());
+        } else {
+            panel.discard_draft();
+        }
+
+        assert!(!panel.draft.neural_rendering);
+        assert!(!panel.applied.neural_rendering);
+        assert!(element(&panel, "neuralRendering").visible);
+        assert!(!element(&panel, "neuralRenderingOn").visible);
+    }
+}
+
+#[test]
+fn neural_rendering_controls_hide_beneath_dropdowns_and_on_other_tabs() {
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+    panel.set_neural_rendering_available(true);
+    let checkbox = element(&panel, "neuralRendering");
+    let point = Some((checkbox.x + 5, checkbox.y + 5));
+
+    for control in ["rendererDrop", "resDrop", "TabAud", "TabIfc"] {
+        click(&mut panel, control);
+
+        for name in [
+            "neuralRendering",
+            "neuralRenderingOn",
+            "vNeuralRenderingLbl",
+        ] {
+            assert!(!element(&panel, name).visible, "{control}: {name}");
+        }
+
+        assert!(panel.button(0, true, point, (800, 600), 1.0));
+        assert!(panel.button(0, false, point, (800, 600), 1.0));
+        assert!(!panel.draft.neural_rendering);
+
+        click(&mut panel, "TabVid");
+        assert!(element(&panel, "neuralRendering").visible);
+        assert!(element(&panel, "vNeuralRenderingLbl").visible);
+    }
+}
+
+#[test]
+fn neural_rendering_layout_keeps_controls_and_renderer_choices_separate() {
+    let mut panel = video_panel(
+        Language::English,
+        &[RendererBackend::Vulkan, RendererBackend::Gl],
+    );
+    let mut game = GameDir::from_files("synthetic-neural-rendering-language", []).unwrap();
+    panel.set_neural_rendering_available(true);
+
+    for language in [Language::Portuguese, Language::English] {
+        game.set_language(language);
+        panel.apply_language(&game, &ui::Strings::default());
+        assert_eq!(
+            element(&panel, "vNeuralRenderingLbl").display,
+            "DLSS 5 (experimental)"
+        );
+
+        for name in [
+            "neuralRendering",
+            "neuralRenderingOn",
+            "vNeuralRenderingLbl",
+        ] {
+            let control = element(&panel, name);
+            assert!(control.y >= element(&panel, "oldSkillVfx").rect()[3]);
+            assert!(control.y >= element(&panel, "vOldSkillVfxLbl").rect()[3]);
+            assert!(control.rect()[3] <= element(&panel, "rendererLabel").y);
+            assert!(control.rect()[2] <= panel.placed.ui.panel.right);
+            assert!(control.x >= panel.placed.ui.panel.left);
+        }
+        assert!(element(&panel, "rendererLabel").rect()[3] <= element(&panel, "rendererDrop").y);
+        assert!(element(&panel, "rendererDrop").rect()[3] <= element(&panel, "rendererNotice").y);
+        assert!(
+            element(&panel, "rendererNotice").rect()[3]
+                <= panel.placed.ui.panel.close_button_location[1]
+        );
+
+        let index = panel
+            .placed
+            .ui
+            .panel
+            .elements
+            .iter()
+            .position(|element| element.name == "vNeuralRenderingLbl")
+            .unwrap();
+        let draws = panel.placed.ui.panel.draw_list(&Interaction::default());
+        let labels: Vec<_> = draws
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                Command::Text(text) if text.owner == Owner::Element(index) => {
+                    Some(text.text.as_str())
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(labels, ["DLSS 5 (experimental)"]);
+    }
+
+    click(&mut panel, "rendererDrop");
+    for choice in panel
+        .placed
+        .ui
+        .panel
+        .elements
+        .iter()
+        .filter(|element| element.name.starts_with("rendererItem"))
+    {
+        assert!(choice.visible);
+        assert!(choice.rect()[3] <= element(&panel, "rendererDrop").y);
+    }
+    panel.set_neural_rendering_available(false);
+    assert!(!panel.renderers_open);
+    assert!(!panel.draft.neural_rendering);
+    assert!(!panel.apply_requested);
+    assert_eq!(element(&panel, "rendererDrop").y, 216);
+}
+
+#[test]
 fn old_skill_effects_default_to_enabled_and_toggle_without_changing_other_video_settings() {
     let files = SettingsFile::new();
 
@@ -992,6 +1441,18 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
             "rendererDrop",
             "rendererNotice",
             "vOldSkillVfxLbl",
+            "vNeuralRenderingLbl",
+            "viewDistanceLabel",
+            "viewDistanceDrop",
+            "viewDistanceItem0",
+            "viewDistanceItem1",
+            "viewDistanceItem2",
+            "viewDistanceItem3",
+            "viewDistanceItem4",
+            "viewDistanceItem5",
+            "viewDistanceItem6",
+            "viewDistanceItem7",
+            "viewDistanceItem8",
         ] {
             let label = element(&panel, name);
 

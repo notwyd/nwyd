@@ -58,6 +58,10 @@ impl RuntimeState {
         self.scene.set_effect_options(effects);
 
         self.retained.effect_options = Some(effects);
+
+        self.scene.set_view_distance(preferences.view_distance);
+
+        self.retained.view_distance = preferences.view_distance;
     }
 
     pub fn new(scene: Scene, clock: Clock, rng: Lcg) -> Self {

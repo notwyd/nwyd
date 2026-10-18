@@ -3,6 +3,43 @@ use super::*;
 use formats::texture::texture_list::FormatFlag;
 
 #[test]
+fn tree_mips_match_cutouts_without_changing_shared_character_or_effect_textures() {
+    use render::texture::MipPolicy;
+
+    let mut scene = empty_scene();
+    let flags = [
+        FormatFlag::Alpha,
+        FormatFlag::AlphaLower,
+        FormatFlag::None_,
+        FormatFlag::ColorKey,
+    ];
+    let model = add_model(&mut scene, 63, &flags);
+
+    scene.prepare_tree_textures(Some(model));
+
+    let policies = [
+        MipPolicy::Cutout(170),
+        MipPolicy::Cutout(170),
+        MipPolicy::Opaque,
+        MipPolicy::Opaque,
+    ];
+
+    for (index, expected) in policies.into_iter().enumerate() {
+        let texture = scene.models[model].parts[index].texture.unwrap();
+        assert_eq!(scene.textures[texture].mip_policy(true), expected);
+        assert_eq!(scene.textures[index].mip_policy_override, None);
+    }
+
+    assert_eq!(scene.textures[0].mip_policy(true), MipPolicy::Blend);
+    assert_eq!(scene.textures[3].mip_policy(true), MipPolicy::Blend);
+    let count = scene.textures.len();
+    scene.prepare_tree_textures(Some(model));
+    assert_eq!(scene.textures.len(), count);
+    scene.textures[0].effect_table = true;
+    assert_eq!(scene.textures[0].mip_policy(false), MipPolicy::Blend);
+}
+
+#[test]
 fn tree_draws_use_foliage_cutoff_and_preserve_opaque_parts() {
     let mut scene = empty_scene();
 

@@ -8,6 +8,12 @@ use bytemuck::{Pod, Zeroable};
 use formats::mesh::StaticVertex;
 use formats::mesh::msa::StaticMesh;
 
+#[cfg(test)]
+mod neural_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod sky_tests;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
 pub struct MeshVertex {
@@ -247,8 +253,12 @@ impl MeshPass {
     ) -> Option<wgpu::DepthStencilState> {
         let mut state = preset.depth_state(format)?;
 
-        if matches!(self, MeshPass::Blended | MeshPass::Additive) {
+        if matches!(self, MeshPass::Sky | MeshPass::Blended | MeshPass::Additive) {
             state.depth_write_enabled = Some(false);
+        }
+
+        if self == MeshPass::Sky {
+            state.depth_compare = Some(wgpu::CompareFunction::LessEqual);
         }
 
         Some(state)
@@ -657,7 +667,7 @@ fn motion_objects(
         })
         .collect();
 
-    let mut reactive = vec![false; objects.len()];
+    let mut preservation = vec![0.0_f32; objects.len()];
 
     for draw in draws {
         if let Some(identity) = identities.get_mut(draw.object as usize) {
@@ -671,8 +681,12 @@ fn motion_objects(
 
             identity.extend_from_slice(&(draw.stage1.unwrap_or(usize::MAX) as u64).to_le_bytes());
 
-            reactive[draw.object as usize] |=
-                !matches!(draw.pass, MeshPass::Opaque | MeshPass::Cutout);
+            let weight = match draw.pass {
+                MeshPass::Opaque => 0.0,
+                MeshPass::Cutout => 0.25,
+                _ => 1.0,
+            };
+            preservation[draw.object as usize] = preservation[draw.object as usize].max(weight);
         }
     }
 
@@ -681,8 +695,8 @@ fn motion_objects(
     let result = objects
         .iter()
         .zip(identities)
-        .zip(reactive)
-        .map(|((object, key), reactive)| {
+        .zip(preservation)
+        .map(|((object, key), preservation)| {
             let clip =
                 (glam::Mat4::from_cols_array(&object.world) * view_projection).to_cols_array();
 
@@ -694,10 +708,10 @@ fn motion_objects(
                 current: *object,
                 previous_clip: previous.unwrap_or(clip),
                 history: [
-                    if previous.is_none() || reactive {
+                    if previous.is_none() {
                         1.0
                     } else {
-                        0.0
+                        preservation
                     },
                     0.0,
                     0.0,
@@ -865,7 +879,10 @@ impl MeshRenderer {
                         vertex: wgpu::VertexState {
                             module: &shader,
                             entry_point: Some("vs"),
-                            compilation_options: Default::default(),
+                            compilation_options: wgpu::PipelineCompilationOptions {
+                                constants: &[("sky_background", f64::from(pass == MeshPass::Sky))],
+                                ..Default::default()
+                            },
                             buffers: &[Some(MeshVertex::LAYOUT)],
                         },
                         primitive: wgpu::PrimitiveState {
@@ -907,7 +924,7 @@ impl MeshRenderer {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::MipmapFilterMode::Linear,
-            ..preset.sampler_descriptor()
+            ..preset.material_sampler_descriptor(gpu.adapter.get_downlevel_capabilities().flags)
         });
 
         let null_texture = gpu.device.create_texture(&wgpu::TextureDescriptor {

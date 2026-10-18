@@ -86,13 +86,24 @@ fn uniforms(mesh: &TerrainMesh) -> FrameUniforms {
 }
 
 fn render(gpu: &Gpu, renderer: &mut TerrainRenderer, mesh: &TerrainMesh) -> Vec<u8> {
+    let pixels = render_uniforms(gpu, renderer, mesh, &uniforms(mesh));
+
+    assert_eq!(renderer.draw_count(), 2);
+
+    pixels
+}
+
+fn render_uniforms(
+    gpu: &Gpu,
+    renderer: &mut TerrainRenderer,
+    mesh: &TerrainMesh,
+    uniforms: &FrameUniforms,
+) -> Vec<u8> {
     let tiles = renderer.bind_null_tiles(gpu);
     let target = Offscreen::new(gpu, WIDTH, HEIGHT);
     let depth = DepthBuffer::with_format(gpu, WIDTH, HEIGHT, wgpu::TextureFormat::Depth32Float);
 
-    renderer.prepare(gpu, &mesh.batches, &tiles, &uniforms(mesh), false);
-
-    assert_eq!(renderer.draw_count(), 2);
+    renderer.prepare(gpu, &mesh.batches, &tiles, uniforms, false);
 
     let readback = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("terrain seam readback"),
@@ -178,6 +189,113 @@ fn render(gpu: &Gpu, renderer: &mut TerrainRenderer, mesh: &TerrainMesh) -> Vec<
     readback.unmap();
 
     pixels
+}
+
+fn fog_surface(columns: usize) -> TerrainMesh {
+    let mut vertices = Vec::new();
+
+    for column in 0..columns {
+        for (x, y) in [
+            (column, -1.0),
+            (column, 1.0),
+            (column + 1, -1.0),
+            (column + 1, 1.0),
+        ] {
+            let t = x as f32 / columns as f32;
+
+            vertices.push(WorldVertex {
+                pos: [t * 2.0 - 1.0, y, 0.1 + 0.8 * t],
+                normal: [0.0; 3],
+                diffuse: 0xffffffff,
+                uv0: [0.0; 2],
+                uv1: [0.0; 2],
+            });
+        }
+    }
+
+    TerrainMesh {
+        vertices,
+        batches: vec![TerrainBatch {
+            base_texture_id: 0,
+            detail_texture_id: 0,
+            material: TerrainMaterial::Base,
+            first_quad: 0,
+            quad_count: columns as u32,
+            bounds: crate::cull::Aabb {
+                min: [-1.0, -1.0, 0.1],
+                max: [1.0, 1.0, 0.9],
+            },
+        }],
+        world: Matrix4::IDENTITY,
+        normal_matrix: Matrix4::IDENTITY,
+        zone: (0, 0),
+    }
+}
+
+#[test]
+#[ignore = "requires a compatible GPU adapter"]
+fn distance_fog_preserves_detail_and_is_independent_of_tessellation() {
+    let gpu = block_on(Gpu::open(Gpu::instance(), None)).expect("open a GPU adapter");
+    let mut renderer = TerrainRenderer::new(&gpu, COLOR_FORMAT, wgpu::TextureFormat::Depth32Float);
+    let surface = fog_surface(1);
+    let mut frame = uniforms(&surface);
+
+    frame.view = Matrix4::IDENTITY.shader_constants();
+    frame.projection = Matrix4::IDENTITY.shader_constants();
+    frame.material_emissive = [1.0; 4];
+    frame.fog_color = [0.0; 4];
+    frame.fog_params = [0.3, 0.7, 2.5, 1.0];
+
+    renderer.upload_mesh(&gpu, &surface);
+
+    let coarse = render_uniforms(&gpu, &mut renderer, &surface, &frame);
+    let surface = fog_surface(64);
+
+    renderer.upload_mesh(&gpu, &surface);
+
+    let fine = render_uniforms(&gpu, &mut renderer, &surface, &frame);
+
+    for (a, b) in coarse.iter().zip(&fine) {
+        assert!(
+            a.abs_diff(*b) <= 1,
+            "fog changes with surface tessellation: {a} vs {b}"
+        );
+    }
+
+    let channel = |x: u32| coarse[((HEIGHT / 2 * WIDTH + x) * 4) as usize];
+
+    assert_eq!(channel(32), 255);
+    assert!(
+        (210..=218).contains(&channel(128)),
+        "midrange detail: {}",
+        channel(128)
+    );
+    assert_eq!(channel(224), 0);
+
+    for x in 1..WIDTH {
+        assert!(channel(x) <= channel(x - 1));
+        assert!(channel(x).abs_diff(channel(x - 1)) <= 5);
+    }
+
+    frame.fog_params[3] = 0.0;
+
+    let disabled = render_uniforms(&gpu, &mut renderer, &surface, &frame);
+
+    assert!(disabled.chunks_exact(4).all(|pixel| pixel == [255; 4]));
+
+    frame.fog_params = [0.24, 0.35, 1.0 / 0.11, 1.0];
+
+    let legacy_range = render_uniforms(&gpu, &mut renderer, &surface, &frame);
+
+    frame.fog_params = [0.24, 0.63, 1.0 / 0.39, 1.0];
+
+    let extended_range = render_uniforms(&gpu, &mut renderer, &surface, &frame);
+    let middle = ((HEIGHT / 2 * WIDTH + WIDTH / 2) * 4) as usize;
+    let far = ((HEIGHT / 2 * WIDTH + 200) * 4) as usize;
+
+    assert_eq!(legacy_range[middle], 0);
+    assert!(extended_range[middle] > 140);
+    assert_eq!(extended_range[far], 0);
 }
 
 fn interior_clear_pixels(pixels: &[u8]) -> usize {

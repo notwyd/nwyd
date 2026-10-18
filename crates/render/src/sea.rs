@@ -277,17 +277,15 @@ impl SeaRenderer {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::MipmapFilterMode::Linear,
-            ..preset.sampler_descriptor()
+            ..preset.material_sampler_descriptor(gpu.adapter.get_downlevel_capabilities().flags)
         });
 
         let detail_sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             label: crate::gpu_label("sea detail (SAMP1)"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 0.0,
-            ..preset.sampler_descriptor()
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
+            ..preset.material_sampler_descriptor(gpu.adapter.get_downlevel_capabilities().flags)
         });
 
         let frame_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {

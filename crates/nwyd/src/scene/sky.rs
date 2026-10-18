@@ -1,5 +1,9 @@
 use super::world::{LIGHT0_BY_DAY, SKY_COLOR_BY_DAY};
 
+mod horizon;
+
+pub use horizon::Horizon;
+
 #[derive(Debug, Clone)]
 pub struct Ornaments {
     pub billboards: [super::effects::Billboard; 22],

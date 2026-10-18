@@ -302,6 +302,7 @@ impl SeaScene {
 
             match decoded {
                 Some((entry, texture)) => scene.textures.push(BoundTexture {
+                    mip_policy_override: None,
                     pending: false,
                     effect_table,
                     slot,
@@ -434,10 +435,11 @@ impl SeaScene {
             .textures
             .iter()
             .map(|t| {
-                render::texture::upload(
+                render::texture::upload_material(
                     gpu,
                     &t.texture,
                     t.alpha_policy(),
+                    render::texture::MipPolicy::Blend,
                     &format!("sea texture {}", t.path),
                 )
             })

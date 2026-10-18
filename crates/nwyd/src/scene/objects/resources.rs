@@ -27,6 +27,7 @@ impl ObjectScene {
             missing_by_id: Vec::new(),
             arena: MeshArena::default(),
             sky: None,
+            sky_horizon: None,
             missing_meshes: Vec::new(),
             missing_textures: Vec::new(),
             registries,

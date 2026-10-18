@@ -21,6 +21,12 @@ impl Client {
 
         self.runtime.retained.effect_options = Some(options);
 
+        self.runtime
+            .scene
+            .set_view_distance(preferences.view_distance);
+
+        self.runtime.retained.view_distance = preferences.view_distance;
+
         if let Scene::Field(scene) = &mut self.runtime.scene {
             apply_interface(scene, game, preferences.interface);
         }
@@ -198,6 +204,8 @@ impl Client {
 
         if size != self.settings.backbuffer {
             self.resize_game(size);
+        } else if previous.neural_rendering != next.neural_rendering {
+            self.rebuild_scene_renderer();
         }
 
         if previous.vsync != next.vsync {
@@ -205,6 +213,10 @@ impl Client {
         }
 
         if let Some(live) = &mut self.live {
+            if previous.view_distance != next.view_distance {
+                live.renderer.reset_temporal_history();
+            }
+
             if previous.fullscreen != next.fullscreen {
                 live.window.set_fullscreen(
                     next.fullscreen
@@ -318,10 +330,18 @@ impl Client {
 
         if let Some(live) = &mut self.live {
             if !live.gpu.is_lost() {
+                live.renderer.release_neural();
                 live.renderer = super::upload_scene_renderer(
                     &live.gpu,
                     &self.runtime.scene,
                     self.overlay.as_ref(),
+                    size,
+                    !live.neural_failed
+                        && self
+                            .runtime
+                            .game_settings
+                            .as_ref()
+                            .is_some_and(|panel| panel.applied.neural_rendering),
                 );
 
                 live.back_buffer = render::Offscreen::new(&live.gpu, size.0, size.1);
@@ -340,6 +360,51 @@ impl Client {
         self.last_frame_at = None;
 
         self.redraw();
+    }
+
+    fn rebuild_scene_renderer(&mut self) {
+        if let Some(live) = &mut self.live
+            && !live.gpu.is_lost()
+        {
+            live.renderer.release_neural();
+            live.renderer = super::upload_scene_renderer(
+                &live.gpu,
+                &self.runtime.scene,
+                self.overlay.as_ref(),
+                self.settings.backbuffer,
+                !live.neural_failed
+                    && self
+                        .runtime
+                        .game_settings
+                        .as_ref()
+                        .is_some_and(|panel| panel.applied.neural_rendering),
+            );
+        }
+
+        self.last_frame_at = None;
+        self.redraw();
+    }
+
+    pub(super) fn report_neural_failure(&self, error: &str) {
+        tracing::warn!(%error, "NWYD: Neural Rendering stopped; using native rendering");
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.error_dialogs {
+            let portuguese = self.screens.as_ref().is_none_or(|screens| {
+                screens.game().language() == formats::config::Language::Portuguese
+            });
+            let message = if portuguese {
+                "Não foi possível usar o DLSS 5. A renderização normal continua ativa."
+            } else {
+                "DLSS 5 could not run. Normal rendering remains active."
+            };
+            let _ = rfd::MessageDialog::new()
+                .set_title("NWYD")
+                .set_description(format!("{message}\n\n{error}"))
+                .set_level(rfd::MessageLevel::Warning)
+                .set_buttons(rfd::MessageButtons::Ok)
+                .show();
+        }
     }
 }
 

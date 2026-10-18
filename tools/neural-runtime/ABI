@@ -1,0 +1,68 @@
+NWYD Windows neural runtime C ABI, version 2
+
+All exported calls are serialized. Only one context may be active. Result zero
+means success; all nonzero results include a bounded UTF-8 error message when
+the caller supplies an error buffer. Structures must have exact struct_size
+and abi_version values. Strings passed as uint16_t pointers are terminated
+UTF-16. The adapter accepts only 64-bit Windows callers.
+
+Probe checks the model and its exported Vulkan requirements, not GPU support.
+A successful create is required to advertise device support. Probe does not
+load a Vulkan layer, create a GPU device, or invoke a model evaluation.
+
+Create borrows the caller's Vulkan instance, physical device, device and
+recording command buffer. Device extensions returned by probe must already
+be enabled. Command recording must occur outside a render pass. The caller
+submits the creation commands and ensures completion before evaluating.
+Each pass owns an independent feature and temporal history. Creation attempts
+are spaced at least 250 ms apart, including the second pass. This is setup-only
+work. The entire chain must initialize successfully; a partial chain is released.
+
+CreateInfo appends a 32-byte tuning block at offset 72: five floats intensity,
+tone, structure, skin, sharpness, followed by three uint32 values auto_mask,
+style, passes. The total structure size is 104. NWYD defaults are 2.0, 2.0, 2.05,
+-1.0, 0.25, 1, 2, 2. Style values 0/1/2 select Default/Natural/Cinematic. Intensity,
+tone and structure accept 0..4, skin accepts -1..4, and sharpness accepts 0..1.
+All floats must be finite. Auto-mask is 0/1; passes is 1/2. The other creation
+controls use preset 0. Tuning is immutable for the context lifetime and is
+applied before creating every feature. Sharpness is also applied after resource
+binding on every evaluation.
+
+Frame has reset at offset 144 and pass_index at offset 148; its size remains 152.
+Evaluate borrows full-resolution depth R32 SFLOAT and motion RG16 SFLOAT.
+A one-pass context reads RGBA8 UNORM and writes RGBA8 UNORM. A two-pass context
+reads RGBA8 UNORM in pass 0 and writes RGBA16 UNORM; pass 1 reads that exact image
+and view and writes a different RGBA16 UNORM image. No intermediate RGBA8
+conversion is allowed. The caller owns both intermediate images and the final
+composition. Every subresource is mip 0, layer 0, one mip and one layer, with
+COLOR aspect. Inputs must be in SHADER_READ_ONLY_OPTIMAL and output in GENERAL.
+Output must not alias input. Passes run strictly in ascending order, restarting
+at 0 for the next frame. Both passes use identical depth/motion images and views
+and the same reset value. Invalid arguments can be corrected and retried without
+advancing the chain. Reset must be 0/1 and clears each feature's own history.
+Motion is current-to-previous pixel displacement, with positive Y down;
+depth is near 0/far 1. Raster and views remain alive until GPU completion.
+
+Evaluate records commands only. The caller manages synchronization, queue
+submission, and output transitions, and must discard an unsuccessful command
+recording. A runtime evaluation failure disables the context until destroy.
+The adapter does not wait or submit per frame. UI composition belongs after
+evaluation. Native alpha/reactive preservation belongs to the caller.
+
+Destroy requires the caller to have drained all submitted commands using the
+context. The adapter never drains the device itself. Destroy restores caller
+identity imports. The adapter and its inactive exception handler remain pinned
+for the process lifetime because the upstream longjmp exception guard can leave
+dispatcher references behind after an exception. GPU and model resources are
+released when the context is destroyed; the code module remains mapped.
+Successful destruction invalidates the context. Invalid handles must not be
+reused, including when another context happens to occupy the same address.
+
+The runtime directory contains user-supplied nvngx_dlssnr.dll. Optional NGX
+core DLLs nvngx.dll/_nvngx.dll are rejected. Native Windows uses system NVAPI
+and rejects local nvapi64.dll/dxgi.dll; Wine may use its local compatibility
+DLLs for testing with an external runtime directory. The optional
+bundled-neural-runtime build embeds explicitly supplied native Windows runtime
+files and attribution, without Wine compatibility DLLs. Before probing, it
+verifies and extracts the payload into the user's local NWYD cache. Default
+builds continue loading external files. No build downloads NVIDIA binaries.

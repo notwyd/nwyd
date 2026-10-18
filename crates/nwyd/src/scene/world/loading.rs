@@ -154,13 +154,37 @@ type Reply = ((u8, u8), Result<Option<Prepared>>);
 pub(super) struct Loader {
     requests: mpsc::SyncSender<Request>,
     replies: mpsc::Receiver<Reply>,
-    pending: bool,
+    pending: Option<(u8, u8)>,
     ready: Option<((u8, u8), Prepared)>,
     retry: HashMap<(u8, u8), Instant>,
     disconnected: bool,
 }
 
 impl Loader {
+    pub fn is_idle(&self) -> bool {
+        self.pending.is_none() && self.ready.is_none()
+    }
+
+    pub fn active_zone(&self) -> Option<(u8, u8)> {
+        self.ready.as_ref().map(|(zone, _)| *zone).or(self.pending)
+    }
+
+    pub fn can_request(&self, zone: (u8, u8)) -> bool {
+        !self.disconnected
+            && !self
+                .retry
+                .get(&zone)
+                .is_some_and(|until| *until > Instant::now())
+    }
+
+    pub fn discard(&mut self, zone: (u8, u8)) -> Result<bool> {
+        if !self.is_idle() {
+            self.take_or_stage(zone, &[], &[], || None, &mut |_| true)?;
+        }
+
+        Ok(self.is_idle())
+    }
+
     pub fn new(game: GameDir, list: EnvTextureList) -> std::io::Result<Self> {
         let (requests, work) = mpsc::sync_channel::<Request>(1);
 
@@ -195,7 +219,7 @@ impl Loader {
         Ok(Self {
             requests,
             replies,
-            pending: false,
+            pending: None,
             ready: None,
             retry: HashMap::new(),
             disconnected: false,
@@ -212,7 +236,7 @@ impl Loader {
     ) -> Result<Option<Prepared>> {
         match self.replies.try_recv() {
             Ok((key, result)) => {
-                self.pending = false;
+                self.pending = None;
 
                 match result {
                     Ok(Some(prepared)) => {
@@ -247,7 +271,7 @@ impl Loader {
             });
         }
 
-        if !self.pending
+        if self.pending.is_none()
             && !self
                 .retry
                 .get(&zone)
@@ -260,7 +284,7 @@ impl Loader {
                 inputs: inputs(),
             })?;
 
-            self.pending = true;
+            self.pending = Some(zone);
         }
 
         Ok(None)

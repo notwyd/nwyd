@@ -108,6 +108,10 @@ fn block(bytes: &[u8], codec: u8) -> [[u8; 4]; 16] {
     })
 }
 
+pub(super) fn pixel(bytes: &[u8], codec: u8, x: u32, y: u32) -> [u8; 4] {
+    block(bytes, codec)[(y * 4 + x) as usize]
+}
+
 pub(super) fn expand(source: Texture, codec: u8) -> Result<Texture> {
     if !(1..=5).contains(&codec) {
         return Err(Error::Wys("unsupported DXT codec".into()));

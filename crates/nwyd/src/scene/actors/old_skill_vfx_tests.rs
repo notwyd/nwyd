@@ -350,6 +350,7 @@ fn retained_hand_sprites_hide_and_resume_without_recreation() {
     effects.scene_id = 30000;
 
     effects.push_texture(BoundTexture {
+        mip_policy_override: None,
         pending: false,
         effect_table: true,
         slot: 56,

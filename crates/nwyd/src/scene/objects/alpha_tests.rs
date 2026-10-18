@@ -136,6 +136,7 @@ fn frame(
         effects,
         0,
         false,
+        false,
         &Frustum::ADMITS_EVERYTHING,
     )
 }
@@ -260,6 +261,7 @@ fn color_key_weapon_shine_preserves_its_alpha_mask_without_a_cutoff() {
     let mut scene = synthetic_scene(&[FormatFlag::ColorKey], 1);
 
     scene.textures.push(BoundTexture {
+        mip_policy_override: None,
         pending: false,
         effect_table: true,
         slot: 0,
@@ -285,4 +287,115 @@ fn color_key_weapon_shine_preserves_its_alpha_mask_without_a_cutoff() {
     assert_eq!(frame.draws[0].stage1, Some(1));
     assert_eq!(frame.draws[0].cull, Cull::None);
     assert_eq!(frame.objects[0].alpha[2], 4.0);
+}
+
+#[test]
+fn window_beams_replace_authored_sheets_and_restore_draws_when_resources_are_unavailable() {
+    let mut scene = synthetic_scene(&[FormatFlag::None_], 1);
+
+    let mesh = &mut scene.meshes[0].mesh;
+
+    mesh.vertices = (0..8)
+        .map(|index| formats::mesh::StaticVertex {
+            position: [
+                if index & 1 == 0 { -1.0 } else { 1.0 },
+                if index & 2 == 0 { -0.4 } else { 0.4 },
+                if index & 4 == 0 { 0.0 } else { 4.0 },
+            ],
+            uv: [(index & 1) as f32, (index >> 2) as f32],
+            normal: [0.0; 3],
+            color: 0,
+        })
+        .collect();
+
+    mesh.indices = vec![0, 1, 5, 5, 4, 0, 2, 3, 7, 7, 6, 2];
+
+    scene.by_id_meshes.insert(506, 0);
+
+    scene.textures[0].pending = false;
+
+    let glow = super::super::lights::glow_of(&super::super::effect_mesh::EffectMesh::new(
+        506,
+        0xff88_7777,
+        0.0,
+        0,
+        0,
+    ))
+    .unwrap();
+
+    let frame = |scene: &ObjectScene, enabled: bool| {
+        scene.frame(
+            Vec3::ZERO,
+            VendorClass::DEFAULT,
+            &[],
+            &[],
+            &[glow],
+            &[],
+            0,
+            false,
+            enabled,
+            &Frustum::ADMITS_EVERYTHING,
+        )
+    };
+
+    let original = frame(&scene, false);
+
+    assert_eq!(original.draws.len(), 1);
+    assert!(original.light_shafts.is_empty());
+
+    let replaced = frame(&scene, true);
+
+    assert!(replaced.draws.is_empty());
+    assert_eq!(replaced.light_shafts.len(), 2);
+
+    let original_bounds = scene.meshes[0].bounds;
+
+    for vertex in &mut scene.meshes[0].mesh.vertices {
+        vertex.position[1] += 1.5;
+    }
+
+    let mut raised_bounds = render::cull::Aabb::EMPTY;
+
+    for vertex in &scene.meshes[0].mesh.vertices {
+        raised_bounds.grow(vertex.position);
+    }
+
+    scene.meshes[0].bounds = raised_bounds;
+
+    let frustum = Frustum::from_clip(&Matrix4::IDENTITY);
+
+    assert!(!frustum.admits(&raised_bounds));
+
+    let visible_volume = scene.frame(
+        Vec3::ZERO,
+        VendorClass::DEFAULT,
+        &[],
+        &[],
+        &[glow],
+        &[],
+        0,
+        false,
+        true,
+        &frustum,
+    );
+
+    assert_eq!(visible_volume.light_shafts.len(), 2);
+
+    scene.meshes[0].bounds = original_bounds;
+
+    for vertex in &mut scene.meshes[0].mesh.vertices {
+        vertex.position[1] -= 1.5;
+    }
+
+    scene.textures[0].pending = true;
+
+    assert_eq!(frame(&scene, true), original);
+
+    scene.textures[0].pending = false;
+
+    for vertex in &mut scene.meshes[0].mesh.vertices {
+        vertex.position[2] = 0.0;
+    }
+
+    assert_eq!(frame(&scene, true), original);
 }
