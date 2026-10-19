@@ -109,6 +109,7 @@ pub(super) fn add_model(scene: &mut ActorScene, model_id: u32, flags: &[FormatFl
 
         scene.textures.push(BoundTexture {
             mip_policy_override: None,
+            prepared: None,
             pending: false,
             effect_table: false,
             slot: texture,
@@ -126,7 +127,8 @@ pub(super) fn add_model(scene: &mut ActorScene, model_id: u32, flags: &[FormatFl
                 }],
                 data: vec![255; 4],
                 source_len: 4,
-            },
+            }
+            .into(),
         });
 
         parts.push(Part {

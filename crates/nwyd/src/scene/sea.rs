@@ -303,12 +303,13 @@ impl SeaScene {
             match decoded {
                 Some((entry, texture)) => scene.textures.push(BoundTexture {
                     mip_policy_override: None,
+                    prepared: None,
                     pending: false,
                     effect_table,
                     slot,
                     path: entry.path_str(),
                     flag: entry.format_flag,
-                    texture,
+                    texture: texture.into(),
                 }),
                 None => scene.missing.push(slot),
             }

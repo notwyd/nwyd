@@ -682,12 +682,13 @@ impl BillboardScene {
 
         let index = self.push_texture(BoundTexture {
             mip_policy_override: None,
+            prepared: None,
             pending: false,
             effect_table: true,
             slot,
             path: path_str,
             flag,
-            texture,
+            texture: texture.into(),
         });
 
         self.by_path.insert(resolved, index);
@@ -777,7 +778,7 @@ impl BillboardScene {
                 .layers
                 .iter()
                 .filter_map(|&l| self.textures.get(l))
-                .map(|t| &t.texture)
+                .map(|t| t.texture.as_ref())
                 .collect();
 
             let Some(uploaded) = render::texture::upload_array(

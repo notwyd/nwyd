@@ -269,6 +269,8 @@ pub(crate) fn enter_scene_state(
 
 pub(crate) fn leave_scene_state(scene: &Scene, audio: Option<&mut SceneAudio>) {
     if let Some(audio) = audio {
+        audio.cancel_pending_sounds();
+
         match scene {
             Scene::ServerSelect(_) => audio.leave(),
             Scene::Field(_) => audio.leave_field(),

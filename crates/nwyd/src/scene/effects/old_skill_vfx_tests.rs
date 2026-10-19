@@ -53,6 +53,7 @@ fn meditation_scene(key: ActorKey) -> BillboardScene {
     for slot in 109..117 {
         scene.push_texture(BoundTexture {
             mip_policy_override: None,
+            prepared: None,
             pending: false,
             effect_table: true,
             slot,
@@ -70,7 +71,8 @@ fn meditation_scene(key: ActorKey) -> BillboardScene {
                 }],
                 data: vec![255; 4],
                 source_len: 4,
-            },
+            }
+            .into(),
         });
     }
 

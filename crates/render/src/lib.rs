@@ -22,6 +22,7 @@ pub mod sprite;
 pub mod target;
 pub mod temporal;
 pub mod texture;
+pub mod timing;
 pub mod world;
 
 pub use billboard::{

@@ -31,8 +31,10 @@ pub struct Track {
     decoder: Box<dyn AudioDecoder>,
     track_id: u32,
     rate: u32,
+    interleaved: Vec<f32>,
     buffer: Vec<[f32; 2]>,
     cursor: usize,
+    decoded_since_rewind: bool,
     ended: bool,
 }
 
@@ -94,8 +96,10 @@ impl Track {
             decoder,
             track_id,
             rate,
+            interleaved: Vec::new(),
             buffer: Vec::new(),
             cursor: 0,
+            decoded_since_rewind: false,
             ended: false,
         })
     }
@@ -106,6 +110,37 @@ impl Track {
 
     pub fn ended(&self) -> bool {
         self.ended
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn buffer_frames(
+        &mut self,
+        count: usize,
+        mut should_stop: impl FnMut() -> bool,
+    ) -> bool {
+        if should_stop() {
+            return false;
+        }
+
+        if self.buffer.len() - self.cursor >= count || self.ended {
+            return true;
+        }
+
+        if self.cursor != 0 {
+            self.buffer.copy_within(self.cursor.., 0);
+
+            self.buffer.truncate(self.buffer.len() - self.cursor);
+
+            self.cursor = 0;
+        }
+
+        while self.buffer.len() < count && !self.ended {
+            if !self.decode_packet(&mut should_stop) {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn next_frame(&mut self) -> Option<[f32; 2]> {
@@ -129,19 +164,27 @@ impl Track {
 
         self.cursor = 0;
 
+        self.decode_packet(&mut || false);
+    }
+
+    fn decode_packet(&mut self, should_stop: &mut impl FnMut() -> bool) -> bool {
         let packet = loop {
+            if should_stop() {
+                return false;
+            }
+
             match self.reader.next_packet() {
                 Ok(Some(p)) if p.track_id == self.track_id => break p,
                 Ok(Some(_)) => continue,
                 Ok(None) => {
                     self.rewind(None);
 
-                    return;
+                    return true;
                 }
                 Err(e) => {
                     self.rewind(Some(&e));
 
-                    return;
+                    return true;
                 }
             }
         };
@@ -150,24 +193,24 @@ impl Track {
             Ok(decoded) => {
                 let channels = decoded.spec().channels().count().max(1);
 
-                let mut interleaved: Vec<f32> = Vec::new();
+                decoded.copy_to_vec_interleaved(&mut self.interleaved);
 
-                decoded.copy_to_vec_interleaved(&mut interleaved);
-
-                self.buffer = interleaved
-                    .chunks(channels)
-                    .map(|c| match c {
+                self.buffer
+                    .extend(self.interleaved.chunks(channels).map(|c| match c {
                         [m] => [*m, *m],
                         [l, r, ..] => [*l, *r],
                         _ => [0.0, 0.0],
-                    })
-                    .collect();
+                    }));
+
+                self.decoded_since_rewind |= !self.interleaved.is_empty();
             }
             Err(SymphoniaError::DecodeError(e)) => {
                 tracing::debug!(error = % e, "skipping a corrupt music packet");
             }
             Err(e) => self.rewind(Some(&e)),
         }
+
+        true
     }
 
     fn rewind(&mut self, cause: Option<&SymphoniaError>) {
@@ -188,6 +231,14 @@ impl Track {
             return;
         }
 
+        if !self.decoded_since_rewind {
+            tracing::debug!("music stream contains no decodable audio; stopping");
+
+            self.ended = true;
+
+            return;
+        }
+
         let time = symphonia::core::units::Time::try_new(0, 0).expect("zero is a valid Time");
 
         let to = SeekTo::Time {
@@ -196,7 +247,11 @@ impl Track {
         };
 
         match self.reader.seek(SeekMode::Accurate, to) {
-            Ok(_) => self.decoder.reset(),
+            Ok(_) => {
+                self.decoder.reset();
+
+                self.decoded_since_rewind = false;
+            }
             Err(e) => {
                 tracing::debug!(error = % e, "music will not loop; stopping");
 
@@ -205,3 +260,6 @@ impl Track {
         }
     }
 }
+
+#[cfg(test)]
+pub(crate) mod behavior_tests;

@@ -14,6 +14,9 @@ mod neural_tests;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod sky_tests;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod draw_tests;
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Pod, Zeroable)]
 pub struct MeshVertex {
@@ -197,6 +200,20 @@ pub enum MeshPass {
 pub const ALPHAREF_MESH_ALPHA_32BPP: u32 = 0xAA;
 
 impl MeshPass {
+    fn index(self) -> usize {
+        match self {
+            Self::Opaque => 0,
+            Self::Cutout => 1,
+            Self::Sky => 2,
+            Self::Blended => 3,
+            Self::Additive => 4,
+            Self::SolidEffect => 5,
+            Self::Silhouette => 6,
+            Self::AdditiveSolid => 7,
+            Self::Reflective => 8,
+        }
+    }
+
     pub fn blend_state(self) -> Option<wgpu::BlendState> {
         let (src, dst) = match self {
             MeshPass::Opaque => return None,
@@ -623,6 +640,7 @@ pub struct MeshRenderer {
     geometry: crate::geometry::GeometryBuffers,
     scratch: Vec<u8>,
     draws: Vec<MeshDraw>,
+    pass_draws: [Vec<usize>; MeshPass::ALL.len()],
     built_pipelines: u32,
     reported_unbuilt: bool,
 }
@@ -727,25 +745,31 @@ fn motion_objects(
 }
 
 fn pipeline_bit(pass: MeshPass, cull: Cull) -> u32 {
-    let p = match pass {
-        MeshPass::Opaque => 0,
-        MeshPass::Cutout => 1,
-        MeshPass::Sky => 2,
-        MeshPass::Blended => 3,
-        MeshPass::Additive => 4,
-        MeshPass::SolidEffect => 5,
-        MeshPass::Silhouette => 6,
-        MeshPass::AdditiveSolid => 7,
-        MeshPass::Reflective => 8,
-    };
-
     let c = match cull {
         Cull::Ccw => 0,
         Cull::Cw => 1,
         Cull::None => 2,
     };
 
-    1 << (p * 3 + c)
+    1 << (pass.index() * 3 + c)
+}
+
+fn prepare_pass_draws(
+    pass_draws: &mut [Vec<usize>; MeshPass::ALL.len()],
+    draws: &[MeshDraw],
+) -> u32 {
+    for indices in pass_draws.iter_mut() {
+        indices.clear();
+    }
+
+    let mut wanted = 0;
+
+    for (index, draw) in draws.iter().enumerate() {
+        pass_draws[draw.pass.index()].push(index);
+        wanted |= pipeline_bit(draw.pass, draw.cull);
+    }
+
+    wanted
 }
 
 impl MeshRenderer {
@@ -1019,6 +1043,7 @@ impl MeshRenderer {
             motion_history: temporal.map(|_| std::collections::HashMap::new()),
             geometry,
             draws: Vec::new(),
+            pass_draws: std::array::from_fn(|_| Vec::new()),
             scratch: Vec::new(),
             built_pipelines: MeshRenderer::PIPELINES
                 .into_iter()
@@ -1131,18 +1156,14 @@ impl MeshRenderer {
 
         self.draws.extend_from_slice(draws);
 
-        self.report_unbuilt_pipelines();
+        let wanted = prepare_pass_draws(&mut self.pass_draws, draws);
+
+        self.report_unbuilt_pipelines(wanted);
     }
 
-    fn report_unbuilt_pipelines(&mut self) {
+    fn report_unbuilt_pipelines(&mut self, wanted: u32) {
         if self.reported_unbuilt {
             return;
-        }
-
-        let mut wanted = 0u32;
-
-        for draw in &self.draws {
-            wanted |= pipeline_bit(draw.pass, draw.cull);
         }
 
         let missing = wanted & !self.built_pipelines;
@@ -1181,7 +1202,8 @@ impl MeshRenderer {
             textures,
             kinds
                 .iter()
-                .flat_map(|kind| self.draws.iter().filter(move |draw| draw.pass == *kind)),
+                .flat_map(|kind| self.pass_draws[kind.index()].iter())
+                .map(|index| &self.draws[*index]),
         );
     }
 
@@ -1210,6 +1232,9 @@ impl MeshRenderer {
         pass.set_bind_group(0, &self.frame_bind_group, &[]);
 
         let mut bound: Option<(MeshPass, Cull)> = None;
+        let mut bound_object = None;
+        let mut bound_texture = None;
+        let mut bound_stage1 = None;
 
         for draw in draws {
             let kind = draw.pass;
@@ -1220,6 +1245,14 @@ impl MeshRenderer {
                 textures.get(draw.texture)
             }) else {
                 continue;
+            };
+
+            let (stage1_index, stage1) = match draw.stage1 {
+                Some(index) => match textures.get(index) {
+                    Some(texture) => (index, texture),
+                    None => continue,
+                },
+                None => (draw.texture, texture),
             };
 
             if bound != Some((kind, draw.cull)) {
@@ -1236,23 +1269,24 @@ impl MeshRenderer {
                 bound = Some((kind, draw.cull));
             }
 
-            pass.set_bind_group(
-                1,
-                &self.object_bind_group,
-                &[draw.object * self.object_stride],
-            );
+            if bound_object != Some(draw.object) {
+                pass.set_bind_group(
+                    1,
+                    &self.object_bind_group,
+                    &[draw.object * self.object_stride],
+                );
+                bound_object = Some(draw.object);
+            }
 
-            pass.set_bind_group(2, &texture.bind_group, &[]);
+            if bound_texture != Some(draw.texture) {
+                pass.set_bind_group(2, &texture.bind_group, &[]);
+                bound_texture = Some(draw.texture);
+            }
 
-            let stage1 = match draw.stage1 {
-                Some(index) => match textures.get(index) {
-                    Some(texture) => texture,
-                    None => continue,
-                },
-                None => texture,
-            };
-
-            pass.set_bind_group(3, &stage1.bind_group, &[]);
+            if bound_stage1 != Some(stage1_index) {
+                pass.set_bind_group(3, &stage1.bind_group, &[]);
+                bound_stage1 = Some(stage1_index);
+            }
 
             pass.draw_indexed(draw.subset.range(), draw.base_vertex, 0..1);
         }

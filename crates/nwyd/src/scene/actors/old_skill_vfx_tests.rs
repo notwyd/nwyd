@@ -351,6 +351,7 @@ fn retained_hand_sprites_hide_and_resume_without_recreation() {
 
     effects.push_texture(BoundTexture {
         mip_policy_override: None,
+        prepared: None,
         pending: false,
         effect_table: true,
         slot: 56,
@@ -368,7 +369,8 @@ fn retained_hand_sprites_hide_and_resume_without_recreation() {
             }],
             data: vec![255; 4],
             source_len: 4,
-        },
+        }
+        .into(),
     });
 
     actor_effects::hand_sprites(&actors, &mut effects, 1000, true);

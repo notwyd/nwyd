@@ -48,6 +48,10 @@ fn streamed_foliage_prepares_the_actual_texture_policy_before_gpu_staging() {
     assert_eq!(bundle.textures.len(), 1);
     assert_eq!(bundle.models[0].parts[0].texture, Some(0));
     assert_eq!(bundle.textures[0].mip_policy(true), MipPolicy::Cutout(170));
+    assert_eq!(
+        bundle.textures[0].prepared_material(true).unwrap().policy(),
+        MipPolicy::Cutout(170)
+    );
 
     let mut scene = empty_scene();
 
@@ -135,4 +139,98 @@ fn later_generic_skin_loading_does_not_reuse_a_foliage_only_texture() {
             .bind_table_slot(&game, &textures, 0, false),
         Some(texture)
     );
+}
+
+#[test]
+fn shared_foliage_variants_keep_authored_pixels_and_install_separate_policies() {
+    use formats::texture::{MipLevel, PixelFormat, Texture};
+
+    let mut scene = empty_scene();
+    let tree = add_model(&mut scene, 63, &[FormatFlag::Alpha]);
+    let actor = add_model(&mut scene, 1, &[FormatFlag::Alpha]);
+    let source = Texture {
+        width: 4,
+        height: 4,
+        format: PixelFormat::Rgba8Unorm,
+        mips: vec![
+            MipLevel {
+                width: 4,
+                height: 4,
+                offset: 0,
+                len: 64,
+            },
+            MipLevel {
+                width: 2,
+                height: 2,
+                offset: 64,
+                len: 16,
+            },
+        ],
+        data: [vec![32; 64], vec![192; 16]].concat(),
+        source_len: 97,
+    };
+    scene.textures[0].texture = source.clone().into();
+    scene.textures[0].prepare_material(true);
+    let blended = scene.textures[0].prepared.as_ref().unwrap().clone();
+    scene.models[actor].parts[0].texture = scene.models[tree].parts[0].texture;
+    let mut bundle = Bundle {
+        textures: scene.textures,
+        models: scene.models,
+        by_spec: BTreeMap::from([(spec(63), Some(tree)), (spec(1), Some(actor))]),
+        ..Default::default()
+    };
+    bundle.prepare_tree_textures(&[spec(63)]);
+    assert_eq!(bundle.textures.len(), 2);
+    assert!(bundle.textures.iter().all(|bound| *bound.texture == source));
+    for bound in &bundle.textures {
+        let material = bound.prepared_material(true).unwrap();
+        assert_eq!(material.policy(), bound.mip_policy(true));
+        assert_eq!(
+            material.texture(),
+            render::texture::with_mipmaps(&source, bound.mip_policy(true)).as_ref()
+        );
+        assert_eq!(&material.texture().data[..source.data.len()], source.data);
+        assert_eq!(material.texture().mips.len(), 3);
+        assert_eq!(
+            Arc::ptr_eq(bound.prepared.as_ref().unwrap(), &blended),
+            bound.mip_policy(true) == MipPolicy::Blend
+        );
+    }
+    assert!(!Arc::ptr_eq(
+        bundle.textures[0].prepared.as_ref().unwrap(),
+        bundle.textures[1].prepared.as_ref().unwrap()
+    ));
+    let prepared: Vec<_> = bundle
+        .textures
+        .iter()
+        .map(|bound| bound.prepared.as_ref().unwrap().clone())
+        .collect();
+
+    let mut resident = empty_scene();
+    resident.install_resources(bundle);
+    for (model, policy) in [(63, MipPolicy::Cutout(170)), (1, MipPolicy::Blend)] {
+        let model = resident.by_spec[&spec(model)].unwrap();
+        let texture = resident.models[model].parts[0].texture.unwrap();
+        assert_eq!(*resident.textures[texture].texture, source);
+        assert_eq!(resident.textures[texture].mip_policy(true), policy);
+        assert!(Arc::ptr_eq(
+            resident.textures[texture].prepared.as_ref().unwrap(),
+            &prepared[texture]
+        ));
+    }
+}
+
+#[test]
+fn streamed_cutout_does_not_resolve_a_pending_blended_texture_of_the_same_slot() {
+    let mut scene = empty_scene();
+    add_model(&mut scene, 1, &[FormatFlag::Alpha]);
+    scene.textures[0].pending = true;
+    scene.install_resources(prepared(false));
+
+    assert_eq!(scene.textures.len(), 2);
+    assert!(scene.textures[0].pending);
+    assert_eq!(scene.textures[0].mip_policy(true), MipPolicy::Blend);
+    assert!(!scene.textures[1].pending);
+    assert_eq!(scene.textures[1].mip_policy(true), MipPolicy::Cutout(170));
+    assert!(scene.texture_updates.is_empty());
 }

@@ -1,6 +1,6 @@
 use crate::volume;
 use crate::wave::{self, Wave};
-use formats::audio::sound_list::{Slot, SoundList};
+use formats::audio::sound_list::{Entry, Slot, SoundList};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,14 +50,14 @@ impl Sound {
         index
     }
 
-    pub(crate) fn sample(&self, position: u64) -> [f32; 2] {
+    fn sample(wave: &Wave, position: u64) -> [f32; 2] {
         let i = (position / FRAME) as usize;
 
         let t = (position % FRAME) as f32 / FRAME as f32;
 
-        let a = self.wave.frame(i);
+        let a = wave.frame(i);
 
-        let b = self.wave.frame(i + 1);
+        let b = wave.frame(i + 1);
 
         [
             a[0] as f32 + (b[0] as f32 - a[0] as f32) * t,
@@ -67,6 +67,21 @@ impl Sound {
 
     pub(crate) fn rate(&self) -> u32 {
         self.wave.rate
+    }
+
+    pub(crate) fn mix(&mut self, out: &mut [f32], step: u64, gain: f32) {
+        let total = self.wave.frames() as u64 * FRAME;
+        for voice in &mut self.voices {
+            for frame in out.chunks_exact_mut(2) {
+                let Some(position) = voice.position else {
+                    break;
+                };
+                let [left, right] = Self::sample(&self.wave, position);
+                frame[0] += left * gain;
+                frame[1] += right * gain;
+                advance(voice, total, step);
+            }
+        }
     }
 
     pub fn stop(&mut self) {
@@ -89,6 +104,7 @@ impl Sound {
             .filter_map(|v| v.position.map(|p| ((p / FRAME) as usize, v.looping)))
     }
 
+    #[cfg(test)]
     pub(crate) fn active_fixed(&self) -> impl Iterator<Item = (usize, u64, bool)> + '_ {
         self.voices
             .iter()
@@ -96,6 +112,7 @@ impl Sound {
             .filter_map(|(i, v)| v.position.map(|p| (i, p, v.looping)))
     }
 
+    #[cfg(test)]
     pub(crate) fn advance_fixed(&mut self, voice: usize, delta: u64) {
         let total = self.wave.frames() as u64 * FRAME;
 
@@ -103,26 +120,28 @@ impl Sound {
             return;
         };
 
-        let Some(pos) = v.position else {
-            return;
-        };
-
-        let next = pos.saturating_add(delta);
-
-        v.position = if total == 0 {
-            None
-        } else if next < total {
-            Some(next)
-        } else if v.looping {
-            Some(next % total)
-        } else {
-            None
-        };
+        advance(v, total, delta);
     }
 
     pub fn voices(&self) -> usize {
         self.voices.len()
     }
+}
+
+fn advance(voice: &mut Voice, total: u64, delta: u64) {
+    let Some(position) = voice.position else {
+        return;
+    };
+    let next = position.saturating_add(delta);
+    voice.position = if total == 0 {
+        None
+    } else if next < total {
+        Some(next)
+    } else if voice.looping {
+        Some(next % total)
+    } else {
+        None
+    };
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -165,6 +184,25 @@ impl Bank {
     }
 
     pub fn sound(&mut self, index: i64, loader: &dyn Loader) -> Result<&mut Sound, Refusal> {
+        let slot = self.prepare(index)?;
+
+        let key = slot.get() as u16;
+
+        if !self.sounds.contains_key(&key) {
+            let entry = self.list.get(slot).ok_or(Refusal::Unlisted)?;
+            let sound = Self::load_entry(slot, entry, loader).inspect_err(|r| {
+                tracing::debug!(slot = key, refusal = ? r, "Load Sound Error");
+
+                self.refused.insert(key, r.clone());
+            })?;
+
+            self.sounds.insert(key, sound);
+        }
+
+        Ok(self.sounds.get_mut(&key).expect("just inserted"))
+    }
+
+    pub(crate) fn prepare(&self, index: i64) -> Result<Slot, Refusal> {
         if self.volume <= volume::MIN {
             return Err(Refusal::Muted);
         }
@@ -177,22 +215,15 @@ impl Bank {
             return Err(r.clone());
         }
 
-        if !self.sounds.contains_key(&key) {
-            let sound = self.load(slot, loader).inspect_err(|r| {
-                tracing::debug!(slot = key, refusal = ? r, "Load Sound Error");
-
-                self.refused.insert(key, r.clone());
-            })?;
-
-            self.sounds.insert(key, sound);
-        }
-
-        Ok(self.sounds.get_mut(&key).expect("just inserted"))
+        self.list.get(slot).ok_or(Refusal::Unlisted)?;
+        Ok(slot)
     }
 
-    fn load(&self, slot: Slot, loader: &dyn Loader) -> Result<Sound, Refusal> {
-        let entry = self.list.get(slot).ok_or(Refusal::Unlisted)?;
-
+    pub(crate) fn load_entry(
+        slot: Slot,
+        entry: &Entry,
+        loader: &dyn Loader,
+    ) -> Result<Sound, Refusal> {
         let path = entry.path();
 
         let bytes = loader
@@ -212,6 +243,19 @@ impl Bank {
             voices: vec![Voice::default(); voices],
             rng: Lcg(slot.get() as u32),
         })
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn complete(&mut self, slot: Slot, result: Result<Sound, Refusal>) {
+        let key = slot.get() as u16;
+        match result {
+            Ok(sound) => {
+                self.sounds.insert(key, sound);
+            }
+            Err(error) => {
+                self.refused.insert(key, error);
+            }
+        }
     }
 
     pub fn loaded(&self, index: i64) -> Option<&Sound> {

@@ -263,6 +263,8 @@ pub struct Session {
     pub client_config: std::sync::Arc<formats::net::client_config::Config>,
     server_return_notice: bool,
     connection: Option<Connection>,
+    #[cfg(not(target_arch = "wasm32"))]
+    retiring: Vec<Connection>,
     phase: Phase,
     pub account: String,
     guild_account: String,
@@ -456,9 +458,9 @@ impl Session {
         tracing::info!("NWYD net: {line}");
     }
 
-    fn log_packet(&self, line: impl std::fmt::Display) {
+    fn log_packet<T: std::fmt::Display>(&self, line: impl FnOnce() -> T) {
         if self.verbosity == Verbosity::Packets {
-            tracing::info!("NWYD net: {line}");
+            tracing::info!("NWYD net: {}", line());
         }
     }
 
@@ -550,6 +552,9 @@ impl Session {
         self.log(format!("connecting to {host}:{port} as {identity}"));
 
         self.disconnect();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        self.finish_retired();
 
         let mut connection =
             Connection::connect(host, port, CONNECT_TIMEOUT, seed).map_err(|error| {
@@ -750,7 +755,7 @@ impl Session {
             .unwrap_or_else(|p| p.into_inner())
             .last_tick;
 
-        self.log_packet(format!("→ {opcode:#05x} {what}, {} bytes", body.len()));
+        self.log_packet(|| format!("→ {opcode:#05x} {what}, {} bytes", body.len()));
 
         Ok(())
     }
@@ -769,7 +774,7 @@ impl Session {
         }
 
         if !field_send_allowed(self.last_limited_opcode, opcode, self.last_send_ms, now_ms) {
-            self.log_packet(format!("{opcode:#05x} {what} throttled"));
+            self.log_packet(|| format!("{opcode:#05x} {what} throttled"));
 
             if opcode == crate::scene::item_move::OPCODE_MOVE {
                 tracing::debug!(
@@ -850,7 +855,7 @@ impl Session {
 
         match sent {
             Ok(sent) => {
-                self.log_packet("→ 0x3A0 keepalive");
+                self.log_packet(|| "→ 0x3A0 keepalive");
 
                 sent
             }
@@ -874,11 +879,51 @@ impl Session {
     pub fn disconnect(&mut self) {
         self.drift.reset();
 
-        if self.connection.take().is_some() {
+        if let Some(connection) = self.connection.take() {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let mut connection = connection;
+                connection.begin_close();
+                self.retiring.push(connection);
+            }
+            #[cfg(target_arch = "wasm32")]
+            drop(connection);
+
             self.log("disconnected");
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        self.prune_retired();
+
         self.phase = Phase::Offline;
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn prune_retired(&mut self) {
+        self.retiring.retain_mut(|connection| {
+            if !connection.close_finished() {
+                return true;
+            }
+            if let Err(error) = connection.close() {
+                tracing::warn!(%error, "could not finish queued packets on retired connection");
+            }
+            false
+        });
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn finish_retired(&mut self) {
+        for mut connection in self.retiring.drain(..) {
+            if let Err(error) = connection.close() {
+                tracing::warn!(%error, "could not finish queued packets on retired connection");
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn shutdown_transport(&mut self) {
+        self.disconnect();
+        self.finish_retired();
     }
 
     pub fn poll(&mut self, clock: &mut Clock) -> Vec<Transition> {
@@ -889,6 +934,9 @@ impl Session {
     }
 
     pub(crate) fn drain_events(&mut self) -> Vec<Event> {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.prune_retired();
+
         self.connection
             .as_mut()
             .map_or_else(Vec::new, |connection| connection.drain_events())
@@ -956,21 +1004,22 @@ impl Session {
 
     fn adopt_clock(&mut self, clock: &mut Clock, message: &ServerMessage, tick: WireTime) {
         if let Some(desync) = self.sync.compare(clock, tick) {
-            self.log_packet(format!(
-                "clock drifted more than {} ms — {desync:?}, nudged {} ms",
-                TimeSync::TOLERANCE_MS,
-                TimeSync::STEP_MS,
-            ));
+            self.log_packet(|| {
+                format!(
+                    "clock drifted more than {} ms — {desync:?}, nudged {} ms",
+                    TimeSync::TOLERANCE_MS,
+                    TimeSync::STEP_MS,
+                )
+            });
         }
 
         match message.opcode() {
             server::LOGIN_ACCEPTED | server::ENTER_WORLD => {
                 clock.synchronize(tick);
 
-                self.log_packet(format!(
-                    "clock synced to the server's tick {}",
-                    tick.as_millis()
-                ));
+                self.log_packet(|| {
+                    format!("clock synced to the server's tick {}", tick.as_millis())
+                });
             }
             _ => {}
         }
@@ -990,7 +1039,7 @@ impl Session {
         if let Some(connection) = self.connection.as_mut() {
             connection.set_dynamic_key(update.resolve(tier));
 
-            self.log_packet("dynamic-key channel updated");
+            self.log_packet(|| "dynamic-key channel updated");
         }
     }
 
@@ -1041,7 +1090,7 @@ impl Session {
                 | ServerMessage::Redirect(_)
                 | ServerMessage::Malformed { .. } => self.log(format!("← {}", message.describe())),
                 _ if self.verbosity == Verbosity::Packets => {
-                    self.log_packet(format!("← {}", message.describe()));
+                    self.log_packet(|| format!("← {}", message.describe()));
                 }
                 _ => {}
             }
@@ -1399,11 +1448,45 @@ fn field_send_allowed(previous: u16, next: u16, last_send_ms: u32, now_ms: u32) 
 #[path = "net/profile_tests.rs"]
 mod profile_tests;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "net/lifecycle_tests.rs"]
+mod lifecycle_tests;
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn packet_logs_build_messages_only_when_verbosity_and_tracing_allow_them() {
+        for (verbosity, level, enabled) in [
+            (Verbosity::Quiet, tracing::Level::INFO, false),
+            (Verbosity::Packets, tracing::Level::ERROR, false),
+            (Verbosity::Packets, tracing::Level::INFO, true),
+        ] {
+            let subscriber = tracing_subscriber::fmt()
+                .with_max_level(level)
+                .with_writer(std::io::sink)
+                .finish();
+            let built = std::cell::Cell::new(0);
+            let session = Session::new(verbosity);
+
+            tracing::subscriber::with_default(subscriber, || {
+                session.log_packet(|| {
+                    built.set(built.get() + 1);
+                    format!("→ {:#05x} {}, {} bytes", 0x3A0, "keepalive", 12)
+                });
+            });
+
+            let compiled = tracing::level_filters::STATIC_MAX_LEVEL >= tracing::Level::INFO;
+            assert_eq!(
+                built.get(),
+                usize::from(enabled && compiled),
+                "verbosity={verbosity:?}, tracing={level}",
+            );
+        }
+    }
 
     #[test]
     fn movement_and_attack_throttles_keep_the_native_deadline_boundaries() {

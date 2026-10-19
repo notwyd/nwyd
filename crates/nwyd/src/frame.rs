@@ -21,6 +21,11 @@ mod light_shafts;
 mod world_textures;
 mod zone_upload;
 
+pub use world_textures::MaterialUploadStats;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod timing_tests;
+
 #[must_use = "a prepared frame must be submitted or explicitly discarded"]
 pub struct PreparedFrame<'a> {
     renderer: &'a mut SceneRenderer,
@@ -30,6 +35,14 @@ pub struct PreparedFrame<'a> {
 impl PreparedFrame<'_> {
     pub fn submit(self, view: &wgpu::TextureView) {
         self.renderer.render_frame(self.gpu, view);
+    }
+
+    pub fn submit_timed(
+        self,
+        view: &wgpu::TextureView,
+        timing: Option<&render::timing::GpuTimingFrame>,
+    ) {
+        self.renderer.render_frame_timed(self.gpu, view, timing);
     }
 }
 
@@ -149,6 +162,7 @@ pub struct SceneRenderer {
     meshes: MeshRenderer,
     world_textures: world_textures::WorldTextures,
     zone_staging: zone_upload::Staging,
+    upload_budget: zone_upload::Budget,
     mesh_queued: bool,
     skins: SkinRenderer,
     skin_queued: bool,
@@ -288,6 +302,7 @@ impl SceneRenderer {
             ),
             world_textures: world_textures::WorldTextures::default(),
             zone_staging: zone_upload::Staging::default(),
+            upload_budget: zone_upload::Budget::new(),
             mesh_queued: false,
             skins: SkinRenderer::with_temporal(
                 gpu,
@@ -755,6 +770,16 @@ impl SceneRenderer {
             self.world_uploads += 1;
         }
 
+        self.world_textures.flush(
+            gpu,
+            &self.meshes,
+            &world.objects.textures,
+            &self.skins,
+            &world.actors.textures,
+            &world.actors.glow_pairs,
+            &mut self.upload_budget,
+        );
+
         self.world_resident = Some(want);
 
         if self.zone_staging.complete && self.zone_staging.matches(world.identity) {
@@ -770,9 +795,7 @@ impl SceneRenderer {
         scene: &mut Scene,
         game: Option<&assets::GameDir>,
     ) -> bool {
-        let mut budget = zone_upload::Budget::new();
-
-        let loaded = match scene {
+        match scene {
             Scene::Field(scene) => {
                 crate::scene::field::stream_zones_staged(scene, game, &mut |identity, prepared| {
                     self.zone_staging.advance(
@@ -780,16 +803,20 @@ impl SceneRenderer {
                         identity,
                         prepared,
                         &mut self.world_textures,
-                        &mut budget,
+                        &mut self.upload_budget,
                     )
                 })
             }
             _ => false,
-        };
+        }
+    }
 
-        budget.report();
+    pub fn begin_upload_frame(&mut self) {
+        self.upload_budget = zone_upload::Budget::new();
+    }
 
-        loaded
+    pub fn finish_upload_frame(&self) {
+        self.upload_budget.report();
     }
 
     pub fn queue_world(
@@ -960,6 +987,10 @@ impl SceneRenderer {
 
     pub fn world_texture_upload_counts(&self) -> (usize, usize) {
         self.world_textures.uploads
+    }
+
+    pub fn material_upload_stats(&self) -> MaterialUploadStats {
+        self.world_textures.stats()
     }
 
     pub fn tile_upload_stats(&self) -> TileUploadStats {
@@ -1266,12 +1297,26 @@ impl SceneRenderer {
     }
 
     pub fn render_frame(&mut self, gpu: &Gpu, view: &wgpu::TextureView) {
+        self.render_frame_timed(gpu, view, None);
+    }
+
+    fn render_frame_timed(
+        &mut self,
+        gpu: &Gpu,
+        view: &wgpu::TextureView,
+        timing: Option<&render::timing::GpuTimingFrame>,
+    ) {
         let has_world = self.has_world();
         let mut encoder = gpu
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: render::gpu_label("scene composition and interface"),
             });
+        if (!has_world || self.temporal.is_none())
+            && let Some(timing) = timing
+        {
+            timing.write(&mut encoder, render::timing::GpuTimingPoint::SceneStart);
+        }
         if has_world {
             if let Some(antialias) = &mut self.antialias {
                 antialias.resize(
@@ -1286,7 +1331,7 @@ impl SceneRenderer {
                 .as_ref()
                 .map_or(view, |antialias| antialias.view());
             if let Some(state) = &self.temporal {
-                self.render_scene(gpu, &state.scene.view);
+                self.render_scene_timed(gpu, &state.scene.view, timing);
                 self.temporal.as_mut().unwrap().finish(
                     gpu,
                     scene_target,
@@ -1303,6 +1348,9 @@ impl SceneRenderer {
         }
 
         self.encode_2d(&mut encoder, view, has_world);
+        if let Some(timing) = timing {
+            timing.write(&mut encoder, render::timing::GpuTimingPoint::SceneEnd);
+        }
         gpu.queue.submit([encoder.finish()]);
     }
 
@@ -1329,12 +1377,24 @@ impl SceneRenderer {
     }
 
     pub fn render_scene(&self, gpu: &Gpu, view: &wgpu::TextureView) {
+        self.render_scene_timed(gpu, view, None);
+    }
+
+    fn render_scene_timed(
+        &self,
+        gpu: &Gpu,
+        view: &wgpu::TextureView,
+        timing: Option<&render::timing::GpuTimingFrame>,
+    ) {
         let mut enc = gpu
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: render::gpu_label("scene frame"),
             });
 
+        if let Some(timing) = timing {
+            timing.write(&mut enc, render::timing::GpuTimingPoint::SceneStart);
+        }
         self.encode_scene(&mut enc, view, self.has_world());
 
         gpu.queue.submit([enc.finish()]);

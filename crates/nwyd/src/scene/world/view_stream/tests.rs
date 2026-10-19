@@ -607,3 +607,184 @@ fn extended_prefetch_finishes_a_normal_request_after_leaving_the_stream_margin()
     assert!(world.actors.window == window);
     assert!(world.visual_collision_dirty);
 }
+
+#[test]
+fn subcell_movement_prefetches_a_zone_as_soon_as_its_edge_enters_range() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let mut world = super::super::fog_tests::field_world();
+    let zone = (18, 16);
+    let game = game_with_zones(&world, &[zone]);
+    world.set_view_distance(ViewDistance::Distant);
+    let far = world.view_far_plane();
+    let half_y = (render::camera::FOV_FRACTION * render::camera::PI * 0.5).tan();
+    let half_x = half_y * 1920.0 / 1080.0;
+    let radius =
+        far * (1.0 + half_y * half_y + half_x * half_x).sqrt() + 18.0 + super::super::STREAM_MARGIN;
+    let boundary = f32::from(zone.0) * 128.0 - radius;
+
+    for x in [boundary - 0.02, boundary + 0.02] {
+        world
+            .prefetch_visual_zones(
+                &game,
+                Vec2::new(x, 2112.0),
+                18.0,
+                (1920, 1080),
+                &mut |_, _| false,
+            )
+            .unwrap();
+        assert_eq!(world.visual_zone, (x > boundary).then_some(zone));
+    }
+    wait_for_visual(&mut world, &game, |_, _| true);
+    assert!(world.holds(zone));
+}
+
+#[test]
+fn camera_offset_and_viewport_changes_restart_an_exhausted_prefetch() {
+    use crate::scene::view_distance::ViewDistance;
+
+    for (camera_offset, viewport) in [(48.0, (1080, 1920)), (0.0, (5120, 1440))] {
+        let mut world = super::super::fog_tests::field_world();
+        let player = Vec2::splat(2112.0);
+        world.set_view_distance(ViewDistance::Distant);
+        let base = required_zones(
+            player,
+            world.environment.far_plane,
+            world.view_far_plane(),
+            0.0,
+            (1080, 1920),
+        );
+        let zone = required_zones(
+            player,
+            world.environment.far_plane,
+            world.view_far_plane(),
+            camera_offset,
+            viewport,
+        )
+        .into_iter()
+        .find(|zone| !base.contains(zone))
+        .unwrap();
+        let game = game_with_zones(&world, &[zone]);
+
+        for _ in 0..3 {
+            world
+                .prefetch_visual_zones(&game, player, 0.0, (1080, 1920), &mut |_, _| false)
+                .unwrap();
+            assert!(world.visual_zone.is_none());
+        }
+        world
+            .prefetch_visual_zones(&game, player, camera_offset, viewport, &mut |_, _| false)
+            .unwrap();
+        assert_eq!(world.visual_zone, Some(zone));
+        wait_for_visual(&mut world, &game, |_, _| true);
+        assert!(world.holds(zone));
+    }
+}
+
+#[test]
+fn failed_prefetch_is_retried_without_moving_or_changing_settings() {
+    use crate::scene::view_distance::ViewDistance;
+
+    let mut world = super::super::fog_tests::field_world();
+    let zone = (17, 16);
+    let game = assets::GameDir::from_files(
+        "failed-visual-stream",
+        [
+            ("Env/Field1716.trn".into(), Vec::new()),
+            ("Env/Field1716.dat".into(), Vec::new()),
+        ],
+    )
+    .unwrap();
+    let player = Vec2::splat(2112.0);
+    world.set_view_distance(ViewDistance::Distant);
+    world
+        .prefetch_visual_zones(&game, player, 18.0, (1920, 1080), &mut |_, _| false)
+        .unwrap();
+    assert_eq!(world.visual_zone, Some(zone));
+    wait_for_visual(&mut world, &game, |_, _| {
+        panic!("invalid terrain cannot stage")
+    });
+    assert!(!world.background_loader.as_ref().unwrap().can_request(zone));
+    let start = std::time::Instant::now();
+
+    while world.visual_zone.is_none() {
+        world
+            .prefetch_visual_zones(&game, player, 18.0, (1920, 1080), &mut |_, _| false)
+            .unwrap();
+        assert!(start.elapsed() < std::time::Duration::from_secs(3));
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    assert_eq!(world.visual_zone, Some(zone));
+    wait_for_visual(&mut world, &game, |_, _| {
+        panic!("invalid terrain cannot stage")
+    });
+}
+
+#[test]
+fn unchanged_prefetch_reuses_planning_and_resident_membership() {
+    let view = View {
+        player: Vec2::splat(2112.0),
+        retail_far: 70.0,
+        view_far: 560.0,
+        camera_offset: 18.0,
+        viewport: (1920, 1080),
+    };
+    let mut prefetch = Prefetch::default();
+    let first = (17, 16);
+    let second = (18, 16);
+    let missing = (19, 16);
+    prefetch.update(view, std::iter::once((16, 16)), |zone| {
+        [first, second].contains(&zone)
+    });
+    assert_eq!(prefetch.pending, [first, second]);
+    assert!(prefetch.zones.contains(&missing));
+    let allocation = prefetch.zones.as_ptr();
+
+    for _ in 0..100 {
+        prefetch.update(
+            view,
+            std::iter::from_fn(|| panic!("stationary views must not rescan resident zones")),
+            |_| panic!("stationary views must not recheck zone files"),
+        );
+        assert_eq!(prefetch.zones.as_ptr(), allocation);
+    }
+
+    prefetch.invalidate_residency();
+    prefetch.update(view, [(16, 16), first].into_iter(), |zone| {
+        assert_ne!(zone, first);
+        [first, second].contains(&zone)
+    });
+    assert_eq!(prefetch.pending, [second]);
+    assert_eq!(prefetch.zones.as_ptr(), allocation);
+    prefetch.invalidate_residency();
+    prefetch.update(view, [(16, 16), first, second].into_iter(), |_| false);
+    assert!(prefetch.pending.is_empty());
+    prefetch.update(
+        view,
+        std::iter::from_fn(|| panic!("exhausted prefetch must not rescan resident zones")),
+        |_| panic!("exhausted prefetch must not recheck zone files"),
+    );
+}
+
+#[test]
+fn retail_prefetch_never_scans_residency_even_while_moving() {
+    let mut prefetch = Prefetch::default();
+
+    for step in 0..100 {
+        let view = View {
+            player: Vec2::splat(2112.0 + step as f32 * 0.01),
+            retail_far: 70.0,
+            view_far: 70.0,
+            camera_offset: 18.0,
+            viewport: (1920, 1080),
+        };
+        prefetch.invalidate_residency();
+        prefetch.update(
+            view,
+            std::iter::from_fn(|| panic!("retail does not require a resident-zone index")),
+            |_| panic!("retail does not require visual-zone files"),
+        );
+        assert!(prefetch.zones.is_empty());
+        assert!(prefetch.pending.is_empty());
+    }
+}

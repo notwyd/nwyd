@@ -1,5 +1,9 @@
 use crate::text::Codepage;
 
+pub const COMMAND_MARKER: [u8; 13] = [
+    0x6a, 0x6f, 0x79, 0x69, 0x6d, 0x70, 0x61, 0x63, 0x74, 0x2e, 0x77, 0x79, 0x64,
+];
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct Credentials {
     pub kind: u16,
@@ -78,7 +82,10 @@ fn decode(bytes: &[u8], key: u8) -> Result<String, Error> {
 }
 
 pub fn parse(command_line: &[u8]) -> Result<Option<Credentials>, Error> {
-    if !command_line.windows(13).any(|w| w == b"joyimpact.wyd") {
+    if !command_line
+        .windows(COMMAND_MARKER.len())
+        .any(|window| window == COMMAND_MARKER)
+    {
         return Ok(None);
     }
 

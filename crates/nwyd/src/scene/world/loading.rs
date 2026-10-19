@@ -3,6 +3,9 @@ use formats::world::objects::{self as records, ObjRecord};
 use std::{collections::HashMap, sync::mpsc};
 use web_time::{Duration, Instant};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug)]
 pub(crate) struct Prepared {
     pub serial: u64,

@@ -171,6 +171,17 @@ impl Blitter {
         target: &wgpu::TextureView,
         target_size: (u32, u32),
     ) -> Fit {
+        self.render_timed(gpu, source, target, target_size, None)
+    }
+
+    pub fn render_timed(
+        &self,
+        gpu: &Gpu,
+        source: &BlitSource,
+        target: &wgpu::TextureView,
+        target_size: (u32, u32),
+        timing: Option<&crate::timing::GpuTimingFrame>,
+    ) -> Fit {
         let fit = fit((source.width, source.height), target_size);
 
         let bind_group = if fit.is_one_to_one((source.width, source.height)) {
@@ -185,6 +196,9 @@ impl Blitter {
                 label: crate::gpu_label("blit"),
             });
 
+        if let Some(timing) = timing {
+            timing.write(&mut enc, crate::timing::GpuTimingPoint::BlitStart);
+        }
         {
             let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: crate::gpu_label("blit"),
@@ -219,6 +233,10 @@ impl Blitter {
             pass.draw(0..3, 0..1);
         }
 
+        if let Some(timing) = timing {
+            timing.write(&mut enc, crate::timing::GpuTimingPoint::BlitEnd);
+            timing.resolve(&mut enc);
+        }
         gpu.queue.submit([enc.finish()]);
 
         fit

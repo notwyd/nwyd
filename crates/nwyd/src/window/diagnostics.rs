@@ -1,3 +1,4 @@
+use crate::frame::MaterialUploadStats;
 #[cfg(any(not(target_arch = "wasm32"), test))]
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -10,6 +11,8 @@ use std::io::Write;
 use std::path::PathBuf;
 
 const RECENT_SAMPLES: usize = 120;
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod benchmark_tests;
 #[cfg(any(not(target_arch = "wasm32"), test))]
 const MAX_BENCHMARK_FRAMES: u64 = 100_000;
 #[cfg(any(not(target_arch = "wasm32"), test))]
@@ -38,6 +41,35 @@ pub(super) struct CpuFrameTiming {
     pub blit_ms: f64,
     pub present_ms: f64,
     pub total_ms: f64,
+    pub material_uploads: MaterialUploadFrame,
+}
+
+#[derive(Debug, Default, Clone, Copy, Serialize)]
+pub(super) struct MaterialUploadFrame {
+    pub uploads: usize,
+    pub bytes: u64,
+    pub elapsed_ms: f64,
+    pub cumulative_max_upload_ms: f64,
+    pub pending: usize,
+}
+
+impl MaterialUploadFrame {
+    fn between(mut before: MaterialUploadStats, after: MaterialUploadStats) -> Self {
+        if after.uploads < before.uploads
+            || after.bytes < before.bytes
+            || after.elapsed_ms < before.elapsed_ms
+        {
+            before = MaterialUploadStats::default();
+        }
+
+        Self {
+            uploads: after.uploads.saturating_sub(before.uploads),
+            bytes: after.bytes.saturating_sub(before.bytes),
+            elapsed_ms: after.elapsed_ms - before.elapsed_ms,
+            cumulative_max_upload_ms: after.longest_ms,
+            pending: after.pending,
+        }
+    }
 }
 
 impl CpuFrameTiming {
@@ -52,6 +84,55 @@ impl CpuFrameTiming {
             self.present_ms,
             self.total_ms,
         ]
+    }
+}
+
+pub(super) struct FrameProbe {
+    start: Option<web_time::Instant>,
+    last: Option<web_time::Instant>,
+    material_upload_start: Option<MaterialUploadStats>,
+    pub sample: CpuFrameTiming,
+}
+
+impl FrameProbe {
+    pub fn new(enabled: bool) -> Self {
+        let start = enabled.then(web_time::Instant::now);
+        Self {
+            start,
+            last: start,
+            material_upload_start: None,
+            sample: CpuFrameTiming::default(),
+        }
+    }
+
+    pub fn begin_material_uploads(&mut self, stats: impl FnOnce() -> Option<MaterialUploadStats>) {
+        if self.start.is_some() {
+            self.material_upload_start = stats();
+        }
+    }
+
+    pub fn sample_material_uploads(&mut self, stats: impl FnOnce() -> MaterialUploadStats) {
+        if self.start.is_some() {
+            self.sample.material_uploads = MaterialUploadFrame::between(
+                self.material_upload_start.unwrap_or_default(),
+                stats(),
+            );
+        }
+    }
+
+    pub fn checkpoint(&mut self) -> f64 {
+        self.last.map_or(0.0, |last| {
+            let now = web_time::Instant::now();
+            self.last = Some(now);
+            now.duration_since(last).as_secs_f64() * 1000.0
+        })
+    }
+
+    pub fn finish(mut self) -> CpuFrameTiming {
+        self.sample.total_ms = self
+            .start
+            .map_or(0.0, |start| start.elapsed().as_secs_f64() * 1000.0);
+        self.sample
     }
 }
 
@@ -74,6 +155,7 @@ struct Benchmark {
 #[derive(Default)]
 pub(super) struct FrameDiagnostics {
     enabled: bool,
+    disable_gpu_timings: bool,
     benchmark: Option<Benchmark>,
     context: serde_json::Value,
     cpu: VecDeque<CpuFrameTiming>,
@@ -85,7 +167,9 @@ pub(super) struct FrameDiagnostics {
 impl FrameDiagnostics {
     pub fn from_env() -> Self {
         Self {
-            enabled: std::env::var("NWYD_FRAME_TIMINGS").is_ok_and(|value| value == "1"),
+            enabled: !cfg!(target_arch = "wasm32")
+                && std::env::var("NWYD_FRAME_TIMINGS").is_ok_and(|value| value == "1"),
+            disable_gpu_timings: std::env::var("NWYD_GPU_TIMINGS").is_ok_and(|value| value == "0"),
             ..Self::default()
         }
     }
@@ -110,8 +194,54 @@ impl FrameDiagnostics {
         self.enabled
     }
 
+    pub fn is_benchmark(&self) -> bool {
+        self.benchmark.is_some()
+    }
+
+    pub fn overlay_enabled(&self) -> bool {
+        self.enabled && self.benchmark.is_none()
+    }
+
+    pub fn configure_gpu(
+        &mut self,
+        gpu: &render::device::Gpu,
+        config: &wgpu::SurfaceConfiguration,
+        backbuffer: (u32, u32),
+        window_backend: &str,
+    ) -> Option<render::timing::GpuTimings> {
+        if !self.enabled {
+            return None;
+        }
+
+        let info = gpu.adapter.get_info();
+        let timings = self
+            .gpu_enabled()
+            .then(|| render::timing::GpuTimings::new(gpu))
+            .flatten();
+
+        self.set_context(serde_json::json!({
+            "adapter": info.name,
+            "backend": format!("{:?}", info.backend),
+            "driver": info.driver,
+            "driver_info": info.driver_info,
+            "os": std::env::consts::OS,
+            "window_backend": window_backend,
+        }));
+        self.set_output(config, backbuffer);
+        self.set_gpu_timestamps_active(timings.is_some());
+
+        timings
+    }
+
+    fn set_output(&mut self, config: &wgpu::SurfaceConfiguration, backbuffer: (u32, u32)) {
+        self.context["backbuffer"] = serde_json::json!([backbuffer.0, backbuffer.1]);
+        self.context["surface"] = serde_json::json!([config.width, config.height]);
+        self.context["present_mode"] = format!("{:?}", config.present_mode).into();
+    }
+
     pub fn gpu_enabled(&self) -> bool {
         self.enabled
+            && !self.disable_gpu_timings
             && self
                 .benchmark
                 .as_ref()
@@ -158,7 +288,12 @@ impl FrameDiagnostics {
             return;
         }
 
-        if !valid(sample.values()) {
+        if !valid(sample.values())
+            || !valid([
+                sample.material_uploads.elapsed_ms,
+                sample.material_uploads.cumulative_max_upload_ms,
+            ])
+        {
             self.rejected_cpu += 1;
 
             return;
@@ -225,6 +360,20 @@ impl FrameDiagnostics {
                 format!(
                     "CPU ms: submit {:.2}  blit {:.2}  present {:.2}  total {:.2}",
                     averages[4], averages[5], averages[6], averages[7]
+                ),
+                BODY_COLOR,
+            ));
+
+            let uploads = self.cpu.back().unwrap().material_uploads;
+
+            lines.push(Line::new(
+                format!(
+                    "Material uploads: {}  {:.1} KiB  {:.2} ms  pending {}  cumulative max {:.2} ms",
+                    uploads.uploads,
+                    uploads.bytes as f64 / 1024.0,
+                    uploads.elapsed_ms,
+                    uploads.pending,
+                    uploads.cumulative_max_upload_ms,
                 ),
                 BODY_COLOR,
             ));
@@ -299,6 +448,13 @@ impl FrameDiagnostics {
             "gpu": gpu,
             "summary": {
                 "cpu": cpu_summary,
+                "material_uploads": {
+                    "uploads": statistics(cpu.iter().map(|sample| sample.material_uploads.uploads as f64)),
+                    "bytes": statistics(cpu.iter().map(|sample| sample.material_uploads.bytes as f64)),
+                    "elapsed_ms": statistics(cpu.iter().map(|sample| sample.material_uploads.elapsed_ms)),
+                    "cumulative_max_upload_ms": statistics(cpu.iter().map(|sample| sample.material_uploads.cumulative_max_upload_ms)),
+                    "pending": statistics(cpu.iter().map(|sample| sample.material_uploads.pending as f64)),
+                },
                 "gpu": {
                     "scene_ms": statistics(gpu.iter().map(|sample| sample.scene_ms)),
                     "blit_ms": statistics(gpu.iter().map(|sample| sample.blit_ms)),
@@ -325,6 +481,45 @@ impl FrameDiagnostics {
         writer.write_all(b"\n")?;
 
         writer.flush().context("writing frame report")
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl super::Client {
+    pub(super) fn finish_frame_report(&mut self) -> Result<()> {
+        if self.diagnostics.benchmark.is_none() {
+            return Ok(());
+        }
+
+        if let Some(live) = &mut self.live {
+            self.diagnostics.set_output(
+                &live.config,
+                (live.back_buffer.width, live.back_buffer.height),
+            );
+        }
+
+        if let Some(live) = &mut self.live
+            && let Some(timings) = &mut live.timings
+        {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+
+            loop {
+                for sample in timings.poll(&live.gpu) {
+                    self.diagnostics.record_gpu(sample);
+                }
+
+                if !timings.has_pending()
+                    || live.gpu.is_lost()
+                    || std::time::Instant::now() >= deadline
+                {
+                    break;
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+
+        self.diagnostics.write_report()
     }
 }
 
@@ -389,6 +584,162 @@ fn statistics(values: impl Iterator<Item = f64>) -> Option<Statistics> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn disabled_probes_do_not_sample_clocks() {
+        let mut probe = FrameProbe::new(false);
+        assert!(probe.start.is_none());
+        assert!(probe.last.is_none());
+        probe.begin_material_uploads(|| panic!("disabled snapshot"));
+        probe.sample_material_uploads(|| panic!("disabled sample"));
+        assert!(probe.material_upload_start.is_none());
+        assert_eq!(probe.checkpoint(), 0.0);
+        let sample = probe.finish();
+        assert_eq!(sample.total_ms, 0.0);
+        assert_eq!(sample.material_uploads.uploads, 0);
+        assert_eq!(sample.material_uploads.bytes, 0);
+        assert_eq!(sample.material_uploads.elapsed_ms, 0.0);
+    }
+
+    #[test]
+    fn probes_measure_adjacent_stages_within_total_elapsed_time() {
+        let mut probe = FrameProbe::new(true);
+        let stages = (0..8).map(|_| probe.checkpoint()).sum::<f64>();
+        let sample = probe.finish();
+        assert!(stages.is_finite() && stages >= 0.0);
+        assert!(sample.total_ms >= stages);
+    }
+
+    #[test]
+    fn probes_report_upload_deltas_and_the_final_pending_count() {
+        let before = MaterialUploadStats {
+            uploads: 10,
+            bytes: 4096,
+            elapsed_ms: 7.5,
+            longest_ms: 2.0,
+            pending: 4,
+        };
+        let after = MaterialUploadStats {
+            uploads: 13,
+            bytes: 7168,
+            elapsed_ms: 11.0,
+            longest_ms: 2.5,
+            pending: 1,
+        };
+        let mut probe = FrameProbe::new(true);
+        probe.begin_material_uploads(|| Some(before));
+        probe.sample_material_uploads(|| after);
+        let uploads = probe.finish().material_uploads;
+        assert_eq!(uploads.uploads, 3);
+        assert_eq!(uploads.bytes, 3072);
+        assert_eq!(uploads.elapsed_ms, 3.5);
+        assert_eq!(uploads.cumulative_max_upload_ms, 2.5);
+        assert_eq!(uploads.pending, 1);
+
+        let mut next = FrameProbe::new(true);
+        next.begin_material_uploads(|| Some(after));
+        next.sample_material_uploads(|| after);
+        let uploads = next.finish().material_uploads;
+        assert_eq!(uploads.uploads, 0);
+        assert_eq!(uploads.bytes, 0);
+        assert_eq!(uploads.elapsed_ms, 0.0);
+        assert_eq!(uploads.cumulative_max_upload_ms, 2.5);
+        assert_eq!(uploads.pending, 1);
+    }
+
+    #[test]
+    fn upload_samples_handle_a_new_renderer_without_underflow() {
+        let current = MaterialUploadStats {
+            uploads: 2,
+            bytes: 128,
+            elapsed_ms: 0.75,
+            longest_ms: 0.5,
+            pending: 3,
+        };
+        for previous in [
+            None,
+            Some(MaterialUploadStats {
+                uploads: 12,
+                bytes: 4096,
+                elapsed_ms: 9.0,
+                longest_ms: 2.0,
+                pending: 10,
+            }),
+        ] {
+            let mut probe = FrameProbe::new(true);
+            probe.begin_material_uploads(|| previous);
+            probe.sample_material_uploads(|| current);
+            let uploads = probe.finish().material_uploads;
+            assert_eq!(uploads.uploads, 2);
+            assert_eq!(uploads.bytes, 128);
+            assert_eq!(uploads.elapsed_ms, 0.75);
+            assert_eq!(uploads.cumulative_max_upload_ms, 0.5);
+            assert_eq!(uploads.pending, 3);
+        }
+    }
+
+    #[test]
+    fn benchmarks_record_without_enabling_the_overlay() {
+        let benchmark = FrameDiagnostics::benchmark(0, 1, PathBuf::new(), false);
+        assert!(benchmark.enabled());
+        assert!(!benchmark.overlay_enabled());
+        assert!(!FrameDiagnostics::default().overlay_enabled());
+        assert!(
+            FrameDiagnostics {
+                enabled: true,
+                ..Default::default()
+            }
+            .overlay_enabled()
+        );
+    }
+
+    #[test]
+    fn cpu_only_overlay_does_not_record_gpu_samples() {
+        let mut diagnostics = FrameDiagnostics {
+            enabled: true,
+            disable_gpu_timings: true,
+            ..Default::default()
+        };
+        diagnostics.record(cpu(1));
+        diagnostics.record_gpu(gpu(1));
+        assert!(diagnostics.overlay_enabled());
+        assert!(!diagnostics.gpu_enabled());
+        assert_eq!(diagnostics.cpu.len(), 1);
+        assert!(diagnostics.gpu.is_empty());
+    }
+
+    #[test]
+    fn report_output_metadata_tracks_resizing_and_present_mode_changes() {
+        let mut diagnostics = FrameDiagnostics::benchmark(0, 1, PathBuf::new(), true);
+        diagnostics.set_context(serde_json::json!({"gpu_timestamps": true, "backend": "Vulkan"}));
+        let mut config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            color_space: wgpu::SurfaceColorSpace::Auto,
+            width: 640,
+            height: 360,
+            present_mode: wgpu::PresentMode::Fifo,
+            desired_maximum_frame_latency: 2,
+            alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+            view_formats: Vec::new(),
+        };
+        diagnostics.set_output(&config, (1280, 720));
+        config.width = 1920;
+        config.height = 1080;
+        config.present_mode = wgpu::PresentMode::Immediate;
+        diagnostics.set_output(&config, (1920, 1080));
+        assert_eq!(
+            diagnostics.context["backbuffer"],
+            serde_json::json!([1920, 1080])
+        );
+        assert_eq!(
+            diagnostics.context["surface"],
+            serde_json::json!([1920, 1080])
+        );
+        assert_eq!(diagnostics.context["present_mode"], "Immediate");
+        assert_eq!(diagnostics.context["gpu_timestamps"], true);
+        assert_eq!(diagnostics.context["backend"], "Vulkan");
+    }
+
     fn cpu(frame_id: u64) -> CpuFrameTiming {
         CpuFrameTiming {
             frame_id,
@@ -403,6 +754,7 @@ mod tests {
             blit_ms: 6.0,
             present_ms: 7.0,
             total_ms: 28.0,
+            material_uploads: MaterialUploadFrame::default(),
         }
     }
 
@@ -507,15 +859,18 @@ mod tests {
 
         assert_eq!(diagnostics.benchmark_time(1), None);
 
-        assert_eq!(diagnostics.lines().len(), 3);
+        assert_eq!(diagnostics.lines().len(), 4);
 
         assert!(!disabled.enabled());
 
         assert!(disabled.cpu.is_empty());
+        assert_eq!(disabled.cpu.capacity(), 0);
 
         assert!(disabled.gpu.is_empty());
+        assert_eq!(disabled.gpu.capacity(), 0);
 
         assert!(disabled.lines().is_empty());
+        assert_eq!(disabled.lines().capacity(), 0);
 
         disabled.write_report().unwrap();
     }
@@ -590,6 +945,63 @@ mod tests {
         }
 
         std::fs::remove_file(output).unwrap();
+    }
+
+    #[test]
+    fn benchmark_reports_include_material_upload_samples_and_statistics() {
+        let output = std::env::temp_dir().join(format!(
+            "nwyd-material-upload-timings-{}.json",
+            std::process::id()
+        ));
+        let mut diagnostics = FrameDiagnostics::benchmark(1, 2, output.clone(), false);
+        for frame_id in 0..3 {
+            let mut sample = cpu(frame_id);
+            sample.material_uploads = MaterialUploadFrame {
+                uploads: frame_id as usize,
+                bytes: frame_id * 1024,
+                elapsed_ms: frame_id as f64 * 0.5,
+                cumulative_max_upload_ms: 0.75,
+                pending: 3 - frame_id as usize,
+            };
+            diagnostics.record(sample);
+        }
+        diagnostics.write_report().unwrap();
+        let report: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&output).unwrap()).unwrap();
+        assert_eq!(report["cpu"][0]["frame_id"], 1);
+        assert_eq!(
+            report["cpu"][0]["material_uploads"],
+            serde_json::json!({
+                "uploads": 1,
+                "bytes": 1024,
+                "elapsed_ms": 0.5,
+                "cumulative_max_upload_ms": 0.75,
+                "pending": 2,
+            })
+        );
+        let summary = &report["summary"]["material_uploads"];
+        assert_eq!(summary["uploads"]["mean"], 1.5);
+        assert_eq!(summary["bytes"]["max"], 2048.0);
+        assert_eq!(summary["elapsed_ms"]["p99"], 1.0);
+        assert_eq!(summary["cumulative_max_upload_ms"]["max"], 0.75);
+        assert_eq!(summary["pending"]["median"], 1.5);
+        assert_eq!(summary["elapsed_ms"]["count"], 2);
+        std::fs::remove_file(output).unwrap();
+    }
+
+    #[test]
+    fn invalid_material_upload_timings_are_rejected() {
+        let mut diagnostics = FrameDiagnostics::benchmark(0, 1, PathBuf::new(), false);
+        for invalid in [f64::NAN, f64::INFINITY, -1.0] {
+            let mut sample = cpu(0);
+            sample.material_uploads.elapsed_ms = invalid;
+            diagnostics.record(sample);
+            let mut sample = cpu(0);
+            sample.material_uploads.cumulative_max_upload_ms = invalid;
+            diagnostics.record(sample);
+        }
+        assert!(diagnostics.cpu.is_empty());
+        assert_eq!(diagnostics.rejected_cpu, 6);
     }
 
     #[test]

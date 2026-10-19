@@ -262,6 +262,7 @@ fn color_key_weapon_shine_preserves_its_alpha_mask_without_a_cutoff() {
 
     scene.textures.push(BoundTexture {
         mip_policy_override: None,
+        prepared: None,
         pending: false,
         effect_table: true,
         slot: 0,

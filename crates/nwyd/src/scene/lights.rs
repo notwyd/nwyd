@@ -274,11 +274,19 @@ pub fn blend(sample: [f32; 4], tint: u32) -> u32 {
 
 pub struct Zones<'a> {
     zones: Vec<&'a mut Terrain>,
+    registered: Vec<usize>,
 }
 
 impl<'a> Zones<'a> {
     pub fn new(zones: Vec<&'a mut Terrain>) -> Zones<'a> {
-        Zones { zones }
+        Zones {
+            zones,
+            registered: Vec::new(),
+        }
+    }
+
+    pub fn registered_zones(&self) -> &[usize] {
+        &self.registered
     }
 
     pub fn owner(&self, x: f32, z: f32) -> Option<usize> {
@@ -296,7 +304,13 @@ impl<'a> Zones<'a> {
 
         let (ox, oz) = self.zones[i].origin();
 
-        self.zones[i].set_light(x - ox, z - oz, argb)
+        let landed = self.zones[i].set_light(x - ox, z - oz, argb);
+
+        if landed && !self.registered.contains(&i) {
+            self.registered.push(i);
+        }
+
+        landed
     }
 }
 

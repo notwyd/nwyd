@@ -186,6 +186,122 @@ fn effect_rgb_is_filtered_independently_from_unused_alpha() {
 }
 
 #[test]
+fn generated_multilevel_pixels_are_exact_for_each_filtering_policy() {
+    let source = rgba(
+        4,
+        2,
+        [
+            [0, 10, 20, 0],
+            [100, 30, 40, 64],
+            [200, 50, 60, 128],
+            [255, 70, 80, 255],
+            [20, 90, 100, 255],
+            [120, 110, 120, 128],
+            [220, 130, 140, 64],
+            [235, 150, 160, 0],
+        ]
+        .concat(),
+    );
+
+    for (policy, middle, last) in [
+        (
+            MipPolicy::Opaque,
+            [60, 60, 70, 255, 228, 100, 110, 255],
+            [144, 80, 90, 255],
+        ),
+        (
+            MipPolicy::Blend,
+            [60, 60, 70, 112, 228, 100, 110, 112],
+            [144, 80, 90, 112],
+        ),
+        (
+            MipPolicy::Cutout(0),
+            [60, 87, 97, 112, 234, 73, 83, 112],
+            [147, 80, 90, 112],
+        ),
+    ] {
+        let result = with_mipmaps(&source, policy);
+        assert_eq!(pixels(&result, 0), source.data);
+        assert_eq!(pixels(&result, 1), middle, "{policy:?}");
+        assert_eq!(pixels(&result, 2), last, "{policy:?}");
+    }
+}
+
+#[test]
+fn authored_compressed_chains_preserve_every_byte_offset_and_policy_independently() {
+    for (format, block) in [
+        (PixelFormat::Bc1RgbaUnorm, 8),
+        (PixelFormat::Bc2RgbaUnorm, 16),
+    ] {
+        let source = Texture {
+            width: 4,
+            height: 4,
+            format,
+            mips: [4, 2, 1]
+                .into_iter()
+                .enumerate()
+                .map(|(level, edge)| MipLevel {
+                    width: edge,
+                    height: edge,
+                    offset: 3 + level * (block + 4),
+                    len: block,
+                })
+                .collect(),
+            data: (0..3 * (block + 4) + 3).map(|n| n as u8).collect(),
+            source_len: 10000,
+        };
+
+        for policy in [MipPolicy::Opaque, MipPolicy::Blend, MipPolicy::Cutout(170)] {
+            let result = with_mipmaps(&source, policy);
+            assert!(matches!(result, Cow::Borrowed(_)));
+            assert_eq!(result.as_ref(), &source);
+        }
+    }
+}
+
+#[test]
+fn malformed_descriptors_are_returned_unchanged_without_panicking() {
+    let source = rgba(4, 4, [1, 2, 3, 4].repeat(16));
+    let mut cases = Vec::new();
+    let mut changed = source.clone();
+    changed.width = 0;
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.mips.clear();
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.mips[0].width = 3;
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.mips[0].len -= 1;
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.mips[0].offset = usize::MAX;
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.data.pop();
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.mips.resize(4, changed.mips[0]);
+    cases.push(changed);
+    let mut changed = source.clone();
+    changed.width = u32::MAX;
+    changed.height = u32::MAX;
+    cases.push(changed);
+    let mut changed = source;
+    changed.format = PixelFormat::Bc1RgbaUnorm;
+    cases.push(changed);
+
+    for source in cases {
+        for policy in [MipPolicy::Opaque, MipPolicy::Blend, MipPolicy::Cutout(170)] {
+            let result = with_mipmaps(&source, policy);
+            assert!(matches!(result, Cow::Borrowed(_)));
+            assert_eq!(result.as_ref(), &source);
+        }
+    }
+}
+
+#[test]
 #[ignore = "requires a compatible GPU adapter"]
 fn generated_compressed_tails_and_mixed_arrays_upload_without_validation_errors() {
     use crate::device::Gpu;

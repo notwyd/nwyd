@@ -111,7 +111,7 @@ fn special_and_dungeon_fields_scale_their_own_authored_ranges_and_keep_their_sty
     }
 }
 
-pub(super) fn field_world() -> World {
+pub(crate) fn field_world() -> World {
     use formats::data::item_list;
     use formats::mesh::registry;
     use formats::texture::texture_list;
@@ -182,6 +182,7 @@ pub(super) fn field_world() -> World {
         terrain_pages: Vec::new(),
         background_loader: None,
         visual_zone: None,
+        visual_prefetch: Default::default(),
         visual_collision_dirty: false,
         background_retry: None,
         variant: FIELD_VARIANT,

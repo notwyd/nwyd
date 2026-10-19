@@ -84,8 +84,10 @@ fn texture() -> BoundTexture {
             }],
             data: vec![255; 4],
             source_len: 4,
-        },
+        }
+        .into(),
         mip_policy_override: None,
+        prepared: None,
     }
 }
 

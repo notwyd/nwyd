@@ -1,6 +1,11 @@
 use crate::bank::{Bank, FRAME, Loader, Refusal, Sound};
 use crate::music::Track;
 use crate::volume;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 pub const CHANNELS: usize = 2;
 
@@ -15,6 +20,25 @@ pub struct Mixer {
     music_prev: [f32; 2],
     music_next: [f32; 2],
     music_frac: u64,
+    #[cfg(not(target_arch = "wasm32"))]
+    music_generation: Arc<AtomicU64>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) struct MusicBuffer {
+    track: Track,
+    frames: usize,
+    generation: u64,
+    current_generation: Arc<AtomicU64>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl MusicBuffer {
+    pub(crate) fn buffer(&mut self, mut should_stop: impl FnMut() -> bool) -> bool {
+        self.track.buffer_frames(self.frames, || {
+            should_stop() || self.current_generation.load(Ordering::Acquire) != self.generation
+        })
+    }
 }
 
 impl Mixer {
@@ -29,6 +53,8 @@ impl Mixer {
             music_prev: [0.0; 2],
             music_next: [0.0; 2],
             music_frac: 0,
+            #[cfg(not(target_arch = "wasm32"))]
+            music_generation: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -36,7 +62,15 @@ impl Mixer {
         self.device_rate
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn set_device_rate(&mut self, rate: u32) {
+        self.device_rate = rate.max(1);
+    }
+
     pub fn play_music(&mut self, slot: usize, track: Track) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.music_generation.fetch_add(1, Ordering::Release);
+
         self.music = Some(track);
 
         self.music_slot = Some(slot);
@@ -49,6 +83,9 @@ impl Mixer {
     }
 
     pub fn stop_music(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.music_generation.fetch_add(1, Ordering::Release);
+
         self.music = None;
 
         self.music_slot = None;
@@ -56,6 +93,35 @@ impl Mixer {
 
     pub fn music_slot(&self) -> Option<usize> {
         self.music_slot
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn take_music_buffer(&mut self, frames: usize) -> Option<MusicBuffer> {
+        if !self.active {
+            return None;
+        }
+        let track = self.music.take()?;
+        let step = (track.rate() as u64 * FRAME) / self.device_rate as u64;
+        let frames = ((self.music_frac as u128 + frames as u128 * step as u128) / FRAME as u128)
+            .try_into()
+            .unwrap_or(usize::MAX);
+        Some(MusicBuffer {
+            track,
+            frames,
+            generation: self.music_generation.load(Ordering::Acquire),
+            current_generation: Arc::clone(&self.music_generation),
+        })
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn restore_music_buffer(&mut self, buffered: MusicBuffer) -> Option<MusicBuffer> {
+        if self.music_generation.load(Ordering::Acquire) != buffered.generation
+            || self.music.is_some()
+        {
+            return Some(buffered);
+        }
+        self.music = Some(buffered.track);
+        None
     }
 
     pub fn set_music_volume(&mut self, hundredths_db: i32) {
@@ -107,7 +173,7 @@ impl Mixer {
 
         let frames = out.len() / CHANNELS;
 
-        self.mix_effects(out, frames);
+        self.mix_effects(out);
 
         self.mix_music(out, frames);
 
@@ -116,7 +182,7 @@ impl Mixer {
         }
     }
 
-    fn mix_effects(&mut self, out: &mut [f32], frames: usize) {
+    fn mix_effects(&mut self, out: &mut [f32]) {
         let gain = volume::amplitude(self.bank.volume()) / i16::MAX as f32;
 
         if gain == 0.0 {
@@ -132,27 +198,7 @@ impl Mixer {
 
             let step = (sound.rate() as u64 * FRAME) / device_rate as u64;
 
-            let voices: Vec<(usize, u64)> =
-                sound.active_fixed().map(|(i, pos, _)| (i, pos)).collect();
-
-            for (voice, start) in voices {
-                let mut pos = start;
-
-                for frame in 0..frames {
-                    let [l, r] = sound.sample(pos);
-
-                    out[frame * CHANNELS] += l * gain;
-
-                    out[frame * CHANNELS + 1] += r * gain;
-
-                    sound.advance_fixed(voice, step);
-
-                    match sound.active_fixed().find(|&(i, _, _)| i == voice) {
-                        Some((_, next, _)) => pos = next,
-                        None => break,
-                    }
-                }
-            }
+            sound.mix(out, step, gain);
         }
     }
 

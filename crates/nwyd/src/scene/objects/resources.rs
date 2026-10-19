@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug)]
 pub(crate) struct Bundle {
     pub meshes: Vec<MeshResource>,
@@ -44,7 +47,7 @@ impl ObjectScene {
     ) -> bool {
         let loader = self
             .texture_loader
-            .get_or_insert_with(|| super::super::actors::texture_loading::Loader::new(game));
+            .get_or_insert_with(|| super::super::actors::texture_loading::Loader::new(game, false));
 
         let meshes = self
             .instances
@@ -138,7 +141,11 @@ impl ObjectScene {
 }
 
 impl Bundle {
-    pub(super) fn from_scene(scene: ObjectScene) -> Self {
+    pub(super) fn from_scene(mut scene: ObjectScene) -> Self {
+        for texture in &mut scene.textures {
+            texture.prepare_material(false);
+        }
+
         Self {
             meshes: scene.meshes,
             textures: scene.textures,

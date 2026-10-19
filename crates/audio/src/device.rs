@@ -1,6 +1,13 @@
-use crate::mixer::{CHANNELS, Mixer};
+#[cfg(target_arch = "wasm32")]
+use crate::mixer::CHANNELS;
+use crate::mixer::Mixer;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
+
+#[cfg(not(target_arch = "wasm32"))]
+mod buffered;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -27,6 +34,8 @@ pub struct Output {
     #[cfg(target_arch = "wasm32")]
     _browser_unlock: BrowserUnlock,
     _stream: cpal::Stream,
+    #[cfg(not(target_arch = "wasm32"))]
+    producer: buffered::Producer,
     rate: u32,
     channels: u16,
 }
@@ -47,6 +56,14 @@ impl Output {
 
     pub fn channels(&self) -> u16 {
         self.channels
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for Output {
+    fn drop(&mut self) {
+        let _ = self._stream.pause();
+        self.producer.stop();
     }
 }
 
@@ -81,12 +98,81 @@ pub fn open(mixer: Arc<Mutex<Mixer>>) -> Result<Output, Error> {
 
     let format = supported.sample_format();
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let config = {
+        let mut config: cpal::StreamConfig = supported.into();
+        if let cpal::SupportedBufferSize::Range { min, max } = supported.buffer_size() {
+            let frames = rate
+                .div_ceil(100)
+                .clamp((*min).max(1), (*max).max((*min).max(1)));
+            config.buffer_size = cpal::BufferSize::Fixed(frames);
+        }
+        config
+    };
+
+    #[cfg(target_arch = "wasm32")]
     let config: cpal::StreamConfig = supported.into();
 
     let err_fn = |e| tracing::warn!(error = % e, "audio output stream error");
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let consumer = {
+        if !matches!(format, cpal::SampleFormat::F32 | cpal::SampleFormat::I16) {
+            return Err(Error::UnsupportedFormat(format!("{format:?}")));
+        }
+
+        Arc::new(OnceLock::<buffered::Consumer>::new())
+    };
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let callback_consumer = Arc::clone(&consumer);
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let stream = match format {
+        cpal::SampleFormat::F32 => device.build_output_stream(
+            config,
+            move |out: &mut [f32], _| match callback_consumer.get() {
+                Some(consumer) => consumer.fill(out, channels as usize, |sample| sample),
+                None => out.fill(0.0),
+            },
+            err_fn,
+            None,
+        ),
+        cpal::SampleFormat::I16 => device.build_output_stream(
+            config,
+            move |out: &mut [i16], _| match callback_consumer.get() {
+                Some(consumer) => consumer.fill(out, channels as usize, |sample| {
+                    (sample * i16::MAX as f32) as i16
+                }),
+                None => out.fill(0),
+            },
+            err_fn,
+            None,
+        ),
+        other => return Err(Error::UnsupportedFormat(format!("{other:?}"))),
+    }
+    .map_err(|e| Error::Stream(e.to_string()))?;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let producer = {
+        let callback_frames = stream.buffer_size().unwrap_or(match config.buffer_size {
+            cpal::BufferSize::Fixed(frames) => frames,
+            cpal::BufferSize::Default => rate.div_ceil(10),
+        });
+        mixer
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .set_device_rate(rate);
+        let (producer, ready) = buffered::Producer::spawn(mixer, rate, callback_frames as usize)
+            .map_err(|error| Error::Stream(error.to_string()))?;
+        let _ = consumer.set(ready);
+        producer
+    };
+
+    #[cfg(target_arch = "wasm32")]
     let mut scratch: Vec<f32> = Vec::new();
 
+    #[cfg(target_arch = "wasm32")]
     let stream = match format {
         cpal::SampleFormat::F32 => device.build_output_stream(
             config,
@@ -128,11 +214,14 @@ pub fn open(mixer: Arc<Mutex<Mixer>>) -> Result<Output, Error> {
         #[cfg(target_arch = "wasm32")]
         _browser_unlock: BrowserUnlock::new(&stream)?,
         _stream: stream,
+        #[cfg(not(target_arch = "wasm32"))]
+        producer,
         rate,
         channels,
     })
 }
 
+#[cfg(target_arch = "wasm32")]
 fn fill(mixer: &Arc<Mutex<Mixer>>, scratch: &mut [f32]) {
     match mixer.lock() {
         Ok(mut m) => m.fill(scratch),
@@ -140,6 +229,7 @@ fn fill(mixer: &Arc<Mutex<Mixer>>, scratch: &mut [f32]) {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 fn scatter<T: Copy + Default>(
     stereo: &[f32],
     out: &mut [T],

@@ -10,16 +10,24 @@ use std::collections::HashMap;
 use web_time::{Duration, Instant};
 
 pub(crate) struct Budget {
-    start: Instant,
+    start: Option<Instant>,
     bytes: usize,
     assets: usize,
     limit: usize,
 }
 
 impl Budget {
+    #[cfg(test)]
+    pub(super) fn with_limit(limit: usize) -> Self {
+        Self {
+            limit,
+            ..Self::new()
+        }
+    }
+
     pub fn new() -> Self {
         Self {
-            start: Instant::now(),
+            start: None,
             bytes: 0,
             assets: 0,
             limit: 2 * 1024 * 1024,
@@ -32,12 +40,17 @@ impl Budget {
                 && self.bytes.saturating_add(bytes) <= self.limit)
     }
 
-    fn take(&mut self, bytes: usize) -> bool {
-        if !self.admits(bytes, self.start.elapsed()) {
+    pub(super) fn take(&mut self, bytes: usize) -> bool {
+        if !self.admits(
+            bytes,
+            self.start.map_or(Duration::ZERO, |start| start.elapsed()),
+        ) {
             return false;
         }
 
-        self.bytes += bytes;
+        self.start.get_or_insert_with(Instant::now);
+
+        self.bytes = self.bytes.saturating_add(bytes);
 
         self.assets += 1;
 
@@ -49,8 +62,12 @@ impl Budget {
             tracing::debug!(
                 bytes = self.bytes,
                 assets = self.assets,
-                elapsed_ms = self.start.elapsed().as_secs_f64() * 1000.0,
-                "zone GPU upload slice"
+                window_ms = self
+                    .start
+                    .map_or(Duration::ZERO, |start| start.elapsed())
+                    .as_secs_f64()
+                    * 1000.0,
+                "frame GPU upload budget"
             );
         }
     }
@@ -106,11 +123,14 @@ impl Staging {
         {
             if index >= self.cursor {
                 if textures.needs_stage(t, skin) {
-                    if !budget.take(t.texture.data.len()) {
+                    let Some(material) = textures.prepared(t, skin) else {
+                        return false;
+                    };
+                    if !budget.take(material.upload_bytes()) {
                         return false;
                     }
 
-                    textures.stage(gpu, t, skin);
+                    textures.stage(gpu, t, skin, &material);
                 }
 
                 self.cursor += 1;
@@ -242,5 +262,51 @@ impl Staging {
         copies.dedup_by_key(|c| c.destination_offset);
 
         copies
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn first_asset_is_admitted_even_when_larger_than_the_budget() {
+        let budget = Budget::new();
+        assert!(budget.admits(budget.limit + 1, Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn later_assets_obey_both_time_and_byte_limits() {
+        let mut budget = Budget::new();
+        budget.assets = 1;
+        budget.bytes = budget.limit - 128;
+        assert!(budget.admits(128, Duration::from_micros(499)));
+        assert!(!budget.admits(129, Duration::ZERO));
+        assert!(!budget.admits(128, Duration::from_micros(500)));
+        assert!(!budget.admits(usize::MAX, Duration::ZERO));
+    }
+
+    #[test]
+    fn repeated_upload_phases_share_the_limit_until_next_frame() {
+        let mut budget = Budget::with_limit(0);
+        assert!(budget.start.is_none());
+        assert!(budget.take(1024));
+        assert!(budget.start.is_some());
+        for _ in 0..3 {
+            assert!(!budget.take(1024));
+        }
+        assert_eq!(budget.bytes, 1024);
+        assert_eq!(budget.assets, 1);
+        budget = Budget::with_limit(0);
+        assert!(budget.take(1024));
+    }
+
+    #[test]
+    fn later_upload_phases_cannot_restart_an_expired_window() {
+        let mut budget = Budget::new();
+        assert!(budget.take(1));
+        budget.start = Some(Instant::now() - Duration::from_secs(1));
+        assert!(!budget.take(1));
+        assert_eq!(budget.assets, 1);
     }
 }

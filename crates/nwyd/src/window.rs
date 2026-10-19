@@ -8,6 +8,7 @@ use crate::scene::field::{self, Transition};
 use crate::scene::rng::Lcg;
 use crate::scene::{char_listener, listener};
 use anyhow::{Context, Result, anyhow};
+use diagnostics::{FrameDiagnostics, FrameProbe};
 use render::blit::{BlitSource, Blitter, Fit};
 use render::device::Gpu;
 use render::target::{COLOR_FORMAT, Offscreen};
@@ -28,6 +29,7 @@ mod actor_packets;
 mod combat_packets;
 mod commerce_packets;
 mod departure;
+mod diagnostics;
 mod dispatch;
 mod entry;
 mod environment_packets;
@@ -74,6 +76,7 @@ struct Live {
     gpu: Gpu,
     back_buffer: Offscreen,
     renderer: SceneRenderer,
+    timings: Option<render::timing::GpuTimings>,
     neural_failed: bool,
     blitter: Blitter,
     source: BlitSource,
@@ -123,6 +126,7 @@ pub struct Client {
     nell_browser: Option<crate::nell_browser::Browser>,
     live: Option<Live>,
     frames: u64,
+    diagnostics: FrameDiagnostics,
     fit: Option<Fit>,
     overlay: Option<Overlay>,
     pacing: pacing::Pacing,
@@ -220,6 +224,7 @@ impl Client {
             #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
             nell_browser: None,
             frames: 0,
+            diagnostics: FrameDiagnostics::from_env(),
             fit: None,
             last_frame_at: None,
             fit_warned: false,
@@ -765,6 +770,11 @@ impl Client {
     }
 
     fn raised(&mut self, raised: listener::Refusal) {
+        if self.diagnostics.is_benchmark() {
+            tracing::info!("NWYD: login is disabled during an offline frame benchmark");
+            return;
+        }
+
         let (account, password, launcher) = match raised {
             listener::Refusal::LoginAccepted { account, password } => (account, password, None),
             listener::Refusal::LauncherAccepted => {
@@ -1892,10 +1902,32 @@ impl Client {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    pub fn with_frame_benchmark(
+        mut self,
+        warmup: u64,
+        frames: u64,
+        output: std::path::PathBuf,
+    ) -> Self {
+        self.diagnostics = FrameDiagnostics::benchmark(
+            warmup,
+            frames,
+            output,
+            !std::env::var("NWYD_GPU_TIMINGS").is_ok_and(|value| value == "0"),
+        );
+        self
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn run(mut self, event_loop: EventLoop<()>) -> Result<()> {
-        event_loop
+        self.validate_benchmark_session()?;
+
+        let event_result = event_loop
             .run_app(&mut self)
-            .context(crate::error_context::Operation::RunEventLoop)?;
+            .context(crate::error_context::Operation::RunEventLoop);
+
+        self.runtime.net.shutdown_transport();
+
+        let report = self.finish_frame_report();
 
         let _ = self.runtime.scene.final_guild_offline();
 
@@ -1903,11 +1935,13 @@ impl Client {
             audio.leave();
         }
 
+        event_result?;
+
         if let Some(failure) = self.failure.take() {
             return Err(failure);
         }
 
-        Ok(())
+        report
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -1935,7 +1969,25 @@ impl Client {
         Ok(())
     }
 
+    fn benchmark_session_is_offline(&self) -> bool {
+        self.runtime.net.phase() == net::Phase::Offline && !self.runtime.net.is_connected()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn validate_benchmark_session(&self) -> Result<()> {
+        anyhow::ensure!(
+            !self.diagnostics.is_benchmark() || self.benchmark_session_is_offline(),
+            "an offline frame benchmark cannot use an active network session"
+        );
+        Ok(())
+    }
+
     fn tick(&mut self) -> crate::clock::GameTime {
+        if let Some(time) = self.diagnostics.benchmark_time(self.frames)
+            && self.benchmark_session_is_offline()
+        {
+            self.runtime.clock = Clock::frozen(time);
+        }
         let inputs = if self.render_rate.is_sampling() {
             crate::scene::lod::Inputs::live(self.render_rate.rate(), self.render_quality)
         } else {
@@ -2108,6 +2160,10 @@ impl Client {
             config.present_mode,
         );
 
+        let timings =
+            self.diagnostics
+                .configure_gpu(&gpu, &config, (width, height), window_backend);
+
         Ok(Live {
             window_backend,
             window,
@@ -2116,6 +2172,7 @@ impl Client {
             gpu,
             back_buffer,
             renderer,
+            timings,
             neural_failed: false,
             blitter,
             source,
@@ -2292,6 +2349,13 @@ impl Client {
             panel.set_neural_rendering_available(neural_available);
         }
 
+        live.timings = self.diagnostics.configure_gpu(
+            &gpu,
+            &live.config,
+            (width, height),
+            live.window_backend,
+        );
+
         live.gpu = gpu;
 
         live.stale = false;
@@ -2307,7 +2371,7 @@ impl Client {
         Ok(())
     }
 
-    fn draw(&mut self) -> Result<()> {
+    fn draw(&mut self, mut probe: FrameProbe) -> Result<()> {
         if matches!(
             & self.runtime.scene, Scene::Field(scene) if scene.world.force_load.is_some()
         ) {
@@ -2340,6 +2404,11 @@ impl Client {
 
         let settings_open = self.settings_visible();
 
+        if self.diagnostics.enabled() {
+            probe.sample.frame_id = self.frames;
+            probe.sample.continuous = self.uncapped_wayland();
+        }
+
         if self.overlay.is_some() {
             let now = web_time::Instant::now();
 
@@ -2360,11 +2429,24 @@ impl Client {
             return Ok(());
         }
 
+        if let Some(timings) = &mut live.timings {
+            for sample in timings.poll(&live.gpu) {
+                self.diagnostics.record_gpu(sample);
+            }
+        }
+
+        if self.diagnostics.enabled() {
+            probe.sample.focused = live.window.has_focus();
+            probe.sample.surface = [live.config.width, live.config.height];
+        }
+
         if std::mem::take(&mut live.stale) {
             live.surface.configure(&live.gpu.device, &live.config);
         }
 
+        probe.sample.gap_ms = probe.checkpoint();
         let acquired = live.surface.get_current_texture();
+        probe.sample.acquire_ms = probe.checkpoint();
 
         if live.gpu.is_lost() {
             return Ok(());
@@ -2420,13 +2502,15 @@ impl Client {
 
         finish_frame_audio(&mut self.runtime.scene, self.audio.as_ref());
 
-        if self.settings.overlay
+        if (self.settings.overlay || self.diagnostics.overlay_enabled())
             && let Some(overlay) = self.overlay.as_ref()
         {
             let top = 6.0;
 
+            let mut lines = overlay.lines();
+            lines.extend(self.diagnostics.lines());
             live.renderer
-                .push_overlay(&overlay.draws(&overlay.lines(), (6.0, top)));
+                .push_overlay(&overlay.draws(&lines, (6.0, top)));
         }
 
         if let Some(panel) = &mut self.runtime.game_settings {
@@ -2440,22 +2524,36 @@ impl Client {
             );
         }
 
+        let timing = live
+            .timings
+            .as_mut()
+            .and_then(|timings| timings.begin_frame(self.frames));
+
         let prepared = live
             .renderer
             .prepare_frame(&live.gpu, self.runtime.scene.viewport());
 
-        prepared.submit(&live.back_buffer.view);
+        probe.sample.prepare_ms = probe.checkpoint();
+        prepared.submit_timed(&live.back_buffer.view, timing.as_ref());
+        probe.sample.submit_ms = probe.checkpoint();
 
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let fit = live.blitter.render(
+        let fit = live.blitter.render_timed(
             &live.gpu,
             &live.source,
             &view,
             (live.config.width, live.config.height),
+            timing.as_ref(),
         );
+
+        probe.sample.blit_ms = probe.checkpoint();
+
+        if let (Some(timings), Some(timing)) = (&mut live.timings, timing) {
+            timings.finish_frame(timing);
+        }
 
         self.fit = Some(fit);
 
@@ -2476,6 +2574,10 @@ impl Client {
         live.window.pre_present_notify();
 
         live.gpu.queue.present(frame);
+
+        probe.sample.present_ms = probe.checkpoint();
+        probe.sample_material_uploads(|| live.renderer.material_upload_stats());
+        self.diagnostics.record(probe.finish());
 
         self.render_rate.sample(self.runtime.clock.tick_ms());
 
@@ -2548,6 +2650,17 @@ impl Client {
 
         let frames_before = self.frames;
 
+        if let Some(live) = &mut self.live {
+            live.renderer.begin_upload_frame();
+        }
+
+        let mut probe = FrameProbe::new(self.diagnostics.enabled());
+        probe.begin_material_uploads(|| {
+            self.live
+                .as_ref()
+                .map(|live| live.renderer.material_upload_stats())
+        });
+
         match self.advance() {
             Ok(crate::runtime::UpdateOutcome::Ready { .. }) => {}
             Ok(crate::runtime::UpdateOutcome::Exit) => {
@@ -2562,12 +2675,23 @@ impl Client {
             }
         };
 
+        probe.sample.update_ms = probe.checkpoint();
+
         if attempt_draw
             && self.should_render()
-            && let Err(error) = self.draw()
+            && let Err(error) = self.draw(probe)
         {
             self.fail(event_loop, error);
 
+            return true;
+        }
+
+        if let Some(live) = &self.live {
+            live.renderer.finish_upload_frame();
+        }
+
+        if self.diagnostics.done(self.frames) {
+            event_loop.exit();
             return true;
         }
 
@@ -2643,11 +2767,19 @@ fn finish_frame_audio(scene: &mut Scene, audio: Option<&SceneAudio>) {
                 .map(|request| audio.play_damage(request)),
         );
     } else {
-        damage_played.resize(damage_sounds.len(), false);
+        damage_played.resize(damage_sounds.len(), Some(false));
     }
 
     for (request, played) in damage_sounds.into_iter().zip(damage_played) {
-        scene.finish_damage_sound(request, played);
+        if let Some(played) = played {
+            scene.finish_damage_sound(request, played);
+        }
+    }
+
+    if let Some(audio) = audio {
+        for (request, played) in audio.take_damage_results() {
+            scene.finish_damage_sound(request, played);
+        }
     }
 }
 

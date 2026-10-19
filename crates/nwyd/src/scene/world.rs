@@ -43,7 +43,10 @@ pub(crate) mod view_stream;
 mod terrain_tests;
 
 #[cfg(test)]
-mod fog_tests;
+pub(crate) mod fog_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod material_upload_tests;
 
 pub const CAMERA_PAIR_UNBUILT: (f32, f32) = (0.0, 0.0);
 
@@ -544,6 +547,7 @@ pub struct World {
     background_loader: Option<loading::Loader>,
     background_retry: Option<web_time::Instant>,
     visual_zone: Option<(u8, u8)>,
+    visual_prefetch: view_stream::Prefetch,
     visual_collision_dirty: bool,
     pub variant: u32,
     pub scene: u32,
@@ -1035,6 +1039,14 @@ pub fn build_spec(game: &GameDir, spec: &WorldSpec, calendar: &Calendar) -> Resu
 
     actors.place_swing_radii(|id| objects.mesh_max_z(id));
 
+    for texture in &mut objects.textures {
+        texture.prepare_material(false);
+    }
+
+    for texture in &mut actors.textures {
+        texture.prepare_material(true);
+    }
+
     let mut rng = super::rng::Lcg::new(WEATHER_SEED);
 
     let (rain, snow, snow_fast) = (
@@ -1050,6 +1062,7 @@ pub fn build_spec(game: &GameDir, spec: &WorldSpec, calendar: &Calendar) -> Resu
         background_loader: None,
         background_retry: None,
         visual_zone: None,
+        visual_prefetch: Default::default(),
         visual_collision_dirty: false,
         variant,
         scene: spec.scene,
@@ -1139,8 +1152,9 @@ fn stitch_terrain_boundaries(
     mesh: &mut TerrainMesh,
     terrain_revision: &mut u64,
     terrain_pages: &mut Vec<u64>,
+    ranges: &[std::ops::Range<usize>],
 ) {
-    let changed = mesh.stitch_boundaries();
+    let changed = mesh.stitch_boundaries_in(ranges);
 
     if changed.is_empty() {
         return;
@@ -1164,6 +1178,7 @@ fn refresh_terrain_colours(
     terrains: &[&Terrain],
     terrain_revision: &mut u64,
     terrain_pages: &mut Vec<u64>,
+    registered: &[usize],
 ) {
     let revision = terrain_revision
         .checked_add(1)
@@ -1173,7 +1188,8 @@ fn refresh_terrain_colours(
 
     let mut changed = false;
 
-    for (zone_index, terrain) in terrains.iter().enumerate() {
+    for &zone_index in registered {
+        let terrain = terrains[zone_index];
         let dx = (i32::from(terrain.zone_x) - i32::from(mesh.zone.0)) * 64;
 
         let dz = (i32::from(terrain.zone_y) - i32::from(mesh.zone.1)) * 64;
@@ -1204,7 +1220,26 @@ fn refresh_terrain_colours(
         *terrain_revision = revision;
     }
 
-    stitch_terrain_boundaries(mesh, terrain_revision, terrain_pages);
+    let ranges = terrain_boundary_ranges(terrains, registered);
+
+    stitch_terrain_boundaries(mesh, terrain_revision, terrain_pages, &ranges);
+}
+
+fn terrain_boundary_ranges(
+    terrains: &[&Terrain],
+    registered: &[usize],
+) -> Vec<std::ops::Range<usize>> {
+    terrains
+        .iter()
+        .enumerate()
+        .filter(|(_, terrain)| {
+            registered.iter().any(|&index| {
+                terrain.zone_x.abs_diff(terrains[index].zone_x) <= 1
+                    && terrain.zone_y.abs_diff(terrains[index].zone_y) <= 1
+            })
+        })
+        .map(|(index, _)| index * 64 * 64 * 4..(index + 1) * 64 * 64 * 4)
+        .collect()
 }
 
 pub fn detail_layer_enabled(env_type: i32) -> bool {
@@ -2012,7 +2047,7 @@ impl World {
         }
     }
 
-    fn rebuild_terrain_colours(&mut self) {
+    fn rebuild_terrain_colours(&mut self, registered: &[usize]) {
         let terrains: Vec<_> = std::iter::once(&self.terrain)
             .chain(self.streamed.iter().map(|s| &s.terrain))
             .collect();
@@ -2022,6 +2057,7 @@ impl World {
             &terrains,
             &mut self.terrain_revision,
             &mut self.terrain_pages,
+            registered,
         );
     }
 
@@ -2066,14 +2102,14 @@ impl World {
 
         let mut zones = lights::Zones::new(list);
 
-        let mut landed = false;
-
         for at in stamps {
-            landed |= zones.register(at.x + 2.0, at.z - 2.0, 0);
+            zones.register(at.x + 2.0, at.z - 2.0, 0);
         }
 
-        if landed {
-            self.rebuild_terrain_colours();
+        let registered = zones.registered_zones().to_vec();
+
+        if !registered.is_empty() {
+            self.rebuild_terrain_colours(&registered);
         }
     }
 
@@ -2603,7 +2639,7 @@ impl World {
 
         let loading::Prepared {
             mut terrain,
-            mut mesh,
+            mesh,
             records,
             tiles,
             resources,
@@ -2628,7 +2664,7 @@ impl World {
 
         let objects_done = commit_start.elapsed();
 
-        let lights = {
+        let (lights, mut registered) = {
             let scene = self.lamps.scene();
 
             let mut list: Vec<&mut Terrain> = vec![&mut self.terrain];
@@ -2639,20 +2675,20 @@ impl World {
 
             let mut zones = lights::Zones::new(list);
 
-            lights::build(
+            let lights = lights::build(
                 &mut zones,
                 &mut self.lamps,
                 &self.objects.neighbour_records[first..],
                 zone,
                 scene,
-            )
+            );
+
+            (lights, zones.registered_zones().to_vec())
         };
 
         self.lights.registrations.extend(lights.registrations);
 
         self.lights.glows.extend(lights.glows.iter().cloned());
-
-        self.rebuild_terrain_colours();
 
         let dx =
             (i32::from(zone.0) - i32::from(self.terrain.zone_x)) * formats::world::TRN_DIM as i32;
@@ -2660,20 +2696,25 @@ impl World {
         let dz =
             (i32::from(zone.1) - i32::from(self.terrain.zone_y)) * formats::world::TRN_DIM as i32;
 
-        for vertex in &mut mesh.vertices {
-            let x = (vertex.pos[0] as usize).min(63);
-
-            let z = (vertex.pos[2] as usize).min(63);
-
-            vertex.diffuse = u32::from_le_bytes(terrain.cells[z * 64 + x].color);
-        }
-
         self.mesh.append_neighbour(&mesh, dx, dz);
 
-        stitch_terrain_boundaries(
+        let appended = self.streamed.len() + 1;
+
+        if !registered.contains(&appended) {
+            registered.push(appended);
+        }
+
+        let terrains: Vec<_> = std::iter::once(&self.terrain)
+            .chain(self.streamed.iter().map(|s| &s.terrain))
+            .chain(std::iter::once(&terrain))
+            .collect();
+
+        refresh_terrain_colours(
             &mut self.mesh,
+            &terrains,
             &mut self.terrain_revision,
             &mut self.terrain_pages,
+            &registered,
         );
 
         for tile in tiles {
@@ -2780,6 +2821,8 @@ impl World {
             relief: terrain.build_height_grid(),
             terrain,
         });
+
+        self.visual_prefetch.invalidate_residency();
 
         tracing::debug!(
             ?zone,

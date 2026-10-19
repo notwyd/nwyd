@@ -1,6 +1,7 @@
 use crate::device::Gpu;
 use formats::texture::texture_list::FormatFlag;
 use formats::texture::{PixelFormat, Texture};
+use std::{borrow::Cow, sync::Arc};
 
 mod mipmaps;
 
@@ -119,6 +120,85 @@ pub struct GpuTexture {
     pub height: u32,
     pub mip_levels: u32,
     pub alpha: AlphaPolicy,
+}
+
+#[derive(Debug)]
+pub struct PreparedMaterial {
+    texture: Arc<Texture>,
+    policy: MipPolicy,
+    upload_bytes: usize,
+}
+
+impl PreparedMaterial {
+    pub fn new(texture: &Texture, policy: MipPolicy) -> Self {
+        Self::from_prepared(Arc::new(with_mipmaps(texture, policy).into_owned()), policy)
+    }
+
+    pub fn from_shared(source: Arc<Texture>, policy: MipPolicy) -> Self {
+        let texture = match with_mipmaps(&source, policy) {
+            Cow::Borrowed(_) => source,
+            Cow::Owned(texture) => Arc::new(texture),
+        };
+
+        Self::from_prepared(texture, policy)
+    }
+
+    fn from_prepared(texture: Arc<Texture>, policy: MipPolicy) -> Self {
+        let upload_bytes = upload_size(&texture);
+
+        Self {
+            texture,
+            policy,
+            upload_bytes,
+        }
+    }
+
+    pub fn policy(&self) -> MipPolicy {
+        self.policy
+    }
+
+    pub fn texture(&self) -> &Texture {
+        &self.texture
+    }
+
+    pub fn upload_bytes(&self) -> usize {
+        self.upload_bytes
+    }
+
+    pub fn upload(&self, gpu: &Gpu, alpha: AlphaPolicy, label: &str) -> GpuTexture {
+        upload(gpu, &self.texture, alpha, label)
+    }
+}
+
+pub fn upload_size(texture: &Texture) -> usize {
+    let mut total = 0usize;
+
+    for mip in &texture.mips {
+        let Some(end) = mip.offset.checked_add(mip.len) else {
+            break;
+        };
+
+        if end > texture.data.len() || mip.width == 0 || mip.height == 0 {
+            break;
+        }
+
+        let bytes = match texture.format.block_bytes() {
+            Some(block) => (mip.width.div_ceil(4) as usize)
+                .checked_mul(mip.height.div_ceil(4) as usize)
+                .and_then(|blocks| blocks.checked_mul(block)),
+            None => (mip.width as usize)
+                .checked_mul(mip.height as usize)
+                .and_then(|pixels| pixels.checked_mul(4)),
+        };
+
+        let Some(bytes) = bytes.filter(|bytes| *bytes <= mip.len) else {
+            break;
+        };
+
+        total = total.saturating_add(bytes);
+    }
+
+    total
 }
 
 pub fn upload_material(
@@ -356,3 +436,9 @@ pub fn upload_array(
         alpha,
     })
 }
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod gpu_tests;

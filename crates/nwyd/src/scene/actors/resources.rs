@@ -336,6 +336,10 @@ impl Bundle {
                 part.texture = part.texture.map(|index| remap[index]);
             }
         }
+
+        for texture in &mut self.textures {
+            texture.prepare_material(true);
+        }
     }
 }
 
@@ -594,13 +598,14 @@ impl Loader<'_> {
 
         if self.background_textures {
             self.textures.push(BoundTexture {
+                prepared: None,
                 mip_policy_override: None,
                 pending: true,
                 effect_table,
                 slot,
                 path: entry.path_str(),
                 flag: entry.format_flag,
-                texture: super::texture_loading::placeholder(),
+                texture: super::texture_loading::placeholder().into(),
             });
 
             return Some(self.textures.len() - 1);
@@ -611,13 +616,14 @@ impl Loader<'_> {
         let texture = { formats::texture::decode(&bytes).ok()? };
 
         self.textures.push(BoundTexture {
+            prepared: None,
             mip_policy_override: None,
             pending: false,
             effect_table,
             slot,
             path: entry.path_str(),
             flag: entry.format_flag,
-            texture,
+            texture: texture.into(),
         });
 
         Some(self.textures.len() - 1)

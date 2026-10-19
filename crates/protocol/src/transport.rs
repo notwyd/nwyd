@@ -30,6 +30,9 @@ use std::time::Duration;
 
 mod diagnostics;
 
+#[cfg(not(target_arch = "wasm32"))]
+mod outbound;
+
 use diagnostics::{Diagnostics, write_counted};
 pub use diagnostics::{DisconnectReport, FailedWrite, IoFailure, PacketMetadata};
 
@@ -37,6 +40,9 @@ pub const PORT: u16 = 8281;
 
 #[cfg(not(target_arch = "wasm32"))]
 const READ_CHUNK: usize = 128 * 1024;
+
+#[cfg(not(target_arch = "wasm32"))]
+const MAX_PENDING_EVENTS: usize = 2_048;
 
 pub trait TrafficObserver: Send + Sync {
     fn packet(&self, connection: u64, outgoing: bool, packet: &Packet);
@@ -57,6 +63,8 @@ static NEXT_LINK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::n
 struct Link {
     id: u64,
     socket: TcpStream,
+    #[cfg(not(target_arch = "wasm32"))]
+    writer: outbound::Writer,
     inbound: Receiver<Event>,
     peer: Peer,
     diagnostics: Arc<Diagnostics>,
@@ -127,7 +135,15 @@ impl Link {
 
         let reader = socket.try_clone().map_err(|e| failed("reader_clone", e))?;
 
-        let (tx, inbound) = std::sync::mpsc::channel();
+        let writer = outbound::Writer::new(
+            socket.try_clone().map_err(|e| failed("writer_clone", e))?,
+            id,
+            observer.clone(),
+            diagnostics.clone(),
+        )
+        .map_err(|e| failed("writer_start", e))?;
+
+        let (tx, inbound) = std::sync::mpsc::sync_channel(MAX_PENDING_EVENTS);
 
         let reader_diagnostics = diagnostics.clone();
 
@@ -139,6 +155,7 @@ impl Link {
         Ok(Link {
             id,
             socket,
+            writer,
             inbound,
             peer,
             diagnostics,
@@ -160,6 +177,8 @@ pub struct Connection {
     observer: Observer,
     link_id: u64,
     socket: TcpStream,
+    #[cfg(not(target_arch = "wasm32"))]
+    writer: outbound::Writer,
     inbound: Receiver<Event>,
     schedule: Schedule,
     client_id: u16,
@@ -192,6 +211,8 @@ impl Connection {
         let Link {
             id,
             socket,
+            #[cfg(not(target_arch = "wasm32"))]
+            writer,
             inbound,
             peer,
             diagnostics,
@@ -201,6 +222,8 @@ impl Connection {
             observer,
             link_id: id,
             socket,
+            #[cfg(not(target_arch = "wasm32"))]
+            writer,
             inbound,
             send_state: Default::default(),
             schedule: Schedule::default(),
@@ -224,21 +247,41 @@ impl Connection {
 
         self.closed = true;
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let drained = {
+            let (tx, inbound) = std::sync::mpsc::channel();
+            drop(tx);
+            self.inbound = inbound;
+            self.writer.finish()
+        };
+
         let _ = self.socket.shutdown(std::net::Shutdown::Both);
 
         if let Some(observer) = &self.observer {
             observer.event(self.link_id, "replaced");
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Err(error) = drained {
+            tracing::warn!(%error, "old connection stopped before queued packets finished");
+        }
+
         let Link {
             id,
             socket,
+            #[cfg(not(target_arch = "wasm32"))]
+            writer,
             inbound,
             peer,
             diagnostics,
         } = Link::open(address, port, timeout, self.observer.clone())?;
 
         let old_socket = std::mem::replace(&mut self.socket, socket);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.writer = writer;
+        }
 
         self.diagnostics = diagnostics;
 
@@ -307,6 +350,17 @@ impl Connection {
             ));
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let reservation = match self.writer.reserve(body.len()) {
+            Ok(reservation) => reservation,
+            Err(error) => {
+                self.diagnostics
+                    .report("send_queue", Some(&error), None, None, true);
+                let _ = self.socket.shutdown(std::net::Shutdown::Both);
+                return Err(error);
+            }
+        };
+
         let tick = self
             .send_state
             .lock()
@@ -327,6 +381,17 @@ impl Connection {
 
         codec::seal(body, key, client_id, tick);
 
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if let Err(error) = reservation.send(body, metadata) {
+                self.diagnostics
+                    .report("send_queue", Some(&error), None, None, true);
+                let _ = self.socket.shutdown(std::net::Shutdown::Both);
+                return Err(error);
+            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
         if let Err((error, bytes_written)) =
             write_counted(&mut self.socket, body, |n| self.diagnostics.bytes(true, n))
         {
@@ -346,15 +411,16 @@ impl Connection {
             return Err(error);
         }
 
-        self.diagnostics.packet(metadata);
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.diagnostics.packet(metadata);
 
-        if let Some(observer) = &self.observer {
-            let mut decoder = Decoder::new();
-
-            decoder.feed(body);
-
-            for packet in decoder.drain().0 {
-                observer.packet(self.link_id, true, &packet);
+            if let Some(observer) = &self.observer {
+                let mut decoder = Decoder::new();
+                decoder.feed(body);
+                for packet in decoder.drain().0 {
+                    observer.packet(self.link_id, true, &packet);
+                }
             }
         }
 
@@ -433,6 +499,28 @@ impl Connection {
     pub fn quit(&mut self, tick: u32) -> std::io::Result<()> {
         self.send(&mut client::quit(), tick)
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn begin_close(&mut self) {
+        self.diagnostics
+            .report("local_close", None, None, None, true);
+        self.closed = true;
+        let (tx, inbound) = std::sync::mpsc::channel();
+        drop(tx);
+        self.inbound = inbound;
+        self.writer.close();
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn close_finished(&self) -> bool {
+        self.writer.is_finished()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn close(&mut self) -> std::io::Result<()> {
+        self.begin_close();
+        self.writer.finish()
+    }
 }
 
 impl Drop for Connection {
@@ -440,6 +528,7 @@ impl Drop for Connection {
         self.diagnostics
             .report("local_close", None, None, None, true);
 
+        #[cfg(target_arch = "wasm32")]
         let _ = self.socket.shutdown(std::net::Shutdown::Both);
     }
 }
@@ -447,7 +536,7 @@ impl Drop for Connection {
 #[cfg(not(target_arch = "wasm32"))]
 fn read_loop(
     mut socket: impl Read,
-    tx: std::sync::mpsc::Sender<Event>,
+    tx: std::sync::mpsc::SyncSender<Event>,
     id: u64,
     observer: Observer,
     diagnostics: Arc<Diagnostics>,
@@ -540,3 +629,9 @@ pub mod keepalive {
 pub use keys::TABLE as KEY_TABLE_LEN;
 
 pub type RawPacket = Packet;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod native_tests;

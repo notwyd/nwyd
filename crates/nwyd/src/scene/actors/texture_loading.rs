@@ -1,7 +1,14 @@
 use super::*;
 use formats::texture::{MipLevel, PixelFormat, Texture};
-use std::{collections::BTreeSet, sync::mpsc};
+use render::texture::{MipPolicy, PreparedMaterial};
+use std::{
+    collections::BTreeSet,
+    sync::{Arc, mpsc},
+};
 use web_time::{Duration, Instant};
+
+#[cfg(test)]
+mod tests;
 
 pub(crate) fn placeholder() -> Texture {
     Texture {
@@ -19,34 +26,64 @@ pub(crate) fn placeholder() -> Texture {
     }
 }
 
-type Reply = (usize, Result<Texture>);
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Request {
+    index: usize,
+    path: String,
+    policy: MipPolicy,
+    generation: u64,
+}
+
+impl Request {
+    fn matches(&self, textures: &[BoundTexture], skin: bool) -> bool {
+        textures.get(self.index).is_some_and(|texture| {
+            texture.pending && texture.path == self.path && texture.mip_policy(skin) == self.policy
+        })
+    }
+}
+
+#[derive(Debug)]
+struct Loaded {
+    texture: Arc<Texture>,
+    prepared: Arc<PreparedMaterial>,
+}
+
+type Reply = (Request, Result<Loaded>);
 
 #[derive(Debug)]
 struct Worker {
-    requests: mpsc::SyncSender<(usize, String)>,
+    requests: mpsc::SyncSender<Request>,
     replies: mpsc::Receiver<Reply>,
 }
 
 impl Worker {
     fn new(game: GameDir) -> std::io::Result<Self> {
-        let (requests, work) = mpsc::sync_channel::<(usize, String)>(1);
+        let (requests, work) = mpsc::sync_channel::<Request>(1);
 
         let (done, replies) = mpsc::sync_channel(1);
 
-        crate::background::spawn("nwyd-skin-textures", work, done, move |(index, path)| {
+        crate::background::spawn("nwyd-skin-textures", work, done, move |request| {
             let start = Instant::now();
 
             let result = game
-                .read(path.as_bytes())
+                .read(request.path.as_bytes())
                 .map_err(anyhow::Error::from)
-                .and_then(|bytes| formats::texture::decode(&bytes).map_err(Into::into));
+                .and_then(|bytes| formats::texture::decode(&bytes).map_err(Into::into))
+                .map(|texture| {
+                    let texture = Arc::new(texture);
+                    let prepared = Arc::new(PreparedMaterial::from_shared(
+                        Arc::clone(&texture),
+                        request.policy,
+                    ));
+                    Loaded { texture, prepared }
+                });
 
             tracing::debug!(
                 elapsed_ms = start.elapsed().as_secs_f64() * 1000.0,
                 "skin texture background preparation completed"
             );
 
-            (index, result)
+            (request, result)
         })?;
 
         Ok(Self { requests, replies })
@@ -56,11 +93,13 @@ impl Worker {
 #[derive(Debug)]
 pub(crate) struct Loader {
     game: GameDir,
+    skin: bool,
     worker: Option<Worker>,
-    pending: Option<usize>,
+    pending: Option<Request>,
+    generation: u64,
     scanned: usize,
     wanted: BTreeSet<usize>,
-    retry: BTreeMap<usize, Instant>,
+    retry: BTreeMap<usize, (Request, Instant)>,
     restart: Instant,
     touched: BTreeMap<usize, Instant>,
     evicted: BTreeSet<usize>,
@@ -69,11 +108,13 @@ pub(crate) struct Loader {
 }
 
 impl Loader {
-    pub(crate) fn new(game: &GameDir) -> Self {
+    pub(crate) fn new(game: &GameDir, skin: bool) -> Self {
         Self {
             game: game.clone(),
+            skin,
             worker: None,
             pending: None,
+            generation: 0,
             scanned: 0,
             wanted: BTreeSet::new(),
             retry: BTreeMap::new(),
@@ -119,7 +160,9 @@ impl Loader {
             let touched = self.touched.entry(index).or_insert(now);
 
             if now.duration_since(*touched) > Duration::from_millis(120_000) {
-                texture.texture = placeholder();
+                texture.texture = placeholder().into();
+
+                texture.prepared = None;
 
                 texture.pending = true;
 
@@ -140,8 +183,13 @@ impl Loader {
 
         self.scanned = textures.len();
 
-        self.wanted
-            .retain(|&i| textures[i].pending && !self.evicted.contains(&i));
+        self.wanted.retain(|&i| {
+            textures.get(i).is_some_and(|texture| texture.pending) && !self.evicted.contains(&i)
+        });
+
+        self.evicted.retain(|&i| i < textures.len());
+
+        self.touched.retain(|&i, _| i < textures.len());
 
         let now = Instant::now();
 
@@ -165,13 +213,21 @@ impl Loader {
         }
 
         match self.worker.as_ref().unwrap().replies.try_recv() {
-            Ok((index, result)) => {
+            Ok((request, result)) => {
+                if self.pending.as_ref() != Some(&request) {
+                    return changed;
+                }
+
                 self.pending = None;
 
-                if textures[index].pending {
+                let index = request.index;
+
+                if request.matches(textures, self.skin) {
                     match result {
-                        Ok(texture) => {
-                            textures[index].texture = texture;
+                        Ok(loaded) => {
+                            textures[index].texture = loaded.texture;
+
+                            textures[index].prepared = Some(loaded.prepared);
 
                             textures[index].pending = false;
 
@@ -185,7 +241,7 @@ impl Loader {
                         }
                         Err(error) => {
                             self.retry
-                                .insert(index, now + Duration::from_millis(15_001));
+                                .insert(index, (request, now + Duration::from_millis(15_001)));
 
                             tracing::debug!(
                                 % error, "skin texture unavailable; will retry"
@@ -210,18 +266,27 @@ impl Loader {
 
         if self.pending.is_none() {
             self.retry
-                .retain(|i, until| textures[*i].pending && *until > now);
+                .retain(|_, (request, until)| request.matches(textures, self.skin) && *until > now);
 
             if let Some(&index) = self.wanted.iter().find(|i| !self.retry.contains_key(i)) {
+                self.generation = self.generation.wrapping_add(1);
+
+                let request = Request {
+                    index,
+                    path: textures[index].path.clone(),
+                    policy: textures[index].mip_policy(self.skin),
+                    generation: self.generation,
+                };
+
                 if self
                     .worker
                     .as_ref()
                     .unwrap()
                     .requests
-                    .try_send((index, textures[index].path.clone()))
+                    .try_send(request.clone())
                     .is_ok()
                 {
-                    self.pending = Some(index);
+                    self.pending = Some(request);
                 } else {
                     self.worker = None;
 
@@ -292,7 +357,8 @@ impl ActorScene {
     }
 
     pub fn enable_background_textures(&mut self, game: &GameDir) {
-        self.texture_loader.get_or_insert_with(|| Loader::new(game));
+        self.texture_loader
+            .get_or_insert_with(|| Loader::new(game, true));
     }
 
     pub fn poll_background_textures(&mut self) -> bool {

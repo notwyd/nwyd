@@ -186,6 +186,16 @@ impl TerrainMesh {
     }
 
     pub fn stitch_boundaries(&mut self) -> Vec<std::ops::Range<usize>> {
+        self.stitch_boundaries_in(&[0..self.vertices.len()])
+    }
+
+    pub fn stitch_boundaries_in(
+        &mut self,
+        ranges: &[std::ops::Range<usize>],
+    ) -> Vec<std::ops::Range<usize>> {
+        debug_assert!(ranges.iter().all(|r| r.start % 4 == 0 && r.end % 4 == 0));
+        debug_assert!(ranges.windows(2).all(|pair| pair[0].end <= pair[1].start));
+
         let dimension = TRN_DIM as i32;
         let boundary_key = |vertex: &WorldVertex| {
             let x = vertex.pos[0] as i32;
@@ -196,7 +206,10 @@ impl TerrainMesh {
         let mut samples: std::collections::BTreeMap<(i32, i32), ((i32, i32), WorldVertex)> =
             std::collections::BTreeMap::new();
 
-        for quad in self.vertices.chunks_exact(4) {
+        for quad in ranges
+            .iter()
+            .flat_map(|range| self.vertices[range.clone()].chunks_exact(4))
+        {
             let owner = (
                 (quad[0].pos[0] / TRN_DIM as f32).floor() as i32,
                 (quad[0].pos[2] / TRN_DIM as f32).floor() as i32,
@@ -219,8 +232,10 @@ impl TerrainMesh {
         }
 
         let mut changed: Vec<std::ops::Range<usize>> = Vec::new();
+        let mut height_changes = Vec::new();
 
-        for (index, vertex) in self.vertices.iter_mut().enumerate() {
+        for index in ranges.iter().cloned().flatten() {
+            let vertex = &mut self.vertices[index];
             let Some((_, source)) = boundary_key(vertex).and_then(|key| samples.get(&key)) else {
                 continue;
             };
@@ -232,7 +247,10 @@ impl TerrainMesh {
                 continue;
             }
 
-            vertex.pos[1] = source.pos[1];
+            if vertex.pos[1] != source.pos[1] {
+                height_changes.push(index);
+                vertex.pos[1] = source.pos[1];
+            }
             vertex.normal = source.normal;
             vertex.diffuse = source.diffuse;
 
@@ -242,10 +260,17 @@ impl TerrainMesh {
             }
         }
 
-        if !changed.is_empty() {
+        if !height_changes.is_empty() {
             for batch in &mut self.batches {
                 let start = batch.first_quad as usize * 4;
                 let end = start + batch.quad_count as usize * 4;
+
+                if !height_changes
+                    .get(height_changes.partition_point(|&index| index < start))
+                    .is_some_and(|&index| index < end)
+                {
+                    continue;
+                }
 
                 batch.bounds = crate::cull::Aabb::EMPTY;
 

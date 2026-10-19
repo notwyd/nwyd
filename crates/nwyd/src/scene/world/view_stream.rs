@@ -4,6 +4,74 @@ use glam::Vec2;
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct View {
+    player: Vec2,
+    retail_far: f32,
+    view_far: f32,
+    camera_offset: f32,
+    viewport: (u32, u32),
+}
+
+#[derive(Debug, Default)]
+pub(super) struct Prefetch {
+    view: Option<View>,
+    zones: Vec<(u8, u8)>,
+    pending: Vec<(u8, u8)>,
+    residency_dirty: bool,
+}
+
+impl Prefetch {
+    pub(super) fn invalidate_residency(&mut self) {
+        self.residency_dirty = true;
+    }
+
+    fn update(
+        &mut self,
+        view: View,
+        resident: impl Iterator<Item = (u8, u8)>,
+        mut exists: impl FnMut((u8, u8)) -> bool,
+    ) {
+        if self.view != Some(view) {
+            self.zones = required_zones(
+                view.player,
+                view.retail_far,
+                view.view_far,
+                view.camera_offset,
+                view.viewport,
+            );
+            self.view = Some(view);
+            self.residency_dirty = true;
+        }
+
+        if !self.residency_dirty {
+            return;
+        }
+
+        self.pending.clear();
+        self.residency_dirty = false;
+
+        if self.zones.is_empty() {
+            return;
+        }
+
+        let mut rows = [0u32; 32];
+
+        for (x, z) in resident {
+            if x < 32 && z < 32 {
+                rows[usize::from(z)] |= 1 << x;
+            }
+        }
+
+        self.pending.extend(
+            self.zones
+                .iter()
+                .copied()
+                .filter(|&(x, z)| rows[usize::from(z)] & (1 << x) == 0 && exists((x, z))),
+        );
+    }
+}
+
 pub(crate) fn required_zones(
     player: Vec2,
     retail_far: f32,
@@ -121,15 +189,25 @@ impl World {
             return Ok(false);
         }
 
-        let zones = required_zones(
+        let view = View {
             player,
-            self.environment.far_plane,
-            self.view_far_plane(),
+            retail_far: self.environment.far_plane,
+            view_far: self.view_far_plane(),
             camera_offset,
             viewport,
+        };
+
+        self.visual_prefetch.update(
+            view,
+            std::iter::once((self.terrain.zone_x, self.terrain.zone_y))
+                .chain(self.streamed.iter().map(|streamed| streamed.zone)),
+            |zone| {
+                game.contains(format!("Env/Field{:02}{:02}.trn", zone.0, zone.1).as_bytes())
+                    && game.contains(format!("Env/Field{:02}{:02}.dat", zone.0, zone.1).as_bytes())
+            },
         );
 
-        if zones.is_empty() {
+        if self.visual_prefetch.zones.is_empty() {
             return Ok(false);
         }
 
@@ -143,14 +221,10 @@ impl World {
             return self.poll_visual_zone(game, stage);
         }
 
-        let Some(zone) = zones.into_iter().find(|&zone| {
-            !self.holds(zone)
-                && self
-                    .background_loader
-                    .as_ref()
-                    .is_none_or(|loader| loader.can_request(zone))
-                && game.contains(format!("Env/Field{:02}{:02}.trn", zone.0, zone.1).as_bytes())
-                && game.contains(format!("Env/Field{:02}{:02}.dat", zone.0, zone.1).as_bytes())
+        let Some(zone) = self.visual_prefetch.pending.iter().copied().find(|&zone| {
+            self.background_loader
+                .as_ref()
+                .is_none_or(|loader| loader.can_request(zone))
         }) else {
             return Ok(false);
         };

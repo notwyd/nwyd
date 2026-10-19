@@ -73,11 +73,27 @@ pub struct BoundTexture {
     pub slot: usize,
     pub path: String,
     pub flag: FormatFlag,
-    pub texture: Texture,
+    pub texture: Arc<Texture>,
     pub mip_policy_override: Option<render::texture::MipPolicy>,
+    pub prepared: Option<Arc<render::texture::PreparedMaterial>>,
 }
 
 impl BoundTexture {
+    pub fn prepared_material(&self, skin: bool) -> Option<&render::texture::PreparedMaterial> {
+        self.prepared
+            .as_deref()
+            .filter(|material| !self.pending && material.policy() == self.mip_policy(skin))
+    }
+
+    pub fn prepare_material(&mut self, skin: bool) {
+        if !self.pending && self.prepared_material(skin).is_none() {
+            self.prepared = Some(Arc::new(render::texture::PreparedMaterial::from_shared(
+                Arc::clone(&self.texture),
+                self.mip_policy(skin),
+            )));
+        }
+    }
+
     pub fn alpha_policy(&self) -> AlphaPolicy {
         AlphaPolicy::for_flag(self.flag)
     }
@@ -450,7 +466,7 @@ pub fn build(
                 .find(|texture| {
                     texture.effect_table && texture.slot == 67 + row && !texture.pending
                 })
-                .map(|texture| &texture.texture)
+                .map(|texture| texture.texture.as_ref())
         });
 
         scene.sky_horizon = Some(super::sky::Horizon::new(
@@ -1088,12 +1104,13 @@ impl ObjectScene {
 
         self.textures.push(BoundTexture {
             mip_policy_override: None,
+            prepared: None,
             pending,
             effect_table,
             slot,
             path: entry.path_str(),
             flag: entry.format_flag,
-            texture,
+            texture: texture.into(),
         });
 
         Some(self.textures.len() - 1)

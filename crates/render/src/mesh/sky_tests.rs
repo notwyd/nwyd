@@ -12,7 +12,7 @@ impl Wake for ThreadWake {
     }
 }
 
-fn block_on<T>(future: impl Future<Output = T>) -> T {
+pub(super) fn block_on<T>(future: impl Future<Output = T>) -> T {
     let waker = Waker::from(Arc::new(ThreadWake(std::thread::current())));
     let mut context = Context::from_waker(&waker);
     let mut future = std::pin::pin!(future);
@@ -84,7 +84,11 @@ fn scene() -> (MeshArena, Vec<ObjectUniforms>, Vec<MeshDraw>) {
     (arena, objects, draws)
 }
 
-fn readback(gpu: &Gpu, buffer: &wgpu::Buffer, submission: wgpu::SubmissionIndex) -> Vec<u8> {
+pub(super) fn readback(
+    gpu: &Gpu,
+    buffer: &wgpu::Buffer,
+    submission: wgpu::SubmissionIndex,
+) -> Vec<u8> {
     let slice = buffer.slice(..);
     let (sender, receiver) = std::sync::mpsc::sync_channel(1);
     slice.map_async(wgpu::MapMode::Read, move |result| {
