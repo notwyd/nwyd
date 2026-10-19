@@ -162,6 +162,30 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
             209,
             "Refinação Capa",
         ),
+        (
+            "effects",
+            "hideItemAnnouncements",
+            ElementType::Button,
+            25,
+            287,
+            "",
+        ),
+        (
+            "effectsOn",
+            "hideItemAnnouncementsOn",
+            ElementType::Button,
+            25,
+            287,
+            "",
+        ),
+        (
+            "vEfx1Lbl",
+            "hideItemAnnouncementsLbl",
+            ElementType::Static,
+            46,
+            287,
+            "",
+        ),
     ] {
         let mut element = ui
             .panel
@@ -648,6 +672,12 @@ impl Panel {
                 "zoomChkOn" => interface_visible && self.draft.interface.zoom,
                 "capeRefine" => interface_visible && !self.draft.interface.cape_refinement,
                 "capeRefineOn" => interface_visible && self.draft.interface.cape_refinement,
+                "hideItemAnnouncements" => {
+                    interface_visible && !self.draft.interface.hide_item_announcements
+                }
+                "hideItemAnnouncementsOn" => {
+                    interface_visible && self.draft.interface.hide_item_announcements
+                }
                 _ => interface_visible,
             };
 
@@ -734,6 +764,11 @@ impl Panel {
                     "Refinação Capa"
                 } else {
                     "Cape refinement"
+                }),
+                "hideItemAnnouncementsLbl" => element.set_display(if portuguese {
+                    "Ocultar anúncios de itens"
+                } else {
+                    "Hide item announcements"
                 }),
                 "languageLabel" => {
                     element.set_display(if portuguese { "Idioma" } else { "Language" })
@@ -965,6 +1000,9 @@ impl Panel {
                 "zoomChk" | "zoomChkOn" => self.draft.interface.zoom ^= true,
                 "capeRefine" | "capeRefineOn" => {
                     self.draft.interface.cape_refinement ^= true;
+                }
+                "hideItemAnnouncements" | "hideItemAnnouncementsOn" => {
+                    self.draft.interface.hide_item_announcements ^= true;
                 }
                 "resDrop" => {
                     self.resolutions_open = !self.resolutions_open;

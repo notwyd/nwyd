@@ -182,7 +182,7 @@ impl Client {
             audio.set_volumes(next.sound, next.music);
         }
 
-        if previous.interface != next.interface {
+        if next.interface.changes_scene_from(previous.interface) {
             if let Scene::Field(scene) = &mut self.runtime.scene
                 && let Some(screens) = &self.screens
             {

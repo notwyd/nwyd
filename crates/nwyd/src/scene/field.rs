@@ -6493,6 +6493,7 @@ pub fn hear(scene: &mut FieldScene, line: &protocol::server::ChatLine) -> Option
 pub fn announce(
     scene: &mut FieldScene,
     message: &protocol::server::SystemMessage,
+    hide_item_announcements: bool,
 ) -> Option<chat::Announced> {
     let now_ms = scene.time.now_ms;
 
@@ -6517,7 +6518,13 @@ pub fn announce(
         });
     };
 
-    let mut announced = chat::announce(screens, message, now_ms, &scene.time.calendar);
+    let mut announced = chat::announce(
+        screens,
+        message,
+        now_ms,
+        &scene.time.calendar,
+        hide_item_announcements,
+    );
 
     announced.world_changed = world_changed;
 

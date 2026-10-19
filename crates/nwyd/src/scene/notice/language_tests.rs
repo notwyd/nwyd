@@ -103,6 +103,7 @@ fn runtime_language_notice_item_names_preserve_metadata_and_queued_messages() {
             has_argument: true,
         },
         7000,
+        false,
     );
 
     assert_eq!(result.text, "Synthetic obtained 합성 검 level 9");

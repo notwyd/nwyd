@@ -13,6 +13,7 @@ pub struct Interface {
     pub hide_mount_costume: bool,
     pub cape_refinement: bool,
     pub hide_hud: bool,
+    pub hide_item_announcements: bool,
     pub zoom: bool,
     pub evok_size: u8,
 }
@@ -25,6 +26,7 @@ impl Default for Interface {
             hide_mount_costume: false,
             cape_refinement: false,
             hide_hud: false,
+            hide_item_announcements: false,
             zoom: false,
             evok_size: 100,
         }
@@ -32,6 +34,13 @@ impl Default for Interface {
 }
 
 impl Interface {
+    pub(crate) fn changes_scene_from(self, previous: Self) -> bool {
+        Self {
+            hide_item_announcements: previous.hide_item_announcements,
+            ..self
+        } != previous
+    }
+
     pub(crate) fn appearance(self) -> bool {
         self.hide_helmet
     }
@@ -112,4 +121,60 @@ impl Interface {
     }
 
     pub(crate) fn project(_scene: &FieldScene, _doll: &mut Doll) {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn announcement_visibility_alone_does_not_require_scene_updates() {
+        let previous = Interface::default();
+        let mut next = previous;
+        assert!(!next.changes_scene_from(previous));
+        next.hide_item_announcements = true;
+        assert!(!next.changes_scene_from(previous));
+        assert!(!previous.changes_scene_from(next));
+    }
+
+    #[test]
+    fn existing_interface_controls_still_require_scene_updates_with_notice_filter_changes() {
+        let previous = Interface::default();
+        for mut next in [
+            Interface {
+                hide_helmet: true,
+                ..previous
+            },
+            Interface {
+                hide_costume: true,
+                ..previous
+            },
+            Interface {
+                hide_mount_costume: true,
+                ..previous
+            },
+            Interface {
+                cape_refinement: true,
+                ..previous
+            },
+            Interface {
+                hide_hud: true,
+                ..previous
+            },
+            Interface {
+                zoom: true,
+                ..previous
+            },
+            Interface {
+                evok_size: 50,
+                ..previous
+            },
+        ] {
+            assert!(next.changes_scene_from(previous));
+            assert!(previous.changes_scene_from(next));
+            next.hide_item_announcements = true;
+            assert!(next.changes_scene_from(previous));
+            assert!(previous.changes_scene_from(next));
+        }
+    }
 }

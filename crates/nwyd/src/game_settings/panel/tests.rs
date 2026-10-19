@@ -136,6 +136,105 @@ impl Drop for SettingsFile {
 }
 
 #[test]
+fn item_announcement_checkbox_applies_saves_reopens_and_discards_changes() {
+    let files = SettingsFile::new();
+    let mut panel = panel(
+        Language::Portuguese,
+        &[Language::Portuguese, Language::English],
+    );
+    panel.path = files.path();
+    let initial = panel.draft;
+
+    assert!(!initial.interface.hide_item_announcements);
+    assert!(!element(&panel, "hideItemAnnouncementsOn").visible);
+
+    click(&mut panel, "hideItemAnnouncements");
+
+    assert_eq!(
+        panel.draft,
+        Preferences {
+            interface: Interface {
+                hide_item_announcements: true,
+                ..initial.interface
+            },
+            ..initial
+        }
+    );
+    assert!(panel.apply_requested);
+    assert_eq!(panel.applied, initial);
+    assert!(!element(&panel, "hideItemAnnouncements").visible);
+    assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+
+    panel.save_draft().unwrap();
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.applied));
+    panel.close();
+    panel.open(Default::default());
+    assert!(panel.draft.interface.hide_item_announcements);
+    assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+
+    click(&mut panel, "hideItemAnnouncementsOn");
+    assert!(!panel.draft.interface.hide_item_announcements);
+    panel.discard_draft();
+    assert!(panel.draft.interface.hide_item_announcements);
+    assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.applied));
+
+    click(&mut panel, "hideItemAnnouncementsOn");
+    panel.path = files.0.join("missing/settings.json");
+    assert!(panel.save_draft().is_err());
+    assert_eq!(panel.draft, panel.applied);
+    assert!(panel.draft.interface.hide_item_announcements);
+    assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+}
+
+#[test]
+fn item_announcement_checkbox_localizes_and_only_shows_on_interface_without_dropdown() {
+    let mut panel = panel(
+        Language::Portuguese,
+        &[Language::Portuguese, Language::English],
+    );
+    let mut game = GameDir::from_files("synthetic-item-announcement-language", []).unwrap();
+    click(&mut panel, "hideItemAnnouncements");
+
+    for (language, caption) in [
+        (Language::English, "Hide item announcements"),
+        (Language::Portuguese, "Ocultar anúncios de itens"),
+    ] {
+        game.set_language(language);
+        panel.apply_language(&game, &ui::Strings::default());
+
+        assert_eq!(element(&panel, "hideItemAnnouncementsLbl").display, caption);
+        assert!(panel.draft.interface.hide_item_announcements);
+        assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+        assert!(element(&panel, "hideItemAnnouncementsLbl").visible);
+        assert!(
+            element(&panel, "languageDrop").rect()[3]
+                <= element(&panel, "hideItemAnnouncementsOn").y
+        );
+        assert!(
+            element(&panel, "hideItemAnnouncementsOn").rect()[3]
+                <= panel.placed.ui.panel.close_button_location[1]
+        );
+
+        for tab in ["TabVid", "TabAud"] {
+            click(&mut panel, tab);
+            assert!(!element(&panel, "hideItemAnnouncements").visible);
+            assert!(!element(&panel, "hideItemAnnouncementsOn").visible);
+            assert!(!element(&panel, "hideItemAnnouncementsLbl").visible);
+        }
+
+        click(&mut panel, "TabIfc");
+        click(&mut panel, "languageDrop");
+        assert!(!element(&panel, "hideItemAnnouncements").visible);
+        assert!(!element(&panel, "hideItemAnnouncementsOn").visible);
+        assert!(!element(&panel, "hideItemAnnouncementsLbl").visible);
+        click(&mut panel, "languageDrop");
+        assert!(element(&panel, "hideItemAnnouncementsOn").visible);
+        assert!(element(&panel, "hideItemAnnouncementsLbl").visible);
+    }
+}
+
+#[test]
 fn view_distance_choices_apply_save_and_cancel_without_changing_other_settings() {
     use crate::scene::view_distance::ViewDistance;
 
@@ -1437,6 +1536,7 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
             "languageLabel",
             "evokLabel",
             "capeRefineLbl",
+            "hideItemAnnouncementsLbl",
             "rendererLabel",
             "rendererDrop",
             "rendererNotice",

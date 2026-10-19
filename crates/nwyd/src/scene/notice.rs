@@ -116,8 +116,15 @@ impl Overlay {
         strings: &ui::Strings,
         message: &protocol::server::SystemMessage,
         now_ms: u32,
+        hide_item_announcements: bool,
     ) -> super::chat::Announced {
-        let announced = super::chat::prepare_announcement(strings, &self.items, message, false);
+        let announced = super::chat::prepare_announcement(
+            strings,
+            &self.items,
+            message,
+            false,
+            hide_item_announcements,
+        );
 
         for (text, life) in &announced.banners {
             self.post(text, *life, true, now_ms);

@@ -901,6 +901,7 @@ impl Scene {
         &mut self,
         message: &protocol::server::SystemMessage,
         launcher: bool,
+        hide_item_announcements: bool,
     ) -> Option<chat::Announced> {
         let record = message.strdef();
 
@@ -934,7 +935,7 @@ impl Scene {
             });
         }
 
-        self.announce(message)
+        self.announce(message, hide_item_announcements)
     }
 
     pub fn cancel_legacy_presses(&mut self) {
@@ -1109,23 +1110,25 @@ impl Scene {
     pub fn announce(
         &mut self,
         message: &protocol::server::SystemMessage,
+        hide_item_announcements: bool,
     ) -> Option<chat::Announced> {
         let login_consumed = !message.has_argument
             || !matches!(message.kind, 0 | 3 | 4)
             || !matches!(message.strdef(), 0x61A | 0x61B | 0x40C);
 
         let announced = match self {
-            Scene::Field(scene) => field::announce(scene, message),
+            Scene::Field(scene) => field::announce(scene, message, hide_item_announcements),
             Scene::LoginPanels(scene) => {
                 if login_consumed {
                     scene.login_reply();
                 }
 
-                Some(
-                    scene
-                        .notice
-                        .announce(&scene.strings, message, scene.time.now_ms),
-                )
+                Some(scene.notice.announce(
+                    &scene.strings,
+                    message,
+                    scene.time.now_ms,
+                    hide_item_announcements,
+                ))
             }
             Scene::ServerSelect(scene) => {
                 if login_consumed {
@@ -1136,12 +1139,14 @@ impl Scene {
                     &scene.panels.strings,
                     message,
                     scene.time.now_ms,
+                    hide_item_announcements,
                 ))
             }
             Scene::SelectChar(scene) => Some(scene.notice.announce(
                 &scene.panels.strings,
                 message,
                 scene.time.now_ms,
+                hide_item_announcements,
             )),
             _ => None,
         };

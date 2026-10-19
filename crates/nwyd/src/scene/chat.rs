@@ -1673,8 +1673,15 @@ pub fn announce(
     message: &protocol::server::SystemMessage,
     now_ms: u32,
     calendar: &crate::clock::Calendar,
+    hide_item_announcements: bool,
 ) -> Announced {
-    let announced = prepare_announcement(&panels.strings, &panels.items, message, true);
+    let announced = prepare_announcement(
+        &panels.strings,
+        &panels.items,
+        message,
+        true,
+        hide_item_announcements,
+    );
 
     for (text, life_ms) in &announced.banners {
         notice::post(panels, text, *life_ms, NOTICE_SOUND, now_ms);
@@ -1696,6 +1703,7 @@ pub fn prepare_announcement(
     items: &formats::data::item_list::ItemList,
     message: &protocol::server::SystemMessage,
     field: bool,
+    hide_item_announcements: bool,
 ) -> Announced {
     let record = message.strdef();
 
@@ -1712,6 +1720,10 @@ pub fn prepare_announcement(
     if (!message.has_argument && !matches!(message.kind, PLAIN | MODAL))
         || (message.has_argument && !matches!(message.kind, PLAIN | FORMATTED | RELAYED | MODAL))
     {
+        return announced;
+    }
+
+    if hide_item_announcements && matches!(record, 1462 | 1562 | 1584) {
         return announced;
     }
 
@@ -2518,3 +2530,6 @@ pub fn size_hotkey(panels: &mut Panels) {
 
 #[cfg(test)]
 mod language_tests;
+
+#[cfg(test)]
+mod announcement_tests;

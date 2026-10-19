@@ -10,6 +10,13 @@ impl Host for Client {
         self.launcher_login
     }
 
+    fn hide_item_announcements(&self) -> bool {
+        self.runtime
+            .game_settings
+            .as_ref()
+            .is_some_and(|panel| panel.applied.interface.hide_item_announcements)
+    }
+
     fn channel(&self) -> i32 {
         self.picked.as_ref().map_or(0, |p| p.channel as i32)
     }
@@ -33,3 +40,6 @@ impl Host for Client {
         Client::redraw(self);
     }
 }
+
+#[cfg(test)]
+mod tests;

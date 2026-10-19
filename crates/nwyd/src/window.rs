@@ -35,6 +35,7 @@ mod entry;
 mod environment_packets;
 mod field_packets;
 mod game_settings;
+mod ime;
 mod interaction_packets;
 mod inventory_packets;
 #[cfg(test)]
@@ -47,6 +48,7 @@ mod pacing;
 mod selection;
 mod session_packets;
 mod social_packets;
+mod surface;
 #[cfg(any(target_arch = "wasm32", test))]
 mod touch;
 #[cfg(test)]
@@ -84,6 +86,7 @@ struct Live {
     recovery_retry_at: Option<web_time::Instant>,
     normal_cursor: Option<CustomCursor>,
     alternate_cursor: Option<CustomCursor>,
+    ime_cursor_area: ime::CursorAreaCache,
 }
 
 pub fn upload_scene_renderer(
@@ -1758,11 +1761,13 @@ impl Client {
 
         let area = self.runtime.ime.area(&mut self.runtime.scene);
 
-        let Some(live) = &self.live else {
+        let Some(live) = &mut self.live else {
             return;
         };
 
         if let Some(allow) = reset {
+            live.ime_cursor_area.clear();
+
             live.window.set_ime_allowed(false);
 
             if allow {
@@ -1776,7 +1781,14 @@ impl Client {
                 (live.config.width, live.config.height),
             );
 
-            let [x, y, w, h] = ime_surface_area(area, self.settings.backbuffer, fit);
+            let area = ime_surface_area(area, self.settings.backbuffer, fit);
+
+            let Some([x, y, w, h]) = live
+                .ime_cursor_area
+                .update(area, live.window.scale_factor())
+            else {
+                return;
+            };
 
             live.window.set_ime_cursor_area(
                 winit::dpi::PhysicalPosition::new(x, y),
@@ -2112,7 +2124,7 @@ impl Client {
             view_formats: vec![],
         };
 
-        surface.configure(&gpu.device, &config);
+        surface::configure(&surface, &gpu, &config)?;
 
         let window_backend = pacing::backend(&window);
 
@@ -2180,6 +2192,7 @@ impl Client {
             recovery_retry_at: None,
             normal_cursor: custom_cursor(event_loop, self.settings.pointers.normal.as_ref()),
             alternate_cursor: custom_cursor(event_loop, self.settings.pointers.alternate.as_ref()),
+            ime_cursor_area: Default::default(),
         })
     }
 
@@ -2304,7 +2317,7 @@ impl Client {
         );
 
         if config.width > 0 && config.height > 0 {
-            surface.configure(&gpu.device, &config);
+            surface::configure(&surface, &gpu, &config)?;
         }
 
         let (width, height) = self.settings.backbuffer;
@@ -2441,7 +2454,7 @@ impl Client {
         }
 
         if std::mem::take(&mut live.stale) {
-            live.surface.configure(&live.gpu.device, &live.config);
+            surface::configure(&live.surface, &live.gpu, &live.config)?;
         }
 
         probe.sample.gap_ms = probe.checkpoint();
@@ -2460,7 +2473,7 @@ impl Client {
                 frame
             }
             wgpu::CurrentSurfaceTexture::Outdated => {
-                live.surface.configure(&live.gpu.device, &live.config);
+                surface::configure(&live.surface, &live.gpu, &live.config)?;
 
                 return Ok(());
             }
@@ -2471,7 +2484,7 @@ impl Client {
                     .create_surface(live.window.clone())
                     .context(crate::error_context::Operation::RecoverSurface)?;
 
-                live.surface.configure(&live.gpu.device, &live.config);
+                surface::configure(&live.surface, &live.gpu, &live.config)?;
 
                 return Ok(());
             }
@@ -2825,6 +2838,14 @@ impl Client {
 
         match event {
             WindowEvent::Ime(event) => {
+                if matches!(
+                    event,
+                    winit::event::Ime::Enabled | winit::event::Ime::Disabled
+                ) && let Some(live) = &mut self.live
+                {
+                    live.ime_cursor_area.clear();
+                }
+
                 if self.settings_visible() {
                     return;
                 }
@@ -2861,7 +2882,11 @@ impl Client {
                     live.config.height = size.height;
 
                     if size.width > 0 && size.height > 0 && !live.gpu.is_lost() {
-                        live.surface.configure(&live.gpu.device, &live.config);
+                        if let Err(error) =
+                            surface::configure(&live.surface, &live.gpu, &live.config)
+                        {
+                            return self.fail(event_loop, error);
+                        }
                     }
                 }
 

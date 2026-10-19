@@ -469,6 +469,29 @@ mod tests {
     }
 
     #[test]
+    fn item_announcement_preference_defaults_visible_and_round_trips() {
+        let files = TestSettings::new();
+        let mut prefs = preferences();
+        let mut legacy = serde_json::to_value(prefs).unwrap();
+        legacy["interface"]
+            .as_object_mut()
+            .unwrap()
+            .remove("hide_item_announcements");
+
+        assert!(!prefs.interface.hide_item_announcements);
+        assert_eq!(
+            Preferences::from_bytes(&serde_json::to_vec(&legacy).unwrap()).unwrap(),
+            prefs
+        );
+
+        for hidden in [true, false] {
+            prefs.interface.hide_item_announcements = hidden;
+            prefs.save(&files.path()).unwrap();
+            assert_eq!(Preferences::load(&files.path()).unwrap(), Some(prefs));
+        }
+    }
+
+    #[test]
     fn retired_lighting_setting_loads_without_resetting_other_preferences() {
         let files = TestSettings::new();
         let path = files.path();

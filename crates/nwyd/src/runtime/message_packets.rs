@@ -14,6 +14,8 @@ pub trait Host {
 
     fn launcher_login(&self) -> bool;
 
+    fn hide_item_announcements(&self) -> bool;
+
     fn channel(&self) -> i32;
 
     fn log_message(&mut self, record: usize);
@@ -29,6 +31,7 @@ pub fn apply(host: &mut impl Host, packet: Packet) {
     match packet {
         Packet::Message(system) => {
             let launcher = host.launcher_login();
+            let hide_item_announcements = host.hide_item_announcements();
 
             host.log_message(system.strdef());
 
@@ -40,7 +43,10 @@ pub fn apply(host: &mut impl Host, packet: Packet) {
                 );
             }
 
-            if let Some(announced) = host.scene().announce_for_login(&system, launcher) {
+            if let Some(announced) =
+                host.scene()
+                    .announce_for_login(&system, launcher, hide_item_announcements)
+            {
                 if host.scene().legacy_modal() {
                     host.sync_ime();
 
