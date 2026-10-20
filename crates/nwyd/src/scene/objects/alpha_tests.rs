@@ -9,7 +9,7 @@ use formats::texture::texture_list;
 use render::cull::Frustum;
 use render::quirk::VendorClass;
 
-fn triangle_mesh(subsets: usize) -> Vec<u8> {
+pub(super) fn triangle_mesh(subsets: usize) -> Vec<u8> {
     let mut bytes = Vec::new();
 
     for value in [0x112, 32, subsets as u32] {
@@ -49,7 +49,7 @@ fn triangle_mesh(subsets: usize) -> Vec<u8> {
     bytes
 }
 
-fn synthetic_scene(flags: &[FormatFlag], subsets: usize) -> ObjectScene {
+pub(super) fn synthetic_scene(flags: &[FormatFlag], subsets: usize) -> ObjectScene {
     let mut records = vec![0; flags.len() * texture_list::LEGACY_RECORD_LEN];
 
     for (index, flag) in flags.iter().enumerate() {
@@ -105,7 +105,7 @@ fn synthetic_scene(flags: &[FormatFlag], subsets: usize) -> ObjectScene {
     scene
 }
 
-fn place(scene: &mut ObjectScene) {
+pub(super) fn place(scene: &mut ObjectScene) {
     scene.instances.push(Instance {
         kind: 100,
         mesh: 0,
@@ -121,7 +121,7 @@ fn place(scene: &mut ObjectScene) {
     });
 }
 
-fn frame(
+pub(super) fn frame(
     scene: &ObjectScene,
     held: &[HeldDraw],
     drops: &[DropDraw],

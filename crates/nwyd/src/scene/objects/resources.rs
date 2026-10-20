@@ -3,12 +3,16 @@ use super::*;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+mod retention_tests;
+
 #[derive(Debug)]
 pub(crate) struct Bundle {
     pub meshes: Vec<MeshResource>,
     pub textures: Vec<BoundTexture>,
     pub arena: MeshArena,
     by_id: BTreeMap<u32, usize>,
+    held_mask_textures: BTreeMap<usize, usize>,
 }
 
 impl ObjectScene {
@@ -35,6 +39,7 @@ impl ObjectScene {
             missing_textures: Vec::new(),
             registries,
             held_loader: None,
+            held_mask_textures: BTreeMap::new(),
             texture_loader: None,
             texture_updates: Vec::new(),
         }
@@ -44,35 +49,14 @@ impl ObjectScene {
         &mut self,
         game: &GameDir,
         actors: &super::super::actors::ActorScene,
+        drops: &super::super::drops::Drops,
+        gates: &super::super::placed::Gates,
     ) -> bool {
+        let used = self.retained_texture_indices(&actors.held_mesh_ids(), drops, gates);
+
         let loader = self
             .texture_loader
             .get_or_insert_with(|| super::super::actors::texture_loading::Loader::new(game, false));
-
-        let meshes = self
-            .instances
-            .iter()
-            .map(|i| i.mesh)
-            .chain(self.house_parts.iter().map(|p| p.mesh))
-            .chain(
-                actors
-                    .held_mesh_ids()
-                    .into_iter()
-                    .filter_map(|id| self.by_id_meshes.get(&id).copied()),
-            );
-
-        let used = meshes
-            .filter_map(|i| self.meshes.get(i))
-            .flat_map(|m| m.subset_textures.iter().flatten().copied())
-            .chain(
-                self.textures
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, t)| !t.effect_table && matches!(t.slot, 1 | 2 | 8))
-                    .map(|(i, _)| i),
-            );
-
-        let used: Vec<_> = used.collect();
 
         let before = self.texture_updates.len();
 
@@ -87,15 +71,97 @@ impl ObjectScene {
             || self.texture_updates.len() != before
     }
 
+    fn retained_texture_indices(
+        &self,
+        held: &[u32],
+        drops: &super::super::drops::Drops,
+        gates: &super::super::placed::Gates,
+    ) -> Vec<usize> {
+        let meshes = self
+            .instances
+            .iter()
+            .map(|i| i.mesh)
+            .chain(self.house_parts.iter().map(|p| p.mesh));
+
+        let used = meshes
+            .filter_map(|i| self.meshes.get(i))
+            .flat_map(|m| m.subset_textures.iter().flatten().copied())
+            .chain(
+                self.textures
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, t)| !t.effect_table && matches!(t.slot, 1 | 2 | 8))
+                    .map(|(i, _)| i),
+            );
+
+        let mut used: Vec<_> = used.collect();
+
+        for id in held {
+            if let Some(&mesh) = self.by_id_meshes.get(id) {
+                let first = used.len();
+
+                self.retain_mesh_textures(mesh, 0, &mut used);
+
+                for index in first..used.len() {
+                    if let Some(&variant) = self.held_mask_textures.get(&used[index]) {
+                        used.push(variant);
+                    }
+                }
+            }
+        }
+
+        for drop in drops.items.iter().filter(|drop| drop.drawable()) {
+            if let Some(mesh) = drop
+                .mesh
+                .and_then(|id| u32::try_from(id).ok())
+                .and_then(|id| self.by_id_meshes.get(&id).copied())
+            {
+                self.retain_mesh_textures(mesh, drop.tex_bias, &mut used);
+            }
+        }
+
+        for id in gates.mesh_ids() {
+            if let Some(&mesh) = self.by_id_meshes.get(&id) {
+                self.retain_mesh_textures(mesh, 0, &mut used);
+            }
+        }
+
+        used.sort_unstable();
+        used.dedup();
+        used
+    }
+
+    fn retain_mesh_textures(&self, mesh: usize, bias: i32, used: &mut Vec<usize>) {
+        let Some(mesh) = self.meshes.get(mesh) else {
+            return;
+        };
+
+        if bias == 0 {
+            used.extend(mesh.subset_textures.iter().flatten().copied());
+        } else {
+            let effect_table = mesh_list::is_effect_dir(mesh_list::split(&mesh.path).0);
+
+            used.extend(mesh.subset_slots.iter().flatten().filter_map(|slot| {
+                let slot = slot.checked_add_signed(bias as isize)?;
+
+                self.textures
+                    .iter()
+                    .position(|t| t.effect_table == effect_table && t.slot == slot)
+            }));
+        }
+    }
+
     pub(crate) fn install_resources(&mut self, bundle: Bundle) {
         let mut textures = Vec::new();
 
         for t in bundle.textures {
-            let i = if let Some(i) = self
-                .textures
-                .iter()
-                .position(|old| old.slot == t.slot && old.effect_table == t.effect_table)
-            {
+            let i = if let Some(i) = self.textures.iter().position(|old| {
+                old.slot == t.slot
+                    && old.effect_table == t.effect_table
+                    && old.path == t.path
+                    && old.flag == t.flag
+                    && old.mip_policy(false) == t.mip_policy(false)
+            }) {
                 if self.textures[i].pending && !t.pending {
                     self.textures[i] = t;
 
@@ -110,6 +176,11 @@ impl ObjectScene {
             };
 
             textures.push(i);
+        }
+
+        for (source, variant) in bundle.held_mask_textures {
+            self.held_mask_textures
+                .insert(textures[source], textures[variant]);
         }
 
         let mut meshes = Vec::new();
@@ -151,6 +222,7 @@ impl Bundle {
             textures: scene.textures,
             arena: scene.arena,
             by_id: scene.by_id_meshes,
+            held_mask_textures: scene.held_mask_textures,
         }
     }
 

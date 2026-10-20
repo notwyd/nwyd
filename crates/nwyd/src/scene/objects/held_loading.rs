@@ -2,16 +2,21 @@ use super::*;
 use std::{collections::BTreeSet, sync::mpsc};
 use web_time::{Duration, Instant};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Key {
-    Mesh(u32),
+    Mesh(u32, bool),
     Effect(usize),
 }
 
 impl Key {
     fn resident(self, scene: &ObjectScene) -> bool {
         match self {
-            Self::Mesh(id) => scene.by_id_meshes.contains_key(&id),
+            Self::Mesh(id, mask) => {
+                scene.by_id_meshes.contains_key(&id) && (!mask || scene.held_materials_ready(id))
+            }
             Self::Effect(slot) => scene
                 .textures
                 .iter()
@@ -23,8 +28,12 @@ impl Key {
         let mut scene = ObjectScene::empty(registries.clone());
 
         match self {
-            Self::Mesh(id) => {
+            Self::Mesh(id, mask) => {
                 scene.load_by_id(game, &[id])?;
+
+                if mask {
+                    scene.prepare_held_materials(id);
+                }
 
                 if let Some(&index) = scene.by_id_meshes.get(&id) {
                     let mesh = &scene.meshes[index];
@@ -53,7 +62,7 @@ fn wanted(scene: &ObjectScene, actor: &super::super::actors::Actor) -> BTreeSet<
     let mut keys = BTreeSet::new();
 
     for hand in &actor.held {
-        keys.insert(Key::Mesh(hand.mesh_id));
+        keys.insert(Key::Mesh(hand.mesh_id, hand.glow.is_some()));
 
         if let Some(slot) = hand.glow {
             keys.insert(Key::Effect(slot));
@@ -70,7 +79,7 @@ fn wanted(scene: &ObjectScene, actor: &super::super::actors::Actor) -> BTreeSet<
     }
 
     if let Some(id) = super::super::siege_mesh::mesh(actor.parts[7].mesh) {
-        keys.insert(Key::Mesh(id));
+        keys.insert(Key::Mesh(id, false));
     }
 
     keys
@@ -188,7 +197,7 @@ impl Loader {
 
                 if needed
                     && key.resident(scene)
-                    && let Key::Mesh(id) = key
+                    && let Key::Mesh(id, _) = key
                 {
                     for index in 0..actors.actors.len() {
                         if actors.actors[index].held.iter().any(|h| h.mesh_id == id) {

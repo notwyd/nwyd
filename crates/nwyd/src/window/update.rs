@@ -103,10 +103,12 @@ impl Client {
 
         let textures = scene.world.actors.poll_background_textures();
 
-        let meshes = scene
-            .world
-            .objects
-            .poll_texture_cache(screens.game(), &scene.world.actors);
+        let meshes = scene.world.objects.poll_texture_cache(
+            screens.game(),
+            &scene.world.actors,
+            &scene.drops,
+            &scene.gates,
+        );
 
         let held = scene
             .world

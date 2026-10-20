@@ -322,12 +322,14 @@ pub struct ObjectScene {
     pub missing_textures: Vec<String>,
     pub registries: Arc<Registries>,
     held_loader: Option<held_loading::Loader>,
+    held_mask_textures: BTreeMap<usize, usize>,
     texture_loader: Option<super::actors::texture_loading::Loader>,
     pub texture_updates: Vec<usize>,
 }
 
 mod held_loading;
 pub(crate) mod resources;
+mod weapon_materials;
 
 #[cfg(test)]
 mod alpha_tests;
@@ -765,6 +767,10 @@ impl ObjectScene {
             .collect();
 
         for hand in actors.iter().flat_map(|a| &a.held) {
+            if hand.glow.is_some() {
+                self.prepare_held_materials(hand.mesh_id);
+            }
+
             if let Some(glow) = hand
                 .ordinary_glow
                 .and_then(|g| self.ordinary_held_glow(hand.mesh_id, g))
@@ -1480,6 +1486,8 @@ impl ObjectScene {
                     uniform.alpha[0] = 0.0;
 
                     uniform.alpha[1] = self.textures[draw.texture].alpha_policy().as_uniform();
+
+                    draw.texture = self.held_mask_texture(draw.texture);
 
                     draw.pass = MeshPass::Opaque;
 
