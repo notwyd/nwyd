@@ -45,6 +45,9 @@ mod terrain_tests;
 #[cfg(test)]
 pub(crate) mod fog_tests;
 
+#[cfg(test)]
+mod marker_tests;
+
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod material_upload_tests;
 
@@ -1947,7 +1950,7 @@ impl World {
         held: &[actors::HeldDraw],
         drops: &[super::drops::DropDraw],
         now_ms: u32,
-        extra_glows: &[lights::Glow],
+        extra_meshes: &[super::effect_tree::AuthoredMesh],
         frustum: &render::cull::Frustum,
     ) -> objects::Frame {
         let mut spawned = self.effects.mesh_frame(self.pose.eye, now_ms);
@@ -1978,12 +1981,10 @@ impl World {
             self.environment.fog_enabled,
         );
 
-        let glows = match extra_glows.is_empty() && spawned_glows.is_empty() {
+        let glows = match spawned_glows.is_empty() {
             true => std::borrow::Cow::Borrowed(&self.lights.glows[..]),
             false => {
                 let mut all = self.lights.glows.clone();
-
-                all.extend_from_slice(extra_glows);
 
                 all.extend_from_slice(&spawned_glows);
 
@@ -2012,6 +2013,9 @@ impl World {
             now_ms,
             self.environment.uses_day_cycle(),
         );
+
+        self.objects
+            .append_authored_effects(&mut frame, extra_meshes, vendor, frustum);
 
         self.objects
             .append_textured_effects(&mut frame, &textured, vendor, frustum);

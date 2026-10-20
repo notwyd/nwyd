@@ -87,7 +87,7 @@ pub const MARKER_PULSE_HARMONIC: f32 = 2.0;
 
 pub const MARKER_MESH_IDS: [u32; 2] = [0x13C, 0x13D];
 
-pub const MARKER_RING_COLOURS: [u32; 2] = [0xFF11_1188, 0xFFFF_0000];
+pub const MARKER_MESH_COLOURS: [u32; 2] = [0xFF11_1188, 0xFFFF_0000];
 
 pub const MARKER_DISC_COLOUR: u32 = 0xFF99_99AA;
 
@@ -264,6 +264,9 @@ pub struct FieldScene {
 
 mod language;
 
+#[cfg(test)]
+mod marker_tests;
+
 pub(crate) use language::LanguageUpdate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -302,11 +305,51 @@ impl ClickMarker {
     pub fn shown(action: usize) -> bool {
         action == appearance::ACTION_WALK || action == appearance::ACTION_RUN
     }
+
+    pub fn draws(&self, now_ms: u32) -> MarkerDraws {
+        let mut out = MarkerDraws::default();
+
+        let [point0, point1, disc] = self.positions();
+
+        let yaw = Self::spin(now_ms);
+
+        for (i, at) in [point0, point1].into_iter().enumerate() {
+            let mut effect = super::effect_mesh::EffectMesh::new(
+                MARKER_MESH_IDS[i] as i32,
+                MARKER_MESH_COLOURS[i],
+                yaw,
+                0,
+                0,
+            );
+
+            effect.position = at;
+
+            out.meshes.push(super::effect_tree::AuthoredMesh {
+                mesh_id: MARKER_MESH_IDS[i],
+                world: effect.world(),
+                texture: None,
+                material: super::effect_tree::MeshMaterial::Effect {
+                    blend: effect.blend,
+                    tint: effect.tint(),
+                    uv_offset: effect.uv_offset,
+                },
+            });
+        }
+
+        out.quads.push(click_marker_quad(
+            disc,
+            MARKER_DISC_COLOUR,
+            Self::pulse(now_ms),
+            0,
+        ));
+
+        out
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct MarkerDraws {
-    pub rings: Vec<super::lights::Glow>,
+    pub meshes: Vec<super::effect_tree::AuthoredMesh>,
     pub quads: Vec<super::quads::GroundQuad>,
 }
 
@@ -377,31 +420,7 @@ pub fn click_markers(scene: &FieldScene, now_ms: u32) -> MarkerDraws {
         .unwrap_or(false);
 
     if let Some(marker) = scene.marker.filter(|_| walking) {
-        let [ring0, ring1, disc] = marker.positions();
-
-        let yaw = ClickMarker::spin(now_ms);
-
-        for (i, at) in [ring0, ring1].into_iter().enumerate() {
-            out.rings.push(super::lights::Glow {
-                uv_scroll: super::effect_mesh::UvScroll::None,
-                uv_offset: [0.0; 2],
-                mesh_id: MARKER_MESH_IDS[i] as i32,
-                position: at,
-                yaw,
-                scale: (1.0, 1.0),
-                colour: MARKER_RING_COLOURS[i],
-                pulse: false,
-                period_ms: 1_000,
-                sector: super::effects::SECTOR_UNASSIGNED,
-            });
-        }
-
-        out.quads.push(click_marker_quad(
-            disc,
-            MARKER_DISC_COLOUR,
-            ClickMarker::pulse(now_ms),
-            0,
-        ));
+        out = marker.draws(now_ms);
     }
 
     if ANCHOR_PIN_DRAWN && scene.combat.movement == 1 && scene.player.is_some() {
@@ -566,7 +585,7 @@ pub fn build(
     world
         .objects
         .load_by_id(game, &MARKER_MESH_IDS)
-        .context("loading the click marker's two rings")?;
+        .context("loading the click marker meshes")?;
 
     let objects = &world.objects;
 

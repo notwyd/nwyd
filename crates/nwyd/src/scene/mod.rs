@@ -2349,7 +2349,7 @@ impl Scene {
             &actors.weapons,
             &drops,
             now_ms,
-            &markers.rings,
+            &markers.meshes,
             &object_frustum,
         );
 
