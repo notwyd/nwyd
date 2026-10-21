@@ -70,7 +70,7 @@ impl Instance {
         static NEXT: AtomicU64 = AtomicU64::new(1);
 
         Self(
-            NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+            NEXT.try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
                 .expect("UI instance identity space exhausted"),
         )
     }
