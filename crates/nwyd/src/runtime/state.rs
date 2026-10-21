@@ -16,6 +16,7 @@ pub struct InputState {
 
 pub struct RuntimeState {
     pub(crate) game_settings: Option<crate::game_settings::Panel>,
+    pub(crate) item_announcements: crate::scene::item_announcements::Filter,
     pub(crate) scene: Scene,
     pub(crate) retained: Retained,
     pub(crate) clock: Clock,
@@ -69,6 +70,7 @@ impl RuntimeState {
 
         Self {
             game_settings: None,
+            item_announcements: Default::default(),
             scene,
             clock,
             rng,

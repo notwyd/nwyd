@@ -17,6 +17,10 @@ impl Host for Client {
             .is_some_and(|panel| panel.applied.interface.hide_item_announcements)
     }
 
+    fn hide_chat_item_announcement(&self, line: &protocol::server::ChatLine) -> bool {
+        self.hide_item_announcements() && self.runtime.item_announcements.matches(line)
+    }
+
     fn channel(&self) -> i32 {
         self.picked.as_ref().map_or(0, |p| p.channel as i32)
     }

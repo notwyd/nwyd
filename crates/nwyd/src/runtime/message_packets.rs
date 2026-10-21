@@ -16,6 +16,8 @@ pub trait Host {
 
     fn hide_item_announcements(&self) -> bool;
 
+    fn hide_chat_item_announcement(&self, line: &ChatLine) -> bool;
+
     fn channel(&self) -> i32;
 
     fn log_message(&mut self, record: usize);
@@ -79,8 +81,12 @@ pub fn apply(host: &mut impl Host, packet: Packet) {
         }
         Packet::Chat(line) => {
             let channel = host.channel();
+            let hide_item_announcement = host.hide_chat_item_announcement(&line);
 
-            match host.scene().hear_on_channel(&line, channel) {
+            match host
+                .scene()
+                .hear_on_channel(&line, channel, hide_item_announcement)
+            {
                 Some(crate::scene::chat::Heard::Dropped(why)) => {
                     tracing::info!("NWYD: {:#05x} chat not shown — {why}", line.opcode)
                 }

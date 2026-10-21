@@ -305,3 +305,86 @@ fn hiding_item_announcements_skips_banner_sound_and_chat_without_touching_pendin
         assert_eq!(panels.wire, [vec![4, 5, 6]]);
     }
 }
+
+#[test]
+#[ignore = "requires game files via GAME_DIR"]
+fn field_item_announcement_filter_preserves_server_clocks_and_other_notices() {
+    use crate::scene::{Scene, enter::Entered, field, login_static::SceneTime};
+    use protocol::server::{CHAT_CONSOLE, ChatLine};
+
+    let game = assets::GameDir::open(std::env::var_os("GAME_DIR").unwrap()).unwrap();
+    let mut packet =
+        formats::net::enter::parse(&vec![0; formats::net::enter::MINIMUM_LEN]).unwrap();
+    packet.client_id = 37;
+    packet.x = 8 * 128 + 64;
+    packet.z = 13 * 128 + 64;
+    let mut field = field::build(
+        &game,
+        (800, 600),
+        &SceneTime::pinned(2000, crate::clock::Calendar::GOLDEN),
+        &Entered::from_packet(&packet, 0, None),
+        &field::Chrome::bare(),
+    )
+    .unwrap();
+    let mut panels = notice_panels();
+    panels.chat.outbox.push(vec![1, 2, 3]);
+    panels.wire.push(vec![4, 5, 6]);
+    field.panels = Some(panels);
+    let mut scene = Scene::Field(Box::new(field));
+    let filter = crate::scene::item_announcements::Filter::load(
+        &crate::scene::item_announcements::tests::game(),
+    );
+    let line = ChatLine {
+        opcode: CHAT_CONSOLE,
+        text: "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!!".into(),
+        ..Default::default()
+    };
+    assert!(filter.matches(&line));
+    assert!(matches!(
+        scene.hear_on_channel(&line, 1, true),
+        Some(Heard::Dropped(_))
+    ));
+    for text in ["!!123456", "!#26120"] {
+        let command = ChatLine {
+            text: text.into(),
+            ..line.clone()
+        };
+        assert!(!filter.matches(&command));
+        scene.hear_on_channel(&command, 1, false);
+    }
+    let Scene::Field(field) = &scene else {
+        unreachable!()
+    };
+    let clock = field.zone_time.get();
+    assert_eq!((clock.hours, clock.minutes, clock.seconds), (12, 34, 56));
+    assert_eq!((field.affect_time.year, field.affect_time.day), (26, 120));
+    let panels = field.panels.as_ref().unwrap();
+    assert_eq!(panels.notice, Default::default());
+    assert!(panels.chat.records.is_empty());
+    assert_eq!(panels.chat.outbox, [vec![1, 2, 3]]);
+    assert_eq!(panels.wire, [vec![4, 5, 6]]);
+
+    let maintenance = ChatLine {
+        text: "Server maintenance in five minutes".into(),
+        ..line.clone()
+    };
+    assert!(!filter.matches(&maintenance));
+    scene.hear_on_channel(&maintenance, 1, false);
+    let Scene::Field(field) = &mut scene else {
+        unreachable!()
+    };
+    let panels = field.panels.as_mut().unwrap();
+    assert!(panels.notice.showing);
+    assert_eq!(panels.notice.sounds, [33]);
+    assert_eq!(panels.chat.records.len(), 1);
+
+    notice::clear(panels);
+    scene.hear_on_channel(&line, 1, false);
+    let Scene::Field(field) = &scene else {
+        unreachable!()
+    };
+    let panels = field.panels.as_ref().unwrap();
+    assert!(panels.notice.showing);
+    assert_eq!(panels.notice.sounds, [33, 33]);
+    assert_eq!(panels.chat.records.len(), 2);
+}

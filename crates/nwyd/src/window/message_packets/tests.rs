@@ -35,6 +35,9 @@ fn client() -> Client {
     client.runtime.game_settings = Some(Panel::for_test(Preferences::from_config(
         &Config::default(),
     )));
+    client.runtime.item_announcements = crate::scene::item_announcements::Filter::load(
+        &crate::scene::item_announcements::tests::game(),
+    );
     client
 }
 
@@ -136,4 +139,71 @@ fn hidden_announcements_preserve_login_reply_handling_and_launcher_errors() {
     client.launcher_login = true;
     message(&mut client, 12, "", false);
     assert!(client.runtime.scene.legacy_modal());
+}
+
+#[test]
+fn plain_server_item_announcements_follow_applied_preferences_and_preserve_login_handling() {
+    let mut client = client();
+    login_scene(&mut client).strings = translated(&[(1584, "%s obteve o item %s no %s")], "");
+    let line = protocol::server::ChatLine {
+        opcode: protocol::server::CHAT_CONSOLE,
+        text: "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!".into(),
+        ..Default::default()
+    };
+    client
+        .runtime
+        .game_settings
+        .as_mut()
+        .unwrap()
+        .draft
+        .interface
+        .hide_item_announcements = true;
+    message_packets::apply(&mut client, Packet::Chat(Box::new(line.clone())));
+    assert!(login_scene(&mut client).notice.state.showing);
+    assert_eq!(login_scene(&mut client).notice.state.sounds, [33]);
+
+    login_scene(&mut client).notice = crate::scene::notice::Overlay::for_test();
+    client
+        .runtime
+        .game_settings
+        .as_mut()
+        .unwrap()
+        .applied
+        .interface
+        .hide_item_announcements = true;
+    for element in &mut login_scene(&mut client).login2.ui.panel.elements {
+        element.enabled = false;
+    }
+    message_packets::apply(&mut client, Packet::Chat(Box::new(line.clone())));
+    let scene = login_scene(&mut client);
+    assert_eq!(scene.notice.state, Default::default());
+    assert!(scene.login2.ui.panel.visible);
+    for element in &scene.login2.ui.panel.elements {
+        if matches!(element.name.as_str(), "btnLogin" | "password") {
+            assert!(element.enabled);
+        }
+    }
+
+    message_packets::apply(
+        &mut client,
+        Packet::Chat(Box::new(protocol::server::ChatLine {
+            text: "Server maintenance in five minutes".into(),
+            ..line.clone()
+        })),
+    );
+    assert!(login_scene(&mut client).notice.state.showing);
+    assert_eq!(login_scene(&mut client).notice.state.sounds, [33]);
+
+    login_scene(&mut client).notice = crate::scene::notice::Overlay::for_test();
+    client
+        .runtime
+        .game_settings
+        .as_mut()
+        .unwrap()
+        .applied
+        .interface
+        .hide_item_announcements = false;
+    message_packets::apply(&mut client, Packet::Chat(Box::new(line)));
+    assert!(login_scene(&mut client).notice.state.showing);
+    assert_eq!(login_scene(&mut client).notice.state.sounds, [33]);
 }

@@ -1723,7 +1723,7 @@ pub fn prepare_announcement(
         return announced;
     }
 
-    if hide_item_announcements && matches!(record, 1462 | 1562 | 1584) {
+    if hide_item_announcements && super::item_announcements::is_record(record) {
         return announced;
     }
 

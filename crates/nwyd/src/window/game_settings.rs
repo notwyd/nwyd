@@ -11,6 +11,8 @@ impl Client {
         path: std::path::PathBuf,
         game: &assets::GameDir,
     ) -> Self {
+        self.runtime.item_announcements = crate::scene::item_announcements::Filter::load(game);
+
         let mut initial = EffectOptions::default();
 
         initial.detail.effects = self.render_quality >= 2;

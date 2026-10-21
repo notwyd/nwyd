@@ -154,7 +154,7 @@ fn message(message: ServerMessage) -> Event {
 
 #[test]
 fn a_redirect_keeps_processing_the_old_socket_until_its_delayed_close() {
-    let Some(path) = std::env::var_os("WYD_GAME_DIR") else {
+    let Some(path) = std::env::var_os("GAME_DIR") else {
         return;
     };
     let mut host = Harness::new(&GameDir::open(path).unwrap());

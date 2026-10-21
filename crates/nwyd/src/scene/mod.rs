@@ -99,6 +99,7 @@ pub mod impact_special;
 pub mod init_place;
 pub mod interact;
 pub mod inventory;
+pub(crate) mod item_announcements;
 pub mod item_move;
 pub mod item_prices;
 pub mod item_table;
@@ -1051,13 +1052,14 @@ impl Scene {
             _ => 0,
         };
 
-        self.hear_on_channel(line, channel)
+        self.hear_on_channel(line, channel, false)
     }
 
     pub fn hear_on_channel(
         &mut self,
         line: &protocol::server::ChatLine,
         channel: i32,
+        hide_item_announcement: bool,
     ) -> Option<chat::Heard> {
         if line.opcode == 0x101 && line.speaker == 0 {
             match self {
@@ -1076,7 +1078,9 @@ impl Scene {
 
             let selection = matches!(self, Scene::SelectChar(_));
 
-            if let Some((text, life)) = console_notice::banner(&line.text, channel, None, selection)
+            if !hide_item_announcement
+                && let Some((text, life)) =
+                    console_notice::banner(&line.text, channel, None, selection)
             {
                 match self {
                     Scene::LoginPanels(s) => {
@@ -1094,11 +1098,14 @@ impl Scene {
         }
 
         let heard = match self {
+            Scene::Field(scene) => field::hear(scene, line, hide_item_announcement),
+            _ if hide_item_announcement => {
+                Some(chat::Heard::Dropped("item announcements are hidden"))
+            }
             Scene::SelectChar(scene) => scene
                 .legacy_boxes
                 .selection_console(line)
                 .then_some(chat::Heard::Modal),
-            Scene::Field(scene) => field::hear(scene, line),
             _ => None,
         };
 

@@ -267,6 +267,9 @@ mod language;
 #[cfg(test)]
 mod marker_tests;
 
+#[cfg(test)]
+mod overlay_tests;
+
 pub(crate) use language::LanguageUpdate;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2748,15 +2751,15 @@ pub(crate) fn append_frame_draws(scene: &mut FieldScene, out: &mut Vec<PlannedQu
 
     out.extend(map_draws(scene));
 
-    out.extend(nameplate::frame_draws(scene));
-
-    out.extend(super::drop_presentation::frame_draws(scene));
-
     out.extend(
         scene
             .damage
             .frame_draws(&scene.sets, &scene.layout, &mut scene.text),
     );
+
+    out.extend(nameplate::frame_draws(scene));
+
+    out.extend(super::drop_presentation::frame_draws(scene));
 
     out.extend(super::message_panel::frame_draws(scene));
 
@@ -6418,7 +6421,11 @@ fn force_load(scene: &mut FieldScene, game: &GameDir) -> bool {
     true
 }
 
-pub fn hear(scene: &mut FieldScene, line: &protocol::server::ChatLine) -> Option<chat::Heard> {
+pub fn hear(
+    scene: &mut FieldScene,
+    line: &protocol::server::ChatLine,
+    hide_item_announcement: bool,
+) -> Option<chat::Heard> {
     if line.opcode == protocol::server::CHAT_CONSOLE && line.speaker == 0 {
         let mut clock = scene.zone_time.get();
 
@@ -6465,6 +6472,10 @@ pub fn hear(scene: &mut FieldScene, line: &protocol::server::ChatLine) -> Option
 
             scene.world.play_sound(super::firework::LAUNCH_SOUND);
         }
+    }
+
+    if hide_item_announcement {
+        return Some(chat::Heard::Dropped("item announcements are hidden"));
     }
 
     if line.opcode == protocol::server::CHAT_CONSOLE && line.speaker == 0 {
