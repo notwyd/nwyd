@@ -316,6 +316,155 @@ mod tests {
     }
 
     #[test]
+    fn disabled_controls_keep_hover_without_activating_or_clicking_through() {
+        for kind in [
+            ElementType::Button,
+            ElementType::IconButton,
+            ElementType::CheckBox,
+            ElementType::RadioButton,
+            ElementType::ComboBox,
+            ElementType::Slider,
+        ] {
+            let mut disabled = control(kind, "disabled");
+            disabled.enabled = false;
+            let mut panel = Panel {
+                right: 100,
+                bottom: 100,
+                elements: vec![control(ElementType::Button, "underneath"), disabled],
+                ..Default::default()
+            };
+            let mut origin = (0, 0);
+            let mut manager = Manager::default();
+            let target = Target {
+                panel: 0,
+                owner: Owner::Element(1),
+            };
+
+            for event in [
+                Mouse::Move,
+                Mouse::LeftDown,
+                Mouse::LeftUp,
+                Mouse::LeftDouble,
+                Mouse::LeftUp,
+                Mouse::RightDown,
+                Mouse::RightUp,
+                Mouse::RightDouble,
+                Mouse::RightUp,
+            ] {
+                let events = manager.mouse(
+                    &mut [PanelMut {
+                        panel: &mut panel,
+                        origin: &mut origin,
+                    }],
+                    event,
+                    10,
+                    10,
+                );
+                assert_eq!(manager.hovered, Some(target), "{kind:?} {event:?}");
+                assert!(events.is_empty(), "{kind:?} {event:?}: {events:?}");
+                assert!(manager.pressed.is_none());
+                assert!(manager.capture.is_none());
+                assert!(manager.focused.is_none());
+                assert!(manager.button_sounds.is_empty());
+            }
+
+            manager.focused = Some(target);
+            assert!(manager.button_key(0, &panel, 0x0d).is_none());
+            assert!(!can_focus(&panel.elements[1]));
+            assert!(!tab_stop(&panel.elements[1]));
+
+            panel.elements[1].visible = false;
+            assert_eq!(hit_test(&panel, 10, 10), Some(Owner::Element(0)));
+            panel.elements[1].visible = true;
+            panel.elements[1].msg_receive = false;
+            assert_eq!(hit_test(&panel, 10, 10), Some(Owner::Element(0)));
+            panel.elements[1].msg_receive = true;
+            panel.elements[1].page_index = 2;
+            panel.page_index = 1;
+            assert_eq!(hit_test(&panel, 10, 10), Some(Owner::Element(0)));
+        }
+    }
+
+    #[test]
+    fn the_separate_title_close_button_still_requires_enabled_hit_testing() {
+        let mut close = control(ElementType::Button, "close");
+        close.enabled = false;
+        let mut panel = Panel {
+            right: 100,
+            bottom: 100,
+            close_button: Some(close),
+            close_button_location: [0, 0, 40, 20],
+            ..Default::default()
+        };
+        assert_eq!(hit_test(&panel, 70, 10), None);
+        panel.close_button.as_mut().unwrap().enabled = true;
+        assert_eq!(hit_test(&panel, 70, 10), Some(Owner::Close));
+    }
+
+    #[test]
+    fn disabling_a_pressed_button_cancels_activation_but_preserves_hover() {
+        let mut panel = Panel {
+            right: 100,
+            bottom: 100,
+            elements: vec![control(ElementType::Button, "entry")],
+            ..Default::default()
+        };
+        let mut origin = (0, 0);
+        let mut manager = Manager::default();
+        let target = Target {
+            panel: 0,
+            owner: Owner::Element(0),
+        };
+        manager.mouse(
+            &mut [PanelMut {
+                panel: &mut panel,
+                origin: &mut origin,
+            }],
+            Mouse::LeftDown,
+            10,
+            10,
+        );
+        assert_eq!(manager.pressed, Some(target));
+        panel.elements[0].enabled = false;
+        let events = manager.mouse(
+            &mut [PanelMut {
+                panel: &mut panel,
+                origin: &mut origin,
+            }],
+            Mouse::LeftUp,
+            10,
+            10,
+        );
+        assert!(events.is_empty());
+        assert_eq!(manager.hovered, Some(target));
+        assert!(manager.pressed.is_none());
+        assert!(manager.capture.is_none());
+        assert!(manager.button_sounds.is_empty());
+
+        panel.elements[0].enabled = true;
+        manager.mouse(
+            &mut [PanelMut {
+                panel: &mut panel,
+                origin: &mut origin,
+            }],
+            Mouse::LeftDown,
+            10,
+            10,
+        );
+        let events = manager.mouse(
+            &mut [PanelMut {
+                panel: &mut panel,
+                origin: &mut origin,
+            }],
+            Mouse::LeftUp,
+            10,
+            10,
+        );
+        assert_eq!(events.iter().filter(|e| e.id == EventId::Click).count(), 1);
+        assert_eq!(manager.button_sounds, [53]);
+    }
+
+    #[test]
     fn selecting_radio_clears_only_sibling_radios_in_the_same_group() {
         let mut panel = Panel::default();
 
@@ -1256,7 +1405,9 @@ pub fn hit_test(panel: &Panel, x: i32, y: i32) -> Option<Owner> {
             continue;
         }
 
-        if element_contains(element, element.rect(), x, y) && interactive(element) {
+        // Retail 0x4784D0 includes disabled children in hover hit testing;
+        // mouse dispatch checks enabled separately before delivering actions.
+        if element_contains(element, element.rect(), x, y) && element.visible {
             return Some(Owner::Element(index));
         }
     }
@@ -3236,6 +3387,20 @@ impl Manager {
                     }
                 }
                 _ => {}
+            }
+
+            return Vec::new();
+        }
+
+        if let Some(Owner::Element(i)) = owner
+            && let Some(element) = panel.elements.get(i)
+            && !interactive(element)
+        {
+            if event == Mouse::Move {
+                self.hovered = element.visible.then_some(Target {
+                    panel: index,
+                    owner: Owner::Element(i),
+                });
             }
 
             return Vec::new();

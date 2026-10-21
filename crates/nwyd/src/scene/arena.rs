@@ -4,6 +4,9 @@ use super::kickout::MessagePanel;
 use formats::net::arena::{self, Kill, List, Round};
 use ui::Strings;
 
+#[cfg(test)]
+mod tooltip_tests;
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Board {
     pub visible: bool,

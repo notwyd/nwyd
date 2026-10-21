@@ -621,7 +621,9 @@ impl Scene {
 
                 match key {
                     ui::text_entry::Key::Escape => report(field::character(scene, '\u{1b}')),
-                    ui::text_entry::Key::Return if !repeat => report(field::character(scene, '\r')),
+                    // Retail repeats Enter through character input, preserving modal
+                    // priority and chat toggling while the key is held.
+                    ui::text_entry::Key::Return => report(field::character(scene, '\r')),
                     ui::text_entry::Key::Tab => field::camera_cycle(scene),
                     ui::text_entry::Key::Delete => field::delete_hud_slot(scene),
                     _ if !repeat => field::unclaimed_key(scene, key),
