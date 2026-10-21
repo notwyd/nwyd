@@ -19,6 +19,10 @@ pub mod runtime;
 pub mod scene;
 mod temporal;
 pub mod ui;
+#[cfg(not(target_arch = "wasm32"))]
+mod update_panel;
+#[cfg(not(target_arch = "wasm32"))]
+mod updates;
 pub mod user_paths;
 pub mod window;
 

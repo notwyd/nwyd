@@ -304,12 +304,22 @@ impl Client {
             *self.screens.as_mut().unwrap().game_mut() = resources.game.clone();
 
             panel.apply_language(&resources.game, &resources.strings);
+
+            #[cfg(not(target_arch = "wasm32"))]
+            if let Some(panel) = &mut self.updates.panel {
+                panel.set_language(resources.game.language());
+            }
         }
 
         Ok(next)
     }
 
     fn resize_game(&mut self, size: (u32, u32)) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(panel) = &mut self.updates.panel {
+            panel.resize(size);
+        }
+
         if let Some(panel) = &self.runtime.game_settings {
             self.runtime.scene.resize(&panel.chains, size);
         }

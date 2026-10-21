@@ -14,6 +14,9 @@ impl UpdateHost for Client {
     }
 
     fn poll_status(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_release_update();
+
         if self.runtime.scene.poll_status() {
             self.redraw();
         }

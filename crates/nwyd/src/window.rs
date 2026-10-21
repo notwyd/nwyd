@@ -45,6 +45,8 @@ mod live_packets;
 mod message_packets;
 mod object_packets;
 mod pacing;
+#[cfg(not(target_arch = "wasm32"))]
+mod release_updates;
 mod selection;
 mod session_packets;
 mod social_packets;
@@ -119,6 +121,8 @@ type BrowserDevice = (wgpu::Surface<'static>, Gpu);
 type BrowserRecovery = std::rc::Rc<std::cell::RefCell<Option<Result<BrowserDevice>>>>;
 
 pub struct Client {
+    #[cfg(not(target_arch = "wasm32"))]
+    updates: release_updates::State,
     #[cfg(target_arch = "wasm32")]
     browser_start: Option<(web_sys::HtmlCanvasElement, BrowserDevice)>,
     #[cfg(target_arch = "wasm32")]
@@ -214,6 +218,8 @@ impl Client {
         };
 
         Client {
+            #[cfg(not(target_arch = "wasm32"))]
+            updates: release_updates::State::default(),
             #[cfg(target_arch = "wasm32")]
             browser_start: None,
             #[cfg(target_arch = "wasm32")]
@@ -589,6 +595,11 @@ impl Client {
             return;
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.update_notice_motion(self.pointer_in_backbuffer()) {
+            return;
+        }
+
         self.route_mouse(Mouse::Move);
 
         let (emissive, inside) = self.hover_inputs();
@@ -604,6 +615,11 @@ impl Client {
 
     fn pointer_left(&mut self) {
         self.pointer_location = crate::scene::cursor::Location::Outside;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(panel) = &mut self.updates.panel {
+            panel.motion(None);
+        }
 
         if let Scene::Field(scene) = &mut self.runtime.scene {
             field::cancel_pointer_hold(scene);
@@ -661,6 +677,16 @@ impl Client {
 
             self.redraw();
 
+            return;
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.update_notice_button(
+            index,
+            state == ElementState::Pressed,
+            point,
+            crate::notice_browser::open,
+        ) {
             return;
         }
 
@@ -1662,6 +1688,11 @@ impl Client {
             return true;
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.update_notice_blocks_pointer(self.pointer_in_backbuffer()) {
+            return true;
+        }
+
         false
     }
 
@@ -2417,6 +2448,16 @@ impl Client {
 
         let settings_open = self.settings_visible();
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let update_visible = self.update_notice_visible();
+        #[cfg(target_arch = "wasm32")]
+        let update_visible = false;
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let update_hovered = self.update_notice_blocks_pointer(engine_pointer);
+        #[cfg(target_arch = "wasm32")]
+        let update_hovered = false;
+
         if self.diagnostics.enabled() {
             probe.sample.frame_id = self.frames;
             probe.sample.continuous = self.uncapped_wayland();
@@ -2505,13 +2546,41 @@ impl Client {
             }
         };
 
-        self.runtime.scene.queue_frame_with_pointer(
-            &live.gpu,
-            &mut live.renderer,
-            &self.settings.pointers,
-            self.runtime.input.pointer_state.frame,
-            if settings_open { None } else { engine_pointer },
-        );
+        if settings_open || update_visible {
+            self.runtime.scene.queue_frame_under_overlay(
+                &live.gpu,
+                &mut live.renderer,
+                if settings_open || update_hovered {
+                    None
+                } else {
+                    engine_pointer
+                },
+            );
+        } else {
+            self.runtime.scene.queue_frame_with_pointer(
+                &live.gpu,
+                &mut live.renderer,
+                &self.settings.pointers,
+                self.runtime.input.pointer_state.frame,
+                engine_pointer,
+            );
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        if update_visible && let Some(panel) = &mut self.updates.panel {
+            panel.queue(&live.gpu, &mut live.renderer);
+            self.settings.pointers.queue(
+                &live.gpu,
+                &mut live.renderer,
+                self.settings.backbuffer,
+                if update_hovered {
+                    crate::scene::cursor::FRAME_NORMAL
+                } else {
+                    self.runtime.input.pointer_state.frame
+                },
+                engine_pointer,
+            );
+        }
 
         finish_frame_audio(&mut self.runtime.scene, self.audio.as_ref());
 
@@ -2944,6 +3013,11 @@ impl Client {
                 self.pointer_left();
             }
             WindowEvent::Focused(focused) => {
+                #[cfg(not(target_arch = "wasm32"))]
+                if !focused && let Some(panel) = &mut self.updates.panel {
+                    panel.cancel_input();
+                }
+
                 if !focused && let Some(panel) = &mut self.runtime.game_settings {
                     panel.cancel_input();
                 }

@@ -95,7 +95,7 @@ pub fn load_client(mut game: GameDir, analytics: crate::analytics::Analytics) ->
         },
     };
 
-    Ok(Client::new(settings, scene)
+    let client = Client::new(settings, scene)
         .with_render_quality(config.raw[config_bin::slot::EFFECT_QUALITY], true)
         .with_inverted_mouse(config.invert_mouse())
         .with_audio(audio)
@@ -105,7 +105,12 @@ pub fn load_client(mut game: GameDir, analytics: crate::analytics::Analytics) ->
                 .with_analytics(analytics),
         )
         .with_game_settings(preferences, settings_path, &game)
-        .with_screens(Box::new(screens)))
+        .with_screens(Box::new(screens));
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let client = client.with_update_check();
+
+    Ok(client)
 }
 
 struct GameScreens {

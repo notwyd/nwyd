@@ -142,6 +142,8 @@ fn watch_git_path(name: &str) {
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
+    println!("cargo:rerun-if-env-changed=NWYD_BUILD_NUMBER");
+
     windows_icon();
 
     web_dependencies();
@@ -155,9 +157,19 @@ fn main() {
     }
 
     let commit = git(&["rev-parse", "--verify", "HEAD"])
-        .filter(|hash| hash.len() >= 8 && hash.bytes().all(|b| b.is_ascii_hexdigit()))
-        .map(|hash| hash[..8].to_owned())
+        .filter(|hash| hash.len() == 40 && hash.bytes().all(|b| b.is_ascii_hexdigit()))
         .unwrap_or_else(|| "unknown".to_owned());
 
-    println!("cargo:rustc-env=NWYD_BUILD_COMMIT={commit}");
+    let short_commit = commit.get(..8).unwrap_or(&commit);
+
+    let build_number = std::env::var("NWYD_BUILD_NUMBER")
+        .ok()
+        .and_then(|number| number.parse::<u64>().ok())
+        .unwrap_or(0);
+
+    println!("cargo:rustc-env=NWYD_BUILD_COMMIT={short_commit}");
+
+    println!("cargo:rustc-env=NWYD_BUILD_COMMIT_FULL={commit}");
+
+    println!("cargo:rustc-env=NWYD_BUILD_NUMBER={build_number}");
 }

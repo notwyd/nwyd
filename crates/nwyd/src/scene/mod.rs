@@ -2597,13 +2597,22 @@ impl Scene {
         frame: u32,
         position: Option<(i32, i32)>,
     ) {
+        self.queue_frame_under_overlay(gpu, renderer, position);
+
+        pointers.queue(gpu, renderer, self.viewport(), frame, position);
+    }
+
+    pub(crate) fn queue_frame_under_overlay(
+        &mut self,
+        gpu: &Gpu,
+        renderer: &mut SceneRenderer,
+        position: Option<(i32, i32)>,
+    ) {
         if let Scene::SelectChar(scene) = self {
             scene.pointer(position);
         }
 
         self.queue_frame_inner(gpu, renderer, false);
-
-        pointers.queue(gpu, renderer, self.viewport(), frame, position);
     }
 
     fn queue_frame_inner(&mut self, gpu: &Gpu, renderer: &mut SceneRenderer, include_cursor: bool) {
