@@ -10,6 +10,12 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use ui::draw::{Command, Interaction, LayerDraw, Owner, TextDraw};
 use ui::{Panel, Resource, Strings};
 
+#[cfg(test)]
+mod raster_tests;
+
+#[cfg(test)]
+mod scaling_tests;
+
 pub(crate) fn read_language(
     game: &GameDir,
     name: &str,
@@ -866,13 +872,14 @@ impl PanelUi {
     ) {
         let surface_rect = [text.indent, 0, text.indent + text.width(), text.height()];
 
-        let Some(cached) = self.cache.resolve(
+        let Some(cached) = self.cache.resolve_scaled(
             (text.owner, run),
             &text.text,
             text.font,
             surface_rect,
             text.align,
             &mut self.fonts,
+            self.scale,
         ) else {
             let note = format!("{:?}: no FontList row {}", text.owner, text.font);
 
@@ -886,13 +893,15 @@ impl PanelUi {
             text.rect[1] + origin.1,
         );
 
-        for quad in table::quads(
-            &cached.bitmap,
-            at,
-            text.color,
-            text.shadow as i32,
-            text.shadow_color,
-        ) {
+        let offset = (
+            ((at.0 as f32 * self.scale).round() - 0.5) / self.scale - at.0 as f32,
+            ((at.1 as f32 * self.scale).round() - 0.5) / self.scale - at.1 as f32,
+        );
+
+        for mut quad in cached.quads(at, text.color, text.shadow as i32, text.shadow_color) {
+            quad.dst_x += offset.0;
+            quad.dst_y += offset.1;
+
             out.push(PanelDraw {
                 owner: text.owner,
                 source: Source::Caption(text.owner, run),

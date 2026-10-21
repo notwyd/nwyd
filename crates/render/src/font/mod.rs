@@ -275,6 +275,14 @@ pub fn texture_size(width: i32, height: i32) -> (u32, u32) {
     (round(width), round(height))
 }
 
+pub fn raster_scale(scale: f32) -> f32 {
+    if scale.is_finite() && scale > 1.0 {
+        scale
+    } else {
+        1.0
+    }
+}
+
 pub struct Font {
     size: u32,
     faces: Vec<Arc<Face>>,
@@ -523,7 +531,28 @@ impl Font {
         colour: u32,
         surface: (u32, u32),
     ) -> TextBitmap {
-        let (tex_w, tex_h) = surface;
+        self.render_scaled(text, rect, flags, colour, surface, 1.0)
+    }
+
+    pub fn render_scaled(
+        &mut self,
+        text: &[u16],
+        rect: Option<[i32; 4]>,
+        flags: u32,
+        colour: u32,
+        surface: (u32, u32),
+        scale: f32,
+    ) -> TextBitmap {
+        let scale = raster_scale(scale);
+
+        let (tex_w, tex_h) = if scale == 1.0 {
+            surface
+        } else {
+            (
+                (surface.0 as f32 * scale).ceil() as u32,
+                (surface.1 as f32 * scale).ceil() as u32,
+            )
+        };
 
         let size = self.size as i32;
 
@@ -534,7 +563,7 @@ impl Font {
         for unit in text {
             measured += self.advance(*unit);
 
-            if (tex_w as i32) < measured {
+            if (surface.0 as i32) < measured {
                 break;
             }
 
@@ -547,8 +576,8 @@ impl Font {
         };
 
         let box_w = match rect {
-            Some([left, _, right, _]) => ((right - left).abs() - 2).min(tex_w as i32),
-            None => (tex_w as i32).min(-2),
+            Some([left, _, right, _]) => ((right - left).abs() - 2).min(surface.0 as i32),
+            None => (surface.0 as i32).min(-2),
         };
 
         if flags != 0 {
@@ -581,6 +610,12 @@ impl Font {
 
         let baseline = if flags != 0 { size + pen_y } else { pen_y };
 
+        let baseline = if scale == 1.0 {
+            baseline
+        } else {
+            (baseline as f32 * scale).round() as i32
+        };
+
         let mut pixels = vec![0u8; (tex_w * tex_h * 4) as usize];
 
         let mut pen = (pen_x << 6).max(0);
@@ -596,7 +631,7 @@ impl Font {
                 continue;
             };
 
-            let face_size = self.face_sizes[slot];
+            let face_size = self.face_sizes[slot] * scale;
 
             let (metrics, coverage) = self.faces[slot]
                 .raster()
@@ -610,17 +645,15 @@ impl Font {
                 coverage,
             };
 
-            blit(
-                &mut pixels,
-                tex_w,
-                tex_h,
-                pen >> 6,
-                baseline,
-                &bitmap,
-                colour,
-            );
+            let pen_x = if scale == 1.0 {
+                pen >> 6
+            } else {
+                ((pen >> 6) as f32 * scale).round() as i32
+            };
 
-            pen += advance_26_6(metrics.advance_width);
+            blit(&mut pixels, tex_w, tex_h, pen_x, baseline, &bitmap, colour);
+
+            pen += self.advance(*unit) << 6;
         }
 
         TextBitmap {
@@ -649,10 +682,6 @@ impl Font {
 
         (text.len(), true)
     }
-}
-
-fn advance_26_6(advance_width: f32) -> i32 {
-    (advance_width.round() as i32) << 6
 }
 
 fn round_half_up(x: f32) -> i32 {

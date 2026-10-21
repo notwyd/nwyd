@@ -1,4 +1,4 @@
-use super::{Face, Font, TextBitmap, texture_size, units};
+use super::{Face, Font, TextBitmap, raster_scale, texture_size, units};
 use crate::sprite::Quad;
 use formats::ui::guimat::FontDef;
 use std::collections::{BTreeMap, HashMap};
@@ -99,6 +99,24 @@ pub struct Cached {
     pub align: u32,
     pub bitmap: TextBitmap,
     pub serial: usize,
+    logical_size: (u32, u32),
+    raster_scale_bits: u32,
+}
+
+impl Cached {
+    pub fn quads(&self, at: (i32, i32), colour: u32, shadow: i32, shadow_colour: u32) -> Vec<Quad> {
+        let scale = f32::from_bits(self.raster_scale_bits);
+        let size = (self.logical_size.0 as f32, self.logical_size.1 as f32);
+
+        caption_quads(
+            at,
+            size,
+            (size.0 * scale, size.1 * scale),
+            colour,
+            shadow,
+            shadow_colour,
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -130,8 +148,27 @@ impl<K: Eq + Hash + Clone> TextCache<K> {
         align: u32,
         table: &mut FontTable,
     ) -> Option<&Cached> {
+        self.resolve_scaled(key, text, font_index, rect, align, table, 1.0)
+    }
+
+    pub fn resolve_scaled(
+        &mut self,
+        key: K,
+        text: &str,
+        font_index: i32,
+        rect: [i32; 4],
+        align: u32,
+        table: &mut FontTable,
+        scale: f32,
+    ) -> Option<&Cached> {
+        let scale = raster_scale(scale);
+        let raster_scale_bits = scale.to_bits();
         let fresh = self.entries.get(&key).is_some_and(|c| {
-            c.text == text && c.rect == rect && c.font == font_index && c.align == align
+            c.text == text
+                && c.rect == rect
+                && c.font == font_index
+                && c.align == align
+                && c.raster_scale_bits == raster_scale_bits
         });
 
         if !fresh {
@@ -139,12 +176,13 @@ impl<K: Eq + Hash + Clone> TextCache<K> {
 
             let surface = texture_size(rect[2], rect[3]);
 
-            let bitmap = font.render(
+            let bitmap = font.render_scaled(
                 &units(text),
                 Some(rect),
                 align | CAPTION_ALIGN,
                 0xFFFF_FFFF,
                 surface,
+                scale,
             );
 
             self.built += 1;
@@ -158,6 +196,8 @@ impl<K: Eq + Hash + Clone> TextCache<K> {
                     align,
                     bitmap,
                     serial: self.built,
+                    logical_size: surface,
+                    raster_scale_bits,
                 },
             );
         }
@@ -201,9 +241,21 @@ pub fn quads(
     shadow: i32,
     shadow_colour: u32,
 ) -> Vec<Quad> {
-    let (x, y) = (at.0 as f32, at.1 as f32);
+    let size = (bitmap.width as f32, bitmap.height as f32);
 
-    let (w, h) = (bitmap.width as f32, bitmap.height as f32);
+    caption_quads(at, size, size, colour, shadow, shadow_colour)
+}
+
+fn caption_quads(
+    at: (i32, i32),
+    size: (f32, f32),
+    source: (f32, f32),
+    colour: u32,
+    shadow: i32,
+    shadow_colour: u32,
+) -> Vec<Quad> {
+    let (x, y) = (at.0 as f32, at.1 as f32);
+    let (w, h) = size;
 
     let whole = |dst_x: f32, dst_y: f32, dst_w: f32, dst_h: f32, color: u32| Quad {
         normalized_corners: None,
@@ -214,8 +266,8 @@ pub fn quads(
         dst_h,
         src_x: 0.0,
         src_y: 0.0,
-        src_w: w,
-        src_h: h,
+        src_w: source.0,
+        src_h: source.1,
         color,
         rotation: 0.0,
     };
