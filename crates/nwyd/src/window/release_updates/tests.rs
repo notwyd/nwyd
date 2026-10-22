@@ -207,10 +207,10 @@ fn unavailable_check_and_download_open_failure_leave_the_client_usable() {
 
 #[test]
 #[ignore = "requires game assets"]
-fn character_and_world_confirmations_take_priority_over_downloads() {
+fn character_and_world_scenes_hide_notification_and_cancel_pending_clicks() {
     use crate::{
         clock::Calendar,
-        scene::{enter::Entered, field, login_static::SceneTime, msgbox, select_char},
+        scene::{enter::Entered, field, login_static::SceneTime, select_char},
     };
 
     let game = assets::GameDir::open(std::env::var_os("GAME_DIR").unwrap()).unwrap();
@@ -243,30 +243,16 @@ fn character_and_world_confirmations_take_priority_over_downloads() {
         Scene::Field(Box::new(world)),
     ] {
         let mut client = client();
-        client.runtime.scene = scene;
         assert!(client.update_notice_visible());
         assert!(client.update_notice_button(0, true, BUTTON, never_open));
-        let boxes = match &mut client.runtime.scene {
-            Scene::SelectChar(scene) => &mut scene.boxes,
-            Scene::Field(scene) => &mut scene.panels.as_mut().unwrap().boxes,
-            _ => unreachable!(),
-        };
-        let slot = boxes
-            .raise(&msgbox::Request::restart_notice(), &ui::Strings::default())
-            .unwrap();
+        let login = std::mem::replace(&mut client.runtime.scene, scene);
         assert!(!client.update_notice_visible());
+        assert!(!client.update_notice_blocks_pointer(BUTTON));
+        assert!(!client.update_notice_motion(BUTTON));
         assert!(client.update_notice_button(0, false, BUTTON, never_open));
         assert!(!client.update_notice_button(0, true, BUTTON, never_open));
-        match &mut client.runtime.scene {
-            Scene::SelectChar(scene) => scene.boxes.close(slot),
-            Scene::Field(scene) => scene.panels.as_mut().unwrap().boxes.close(slot),
-            _ => unreachable!(),
-        }
+        assert!(!client.update_notice_button(0, false, BUTTON, never_open));
+        client.runtime.scene = login;
         assert!(client.update_notice_visible());
-
-        if let Scene::SelectChar(scene) = &mut client.runtime.scene {
-            scene.name_dialog.visible = true;
-            assert!(!client.update_notice_visible());
-        }
     }
 }

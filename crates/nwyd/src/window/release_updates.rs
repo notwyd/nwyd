@@ -102,14 +102,8 @@ impl Client {
             Scene::ServerSelect(scene) => {
                 !dialogs_visible(&scene.panels.boxes, &scene.panels.msgbox)
             }
-            Scene::SelectChar(scene) => {
-                !scene.name_dialog.visible && !dialogs_visible(&scene.boxes, &scene.panels.msgbox)
-            }
-            Scene::Field(scene) => scene
-                .panels
-                .as_ref()
-                .is_none_or(|panels| !dialogs_visible(&panels.boxes, &panels.msgbox)),
-            _ => true,
+            Scene::LoginStatic(_) => true,
+            Scene::SelectChar(_) | Scene::Field(_) => false,
         }
     }
 
