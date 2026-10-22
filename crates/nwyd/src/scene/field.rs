@@ -1661,6 +1661,8 @@ pub fn begin_air_move(scene: &mut FieldScene, row: u32) -> bool {
         return false;
     };
 
+    super::movement::discard_spatial_outbox(&mut scene.outbox);
+
     scene.air_move = Some(AirMove {
         row,
         flight,
@@ -6278,8 +6280,12 @@ fn stream_zones_mode(
                     }
                 }
                 world::Proximity::Cross(dir) => {
-                    if background && !committed {
-                        match scene.world.stream_background_staged(game, dir, stage) {
+                    if !background || !committed {
+                        match if background {
+                            scene.world.stream_background_staged(game, dir, stage)
+                        } else {
+                            scene.world.stream(game, dir)
+                        } {
                             Ok(added) => {
                                 loaded |= added;
 

@@ -482,6 +482,7 @@ fn synchronous_loading_of_a_visual_request_does_not_stall_future_prefetch() {
 #[test]
 fn crossing_cached_terrain_after_another_axis_commits_keeps_the_collision_window_aligned() {
     use super::super::Direction;
+    use formats::world::path::{self, HeightField};
 
     let mut world = super::super::fog_tests::field_world();
     let game = game_with_zones(&world, &[(16, 15), (15, 16)]);
@@ -490,7 +491,12 @@ fn crossing_cached_terrain_after_another_axis_commits_keeps_the_collision_window
     assert!(!world.stream(&game, Direction::MinusZ).unwrap());
     assert_eq!(world.actors.zone, (16, 15));
     assert!(world.stream(&game, Direction::MinusX).unwrap());
-    assert_eq!(world.actors.zone, (15, 16));
+    assert_eq!(world.actors.zone, (15, 15));
+    let field = HeightField::window(&world.actors.window, world.actors.zone);
+    assert_eq!(
+        path::walk(&field, (2048, 2048), (2049, 2049), 12, 8).reached,
+        (2049, 2049)
+    );
     assert!(world.rebase(Direction::MinusZ));
     assert_eq!(world.current, (16, 15));
     assert_eq!(world.actors.zone, (15, 15));
@@ -580,32 +586,290 @@ fn extended_prefetch_retires_a_normal_request_already_loaded_synchronously() {
 }
 
 #[test]
-fn extended_prefetch_finishes_a_normal_request_after_leaving_the_stream_margin() {
+fn prefetch_finishes_a_normal_request_after_leaving_the_stream_margin_at_every_view_tier() {
     use super::super::Direction;
     use crate::scene::view_distance::ViewDistance;
 
-    let mut world = super::super::fog_tests::field_world();
-    let game = game_with_zones(&world, &[(17, 16)]);
-    let window = world.actors.window.clone();
-    world.set_view_distance(ViewDistance::Distant);
-    assert!(!world.stream_background(&game, Direction::PlusX).unwrap());
-    let start = std::time::Instant::now();
-    while !world.holds((17, 16)) {
-        world.poll_visual_zone(&game, &mut |_, _| true).unwrap();
-        world
-            .prefetch_visual_zones(
-                &game,
-                Vec2::splat(2112.0),
-                18.0,
-                (1920, 1080),
-                &mut |_, _| true,
-            )
-            .unwrap();
-        assert!(start.elapsed() < std::time::Duration::from_secs(5));
-        std::thread::sleep(std::time::Duration::from_millis(1));
+    for tier in ViewDistance::ALL {
+        let mut world = super::super::fog_tests::field_world();
+        let game = game_with_zones(&world, &[(17, 16)]);
+        let window = world.actors.window.clone();
+        world.set_view_distance(tier);
+        assert!(!world.stream_background(&game, Direction::PlusX).unwrap());
+        let start = std::time::Instant::now();
+        while !world.holds((17, 16)) {
+            world.poll_visual_zone(&game, &mut |_, _| true).unwrap();
+            world
+                .prefetch_visual_zones(
+                    &game,
+                    Vec2::splat(2112.0),
+                    18.0,
+                    (1920, 1080),
+                    &mut |_, _| true,
+                )
+                .unwrap();
+            assert!(start.elapsed() < std::time::Duration::from_secs(5));
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+        assert!(world.actors.window == window);
+        assert!(world.visual_collision_dirty);
     }
-    assert!(world.actors.window == window);
-    assert!(world.visual_collision_dirty);
+}
+
+#[test]
+fn delayed_crossings_recover_movement_from_each_collision_window_edge() {
+    use super::super::{Direction, Proximity, proximity, stream_margin};
+    use formats::world::path::{self, HeightField};
+
+    for direction in Direction::ALL {
+        for distance in 1..=3 {
+            let mut world = super::super::fog_tests::field_world();
+            let (dx, dz) = direction.step();
+            let zones: Vec<_> = (1..=distance)
+                .map(|step| ((16 + dx * step) as u8, (16 + dz * step) as u8))
+                .collect();
+            let target = *zones.last().unwrap();
+            let cell = (
+                i32::from(target.0) * 128
+                    + if dx < 0 {
+                        0
+                    } else if dx > 0 {
+                        127
+                    } else {
+                        64
+                    },
+                i32::from(target.1) * 128
+                    + if dz < 0 {
+                        0
+                    } else if dz > 0 {
+                        127
+                    } else {
+                        64
+                    },
+            );
+            let player = Vec2::new(cell.0 as f32 + 0.5, cell.1 as f32 + 0.5);
+            let game = game_with_zones(&world, &zones);
+            let unavailable = game_with_zones(&world, &[]);
+
+            assert!(!world.stream(&unavailable, direction).unwrap());
+            assert!(!world.rebase(direction));
+            assert_eq!(world.current, (16, 16));
+
+            for _ in 0..Direction::ALL.len() {
+                let origin =
+                    Vec2::new(f32::from(world.current.0), f32::from(world.current.1)) * 128.0;
+                let mut crossed = false;
+                for outcome in proximity(player - origin, stream_margin(world.current, player))
+                    .into_iter()
+                    .flatten()
+                {
+                    match outcome {
+                        Proximity::Cross(dir) => {
+                            world.stream(&game, dir).unwrap();
+                            assert!(world.rebase(dir));
+                            crossed = true;
+                        }
+                        Proximity::Load(dir) => {
+                            assert!(!world.stream(&game, dir).unwrap());
+                        }
+                    }
+                }
+                if !crossed {
+                    break;
+                }
+            }
+
+            assert_eq!(world.current, target, "{direction:?}, {distance}");
+            let field = HeightField::window(&world.actors.window, world.actors.zone);
+            let back = (cell.0 - dx, cell.1 - dz);
+            let path = path::walk(&field, cell, back, 12, 8);
+            assert_eq!(path.reached, back, "{direction:?}, {distance}");
+            assert!(!path.dirs.is_empty());
+        }
+    }
+}
+
+#[test]
+fn delayed_corner_crossings_keep_both_axes_inside_the_collision_window() {
+    use super::super::{Direction, Proximity, proximity, stream_margin};
+    use formats::world::path::{self, HeightField};
+
+    for dx in [-1, 1] {
+        for dz in [-1, 1] {
+            let mut world = super::super::fog_tests::field_world();
+            let target = ((16 + dx) as u8, (16 + dz) as u8);
+            let game = game_with_zones(&world, &[(target.0, 16), target]);
+            let cell = (
+                i32::from(target.0) * 128 + if dx < 0 { 0 } else { 127 },
+                i32::from(target.1) * 128 + if dz < 0 { 0 } else { 127 },
+            );
+            let player = Vec2::new(cell.0 as f32 + 0.5, cell.1 as f32 + 0.5);
+
+            for _ in 0..Direction::ALL.len() {
+                let origin =
+                    Vec2::new(f32::from(world.current.0), f32::from(world.current.1)) * 128.0;
+                let mut crossed = false;
+                for outcome in proximity(player - origin, stream_margin(world.current, player))
+                    .into_iter()
+                    .flatten()
+                {
+                    match outcome {
+                        Proximity::Cross(dir) => {
+                            world.stream(&game, dir).unwrap();
+                            assert!(world.rebase(dir));
+                            crossed = true;
+                        }
+                        Proximity::Load(dir) => {
+                            assert!(!world.stream(&game, dir).unwrap());
+                        }
+                    }
+                }
+                if !crossed {
+                    break;
+                }
+            }
+
+            assert_eq!(world.current, target);
+            let field = HeightField::window(&world.actors.window, world.actors.zone);
+            let back = (cell.0 - dx, cell.1 - dz);
+            assert_eq!(path::walk(&field, cell, back, 12, 8).reached, back);
+            assert_eq!(world.actors.placement_window, world.actors.window);
+        }
+    }
+}
+
+#[test]
+fn failed_neighbour_preparation_still_restores_movement_inside_the_current_zone() {
+    use super::super::Direction;
+    use formats::world::path::{self, HeightField};
+
+    let mut world = super::super::fog_tests::field_world();
+    let game = game_with_zones(&world, &[(17, 16), (18, 16)]);
+    assert!(world.stream(&game, Direction::PlusX).unwrap());
+    assert!(world.rebase(Direction::PlusX));
+    assert_eq!(world.actors.zone, (16, 16));
+    let broken = assets::GameDir::from_files(
+        "broken-neighbour",
+        [(
+            "Env/Field1816.trn".into(),
+            game.read(b"Env/Field1816.trn").unwrap(),
+        )],
+    )
+    .unwrap();
+
+    assert!(world.stream(&broken, Direction::PlusX).is_err());
+    assert_eq!(world.current, (17, 16));
+    assert_eq!(world.actors.zone, (17, 16));
+    let field = HeightField::window(&world.actors.window, world.actors.zone);
+    assert_eq!(
+        path::walk(&field, (2303, 2112), (2302, 2112), 12, 8).reached,
+        (2302, 2112)
+    );
+}
+
+#[test]
+#[ignore = "requires game files via GAME_DIR"]
+fn field_streaming_recovers_after_crossing_beyond_the_loading_margin() {
+    use crate::clock::Calendar;
+    use crate::scene::enter::Entered;
+    use crate::scene::login_static::SceneTime;
+    use crate::scene::view_distance::ViewDistance;
+    use crate::scene::{attack, field, movement, walk};
+    use formats::world::path::{self, HeightField};
+
+    let game = assets::GameDir::open(std::env::var_os("GAME_DIR").unwrap()).unwrap();
+    let unavailable =
+        assets::GameDir::from_files("unavailable-neighbour", Vec::<(String, Vec<u8>)>::new())
+            .unwrap();
+
+    for background in [false, true] {
+        let mut packet =
+            formats::net::enter::parse(&vec![0; formats::net::enter::MINIMUM_LEN]).unwrap();
+        packet.client_id = 37;
+        packet.x = 2118;
+        packet.z = 2102;
+        packet.mob.equipment.items[0].index = 1;
+        packet.mob.status.hp = 100;
+        packet.mob.status.max_hp = 100;
+        let entered = Entered::from_packet(&packet, 0, None);
+        let mut scene = field::build(
+            &game,
+            (800, 600),
+            &SceneTime::pinned(20000, Calendar::GOLDEN),
+            &entered,
+            &field::Chrome::bare(),
+        )
+        .unwrap();
+        scene.world.set_view_distance(ViewDistance::Retail);
+
+        let height = HeightField::window(&scene.world.actors.window, scene.world.actors.zone);
+        let row = (2049..2175)
+            .find(|&z| {
+                let mut from = (2170, z);
+                if height.at(from.0, from.1) >= 127 {
+                    return false;
+                }
+                for _ in 0..30 {
+                    let plan = path::walk(&height, from, (2303, z), 12, 8);
+                    if plan.dirs.is_empty() || height.at(plan.reached.0, plan.reached.1) >= 127 {
+                        break;
+                    }
+                    from = plan.reached;
+                }
+                from == (2303, z)
+            })
+            .unwrap();
+        let start = (2170, row);
+        let index = scene.player.unwrap();
+        let actor = &mut scene.world.actors.actors[index];
+        actor.mover = walk::Mover::standing([start.0 as f32 + 0.5, start.1 as f32 + 0.5], 0.0);
+        actor.position.x = start.0 as f32 + 0.5;
+        actor.position.z = start.1 as f32 + 0.5;
+        actor.speed = 6.0;
+        actor.action = 0;
+        actor.is_dead = false;
+        scene.cc.auto_move = start;
+        scene.sent_dest = Some(start);
+        scene.cc.last_order_ms = 0;
+        scene.wire_speed = 6;
+        scene.lock = Default::default();
+        scene.outbox.clear();
+        let mut released = false;
+
+        for segment in 0..15 {
+            scene.time.now_ms = 10000 + segment * 3000;
+            movement::order(&mut scene, (2303, row));
+            for frame in 1..=187 {
+                scene.world.actors.tick(scene.time.now_ms + frame * 16);
+                let at = attack::cell_of(&scene.world.actors.actors[index]);
+                released |= at.0 >= 2192;
+                if background {
+                    field::stream_zones_staged(&mut scene, Some(&game), &mut |_, _| released);
+                } else {
+                    field::stream_zones(
+                        &mut scene,
+                        Some(if released { &game } else { &unavailable }),
+                    );
+                }
+            }
+        }
+
+        assert!(released);
+        if background {
+            let start = std::time::Instant::now();
+            while scene.world.current != (17, 16) {
+                field::stream_zones_background(&mut scene, Some(&game));
+                assert!(start.elapsed() < std::time::Duration::from_secs(10));
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        }
+        assert_eq!(scene.world.current, (17, 16));
+        let here = attack::cell_of(&scene.world.actors.actors[index]);
+        assert_eq!(here, (2303, row));
+        let back = movement::preview(&scene, (here.0 - 1, here.1)).unwrap();
+        assert_eq!(back.reached, (here.0 - 1, here.1));
+        assert!(!back.dirs.is_empty());
+    }
 }
 
 #[test]

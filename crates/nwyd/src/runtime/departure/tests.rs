@@ -192,6 +192,10 @@ fn a_redirect_keeps_processing_the_old_socket_until_its_delayed_close() {
     assert!(host.reconnects.is_empty());
     assert_eq!(host.notices, 2);
 
+    let queued = formats::net::action::Action::walk((1088, 1728), (1090, 1728), 2, b"66");
+    let keepalive = protocol::client::keepalive();
+    host.field().outbox = vec![protocol::client::move_to(&queued), keepalive.clone()];
+
     host.now = 10_000;
     assert_eq!(
         dispatch::drain(
@@ -207,6 +211,7 @@ fn a_redirect_keeps_processing_the_old_socket_until_its_delayed_close() {
     assert_eq!(host.reconnects, [("second.invalid:8281".into(), ticket)]);
     assert_eq!(host.disconnects, 0);
     assert_eq!(host.notices, 2, "the close must retire the old read batch");
+    assert_eq!(host.field().outbox, [keepalive]);
     assert!(
         host.scene.redirect_after_disconnect(true, 10_001).is_none(),
         "the ticket is consumed exactly once"

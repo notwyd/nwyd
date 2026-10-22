@@ -153,6 +153,8 @@ pub fn die(scene: &mut FieldScene, index: usize, now_ms: u32) -> bool {
     }
 
     if scene.player == Some(index) {
+        super::movement::discard_spatial_outbox(&mut scene.outbox);
+
         scene.death_return_birth_ms = now_ms;
     }
 

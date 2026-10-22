@@ -628,21 +628,23 @@ pub fn proximity(offset: glam::Vec2, margin: f32) -> [Option<Proximity>; 2] {
     let cells = formats::world::ZONE_CELLS as f32;
 
     let axis = |v: f32, low: Direction, high: Direction| -> Option<Proximity> {
+        if !v.is_finite() {
+            return None;
+        }
+
         if (0.0..margin).contains(&v) {
             return Some(Proximity::Load(low));
         }
 
         if v < 0.0 {
-            return (v > -margin).then_some(Proximity::Cross(low));
+            return Some(Proximity::Cross(low));
         }
 
         if v > cells - margin && v < cells {
             return Some(Proximity::Load(high));
         }
 
-        (cells..(cells + margin))
-            .contains(&v)
-            .then_some(Proximity::Cross(high))
+        (v >= cells).then_some(Proximity::Cross(high))
     };
 
     [
@@ -2451,11 +2453,11 @@ impl World {
             return Ok(false);
         };
 
-        let loaded = self.load_zone(game, zone, zone_name)?;
+        let loaded = self.load_zone(game, zone, zone_name);
 
-        self.restore_stream_collision(dir, zone, loaded);
+        self.restore_stream_collision(zone, loaded.as_ref().is_ok_and(|&loaded| loaded));
 
-        Ok(loaded)
+        loaded
     }
 
     pub fn stream_background(&mut self, game: &GameDir, dir: Direction) -> Result<bool> {
@@ -2472,43 +2474,37 @@ impl World {
             return Ok(false);
         };
 
-        let loaded = self.load_zone_background(game, zone, stage)?;
+        let loaded = self.load_zone_background(game, zone, stage);
 
-        self.restore_stream_collision(dir, zone, loaded);
+        self.restore_stream_collision(zone, loaded.as_ref().is_ok_and(|&loaded| loaded));
 
-        Ok(loaded)
+        loaded
     }
 
-    fn restore_stream_collision(&mut self, dir: Direction, zone: (u8, u8), loaded: bool) {
-        if loaded {
-            self.actors.rewindow(window_anchor(self.current, dir));
+    fn restore_stream_collision(&mut self, zone: (u8, u8), loaded: bool) {
+        let old = self.actors.zone;
+
+        let axis = |anchor: u8, current: u8, neighbour: u8| {
+            let low = current.min(neighbour);
+
+            let high = current.max(neighbour);
+
+            if low < anchor || high > anchor.saturating_add(1) {
+                low
+            } else {
+                anchor
+            }
+        };
+
+        let anchor = (
+            axis(old.0, self.current.0, zone.0),
+            axis(old.1, self.current.1, zone.1),
+        );
+
+        if anchor != old || loaded || self.visual_collision_dirty {
+            self.actors.rewindow(anchor);
 
             self.visual_collision_dirty = false;
-        } else if self.holds(zone) {
-            let old = self.actors.zone;
-
-            let axis = |anchor: u8, current: u8, neighbour: u8| {
-                let low = current.min(neighbour);
-
-                let high = current.max(neighbour);
-
-                if low < anchor || high > anchor.saturating_add(1) {
-                    low
-                } else {
-                    anchor
-                }
-            };
-
-            let anchor = (
-                axis(old.0, self.current.0, zone.0),
-                axis(old.1, self.current.1, zone.1),
-            );
-
-            if anchor != old || self.visual_collision_dirty {
-                self.actors.rewindow(anchor);
-
-                self.visual_collision_dirty = false;
-            }
         }
     }
 
@@ -2916,7 +2912,7 @@ impl World {
             return false;
         }
 
-        self.restore_stream_collision(dir, zone, false);
+        self.restore_stream_collision(zone, false);
 
         self.current = zone;
 

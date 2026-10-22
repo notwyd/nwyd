@@ -1,6 +1,9 @@
 use formats::net::action::Action;
 use formats::world::path::{self, HeightField, WAYPOINTS};
 
+#[cfg(test)]
+mod tests;
+
 pub const DEFAULT_MS_PER_TILE: u32 = 1000;
 
 pub const TURN_MS: f32 = 200.0;
@@ -368,7 +371,25 @@ impl Mover {
         let walked = laid_out.is_some();
 
         if let Some((start, dirs)) = laid_out {
-            let (points, count) = path::expand(start, &dirs);
+            let (mut points, count) = path::expand(start, &dirs);
+
+            for i in 1..WAYPOINTS {
+                let previous = points[i - 1];
+
+                let next = points[i];
+
+                if (field.byte(previous[0] as i32, previous[1] as i32)
+                    - field.byte(next[0] as i32, next[1] as i32))
+                .abs()
+                    > path::HEIGHT_TOLERANCE
+                {
+                    points[i..].fill(previous);
+
+                    break;
+                }
+            }
+
+            self.teleport_from = None;
 
             self.waypoints = points;
 
@@ -407,12 +428,18 @@ impl Mover {
             false => here,
         };
 
-        let mut planned = path::plan(field, start, to, budget);
+        let mut planned = path::walk(field, start, to, budget, path::HEIGHT_TOLERANCE);
 
         if planned.dirs.is_empty() {
             start = from;
 
-            planned = path::plan(field, start, to, budget);
+            planned = path::walk(
+                field,
+                start,
+                planned.reached,
+                budget,
+                path::HEIGHT_TOLERANCE,
+            );
         }
 
         if planned.reached == to {
@@ -423,7 +450,7 @@ impl Mover {
             return None;
         }
 
-        let planned = path::plan(field, from, to, budget);
+        let planned = path::walk(field, from, to, budget, path::HEIGHT_TOLERANCE);
 
         match !planned.dirs.is_empty() && planned.reached == to {
             true => Some((from, planned.dirs)),

@@ -147,6 +147,13 @@ fn apply_kickout(host: &mut impl Host, packet: Kickout) {
         return;
     };
 
+    if matches!(
+        applied,
+        kickout::Applied::Characters { .. } | kickout::Applied::Disconnected { .. }
+    ) {
+        host.state().scene.discard_spatial_outbox();
+    }
+
     tracing::info!("{}", kickout::describe(&applied));
 
     if let kickout::Applied::Disconnected {
@@ -214,6 +221,8 @@ pub fn apply(host: &mut impl Host, packet: Packet) -> PacketFlow {
             reason,
             socket_closed,
         } => {
+            host.state().scene.discard_spatial_outbox();
+
             tracing::info!("NWYD: connection lost — {reason}");
 
             let now = host.game_time();

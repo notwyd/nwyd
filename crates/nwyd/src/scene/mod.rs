@@ -1333,7 +1333,23 @@ impl Scene {
             return None;
         };
 
+        let pending_move = movement::has_pending_report(&scene.outbox);
+
         let applied = action::apply_op(scene, opcode, entity, act);
+
+        if pending_move
+            && applied.walked
+            && applied.index.is_some()
+            && applied.index == scene.player
+        {
+            movement::discard_spatial_outbox(&mut scene.outbox);
+
+            scene.cc.auto_move = act.to();
+
+            scene.sent_dest = Some(act.to());
+
+            scene.attack.remember_move(act);
+        }
 
         if applied.index.is_none() && protocol::server::ASKS_WHO.contains(&opcode) {
             let ask = scene
@@ -2130,6 +2146,26 @@ impl Scene {
         match self {
             Scene::Field(scene) => field::take_pending_outbox(scene),
             _ => Vec::new(),
+        }
+    }
+
+    pub(crate) fn discard_spatial_outbox(&mut self) {
+        if let Scene::Field(scene) = self {
+            if movement::has_pending_report(&scene.outbox)
+                && let Some(actor) = scene
+                    .player
+                    .and_then(|index| scene.world.actors.actors.get(index))
+            {
+                let at = attack::cell_of(actor);
+
+                scene.cc.auto_move = at;
+
+                scene.sent_dest = Some(at);
+
+                scene.attack.from = Some((at.0 as u16, at.1 as u16));
+            }
+
+            movement::discard_spatial_outbox(&mut scene.outbox);
         }
     }
 

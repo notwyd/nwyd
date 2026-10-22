@@ -23,27 +23,7 @@ pub(crate) fn preview(scene: &FieldScene, tile: (i32, i32)) -> Option<path::Path
 
     let height = HeightField::window(&scene.world.actors.window, scene.world.actors.zone);
 
-    let mut plan = path::walk(&height, from, tile, 12, 8);
-
-    if plan.reached != tile {
-        plan = path::walk(&height, from, plan.reached, 12, 8);
-    }
-
-    if let Some(last) = scene.sent_dest.filter(|(x, z)| *x != 0 && *z != 0) {
-        if (height.at(plan.reached.0, plan.reached.1) - height.at(last.0, last.1)).abs() > 30 {
-            return None;
-        }
-    }
-
-    for budget in [6, 3] {
-        if (height.at(plan.reached.0, plan.reached.1) - height.at(from.0, from.1)).abs() > 30 {
-            plan = path::walk(&height, from, plan.reached, budget, 8);
-        }
-    }
-
-    if plan.dirs.is_empty() {
-        return None;
-    }
+    let mut plan = preview_route(&height, from, tile, scene.sent_dest)?;
 
     while !plan.dirs.is_empty()
         && scene
@@ -58,6 +38,37 @@ pub(crate) fn preview(scene: &FieldScene, tile: (i32, i32)) -> Option<path::Path
         plan.reached.0 -= dx;
 
         plan.reached.1 -= dz;
+    }
+
+    Some(plan)
+}
+
+fn preview_route(
+    height: &HeightField<'_>,
+    from: (i32, i32),
+    tile: (i32, i32),
+    last: Option<(i32, i32)>,
+) -> Option<path::Path> {
+    let mut plan = path::walk(height, from, tile, 12, 8);
+
+    if plan.reached != tile {
+        plan = path::walk(height, from, plan.reached, 12, 8);
+    }
+
+    if let Some(last) = last.filter(|(x, z)| *x != 0 && *z != 0) {
+        if (height.byte(plan.reached.0, plan.reached.1) - height.byte(last.0, last.1)).abs() > 30 {
+            return None;
+        }
+    }
+
+    for budget in [6, 3] {
+        if (height.byte(plan.reached.0, plan.reached.1) - height.byte(from.0, from.1)).abs() > 30 {
+            plan = path::walk(height, from, plan.reached, budget, 8);
+        }
+    }
+
+    if plan.dirs.is_empty() {
+        return None;
     }
 
     Some(plan)
@@ -108,16 +119,52 @@ pub(crate) fn order(scene: &mut FieldScene, tile: (i32, i32)) -> bool {
     .walked
 }
 
-fn report(scene: &mut FieldScene, packet: &Action) {
-    scene.attack.remember_move(packet);
+pub(crate) fn has_pending_report(outbox: &[Vec<u8>]) -> bool {
+    outbox
+        .iter()
+        .any(|body| protocol::header::opcode_of(body) == Some(protocol::client::MOVE))
+}
 
-    scene.outbox.push(protocol::client::move_to(packet));
+fn queue_report(outbox: &mut Vec<Vec<u8>>, packet: &Action) -> bool {
+    if has_pending_report(outbox) {
+        return false;
+    }
+
+    outbox.push(protocol::client::move_to(packet));
+
+    true
+}
+
+pub(crate) fn discard_spatial_outbox(outbox: &mut Vec<Vec<u8>>) {
+    outbox.retain(|body| {
+        !matches!(
+            protocol::header::opcode_of(body),
+            Some(
+                protocol::client::MOVE
+                    | protocol::client::MOVE_STOP
+                    | protocol::client::ACT
+                    | formats::net::attack::ATTACK
+                    | formats::net::attack::ATTACK_AREA
+                    | formats::net::attack::ATTACK_MANY
+            )
+        )
+    });
+}
+
+fn report(scene: &mut FieldScene, packet: &Action) -> bool {
+    if !queue_report(&mut scene.outbox, packet) {
+        return false;
+    }
+
+    scene.attack.remember_move(packet);
 
     scene.sent_dest = Some(packet.to());
 
     scene.cc.last_order_ms = scene.time.now_ms;
 
     scene.last_move_sent_ms = scene.time.now_ms;
+
+    true
 }
 
 pub(crate) fn tick(scene: &mut FieldScene) {
@@ -168,7 +215,10 @@ pub(crate) fn tick(scene: &mut FieldScene) {
         Action::walk(to, to, scene.wire_speed, &[])
     };
 
-    report(scene, &packet);
-
-    scene.sent_dest = Some(to);
+    if report(scene, &packet) {
+        scene.sent_dest = Some(to);
+    }
 }
+
+#[cfg(test)]
+mod tests;

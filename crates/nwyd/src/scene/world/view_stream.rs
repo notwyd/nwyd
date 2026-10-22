@@ -189,6 +189,16 @@ impl World {
             return Ok(false);
         }
 
+        if let Some(zone) = self
+            .background_loader
+            .as_ref()
+            .and_then(super::loading::Loader::active_zone)
+        {
+            self.visual_zone = Some(zone);
+
+            return self.poll_visual_zone(game, stage);
+        }
+
         let view = View {
             player,
             retail_far: self.environment.far_plane,
@@ -211,16 +221,6 @@ impl World {
             return Ok(false);
         }
 
-        if let Some(zone) = self
-            .background_loader
-            .as_ref()
-            .and_then(super::loading::Loader::active_zone)
-        {
-            self.visual_zone = Some(zone);
-
-            return self.poll_visual_zone(game, stage);
-        }
-
         let Some(zone) = self.visual_prefetch.pending.iter().copied().find(|&zone| {
             self.background_loader
                 .as_ref()
@@ -236,7 +236,7 @@ impl World {
 
     pub(crate) fn restore_cached_stream_collision(&mut self, direction: super::Direction) {
         if let Some((zone, _)) = super::neighbour_of(self.current, direction) {
-            self.restore_stream_collision(direction, zone, false);
+            self.restore_stream_collision(zone, false);
         }
     }
 }

@@ -2263,6 +2263,14 @@ fn blink(
         dest_z: tile.1,
     };
 
+    if super::movement::has_pending_report(&scene.outbox) {
+        scene.sent_dest = Some(action.to());
+
+        scene.cc.auto_move = action.to();
+    }
+
+    super::movement::discard_spatial_outbox(&mut scene.outbox);
+
     scene.attack.from = Some(tile);
 
     scene.outbox.push(protocol::client::act(&action));

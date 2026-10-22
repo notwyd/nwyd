@@ -8,6 +8,8 @@ pub fn tick(
     let transition = scene.tick();
 
     if transition.is_some() {
+        scene.discard_spatial_outbox();
+
         flush(scene, session, clock);
     }
 
@@ -21,7 +23,30 @@ pub fn flush(scene: &mut Scene, session: &mut Session, clock: &Clock) {
         crate::scene::city::write_back(block, slot, position);
     }
 
-    for mut body in scene.take_pending_outbox() {
+    if !session.is_connected() {
+        scene.discard_spatial_outbox();
+    }
+
+    let pending = send_pending(scene.take_pending_outbox(), session, clock);
+
+    if let Scene::Field(scene) = scene {
+        scene.outbox = pending;
+    }
+
+    if let Some(limit) = session.take_chat_limit_notice()
+        && let Scene::Field(scene) = scene
+        && let Some(panels) = scene.panels.as_mut()
+        && let Some(template) = panels.strings.strdef.as_ref().map(|s| s.get(1664))
+        && let Some(notice) = formats::net::client_config::chat_limit_notice(template, limit)
+    {
+        crate::scene::chat::system(panels, &notice, 0xffff_ffff);
+    }
+}
+
+fn send_pending(outbox: Vec<Vec<u8>>, session: &mut Session, clock: &Clock) -> Vec<Vec<u8>> {
+    let mut pending = outbox.into_iter();
+
+    while let Some(mut body) = pending.next() {
         let now = clock.wire_tick();
 
         let opcode = protocol::header::opcode_of(&body).unwrap_or(0);
@@ -40,19 +65,18 @@ pub fn flush(scene: &mut Scene, session: &mut Session, clock: &Clock) {
 
         apply_window_state(&mut body, active_window_iconic());
 
-        if let Err(error) = session.send_field(&mut body, what, now) {
-            tracing::info!("NWYD: {opcode:#05x} {what} not sent — {error}");
+        match session.send_field(&mut body, what, now) {
+            Ok(false) if opcode == protocol::client::MOVE && session.is_connected() => {
+                return std::iter::once(body).chain(pending).collect();
+            }
+            Err(error) => {
+                tracing::info!("NWYD: {opcode:#05x} {what} not sent — {error}");
+            }
+            _ => {}
         }
     }
 
-    if let Some(limit) = session.take_chat_limit_notice()
-        && let Scene::Field(scene) = scene
-        && let Some(panels) = scene.panels.as_mut()
-        && let Some(template) = panels.strings.strdef.as_ref().map(|s| s.get(1664))
-        && let Some(notice) = formats::net::client_config::chat_limit_notice(template, limit)
-    {
-        crate::scene::chat::system(panels, &notice, 0xffff_ffff);
-    }
+    Vec::new()
 }
 
 fn apply_window_state(body: &mut [u8], iconic: bool) {
@@ -87,3 +111,6 @@ fn active_window_iconic() -> bool {
 fn active_window_iconic() -> bool {
     false
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests;

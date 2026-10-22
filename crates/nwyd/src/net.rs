@@ -1552,7 +1552,9 @@ mod tests {
 
         for (first, second) in pairs {
             let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap();
-            let mut session = Session::default().with_fingerprint(Some(Fingerprint::ZERO));
+            let mut session = Session::default()
+                .with_profile(protocol::send_state::Profile::BuildC9D8)
+                .with_fingerprint(Some(Fingerprint::ZERO));
             session
                 .login(
                     &listener.local_addr().unwrap().to_string(),

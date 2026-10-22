@@ -404,6 +404,8 @@ pub fn apply_op(scene: &mut FieldScene, opcode: u16, entity: u16, action: &Actio
     }
 
     if local && (applied.warped || order == Order::Teleport) {
+        super::movement::discard_spatial_outbox(&mut scene.outbox);
+
         super::gate::arrived(scene);
 
         let to = action.to();
