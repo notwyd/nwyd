@@ -390,7 +390,17 @@ async fn relay_game(state: AppState, websocket: WebSocket, stream: TcpStream) {
             .unwrap_or_else(|e| e.into_inner())
             .last_error = Some(error.into());
     }
-    let _ = tokio::time::timeout(Duration::from_secs(1), ws_write.send(Message::Close(None))).await;
+    let _ = tokio::time::timeout(Duration::from_secs(1), async {
+        if ws_write.close().await.is_err() {
+            return;
+        }
+        while let Some(Ok(message)) = ws_read.next().await {
+            if matches!(message, Message::Close(_)) {
+                break;
+            }
+        }
+    })
+    .await;
 }
 
 #[derive(Deserialize)]

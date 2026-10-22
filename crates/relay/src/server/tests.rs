@@ -449,19 +449,90 @@ async fn server_eof_closes_browser_after_final_bytes() {
     let relay = TestRelay::new(true).await;
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let address = listener.local_addr().unwrap();
+    let (finish, finished) = tokio::sync::oneshot::channel();
     let upstream = tokio::spawn(async move {
         let (mut stream, _) = listener.accept().await.unwrap();
+        finished.await.unwrap();
         stream.write_all(&[5, 6, 7]).await.unwrap();
         stream.shutdown().await.unwrap();
     });
     let mut socket = relay.socket(address).await;
+    let heartbeat = tokio::time::timeout(Duration::from_secs(2), socket.next())
+        .await
+        .unwrap();
+    assert!(matches!(heartbeat, Some(Ok(tungstenite::Message::Ping(_)))));
+    finish.send(()).unwrap();
+    upstream.await.unwrap();
     assert_eq!(binary(&mut socket).await, [5, 6, 7]);
     let closed = tokio::time::timeout(Duration::from_secs(2), next_non_control(&mut socket))
         .await
         .unwrap();
-    assert!(matches!(closed, Some(Ok(tungstenite::Message::Close(_)))));
+    assert!(
+        matches!(closed, Some(Ok(tungstenite::Message::Close(_)))),
+        "expected close after final bytes, got {closed:?}"
+    );
+    assert_eq!(relay.state.lock().unwrap().active_sessions, 1);
+    socket.flush().await.unwrap();
+    let end = tokio::time::timeout(Duration::from_secs(2), socket.next())
+        .await
+        .unwrap();
+    assert!(end.is_none(), "expected clean EOF, got {end:?}");
+    wait_for_sessions_to_close(&relay).await;
+    relay.stop().await;
+}
+
+async fn wait_for_sessions_to_close(relay: &TestRelay) {
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while relay.state.lock().unwrap().active_sessions != 0 {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn server_eof_releases_sessions_when_browser_does_not_acknowledge_close() {
+    let relay = TestRelay::new(true).await;
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let upstream = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        stream.shutdown().await.unwrap();
+    });
+    let mut socket = relay.socket(address).await;
+    let closed = tokio::time::timeout(Duration::from_secs(2), next_non_control(&mut socket))
+        .await
+        .unwrap();
+    assert!(
+        matches!(closed, Some(Ok(tungstenite::Message::Close(_)))),
+        "expected close, got {closed:?}"
+    );
+    assert_eq!(relay.state.lock().unwrap().active_sessions, 1);
+    wait_for_sessions_to_close(&relay).await;
     upstream.await.unwrap();
     relay.stop().await;
+}
+
+#[tokio::test]
+async fn browser_close_is_acknowledged_before_releasing_the_session() {
+    let relay = TestRelay::new(true).await;
+    let (target, echo) = echo_server().await;
+    let mut socket = relay.socket(target).await;
+    socket
+        .send(tungstenite::Message::Close(None))
+        .await
+        .unwrap();
+    let closed = tokio::time::timeout(Duration::from_secs(2), next_non_control(&mut socket))
+        .await
+        .unwrap();
+    assert!(
+        matches!(closed, Some(Ok(tungstenite::Message::Close(_)))),
+        "expected close acknowledgement, got {closed:?}"
+    );
+    wait_for_sessions_to_close(&relay).await;
+    relay.stop().await;
+    echo.abort();
 }
 
 #[tokio::test]
