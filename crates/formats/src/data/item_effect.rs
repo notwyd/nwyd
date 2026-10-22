@@ -450,7 +450,7 @@ impl<'a> Effects<'a> {
     }
 
     pub fn total_scaled(&self, item: &Item, id: u8) -> i32 {
-        let Some((item_id, entry)) = self.lookup(item) else {
+        let Some((item_id, entry)) = self.lookup_item(item) else {
             return 0;
         };
 
@@ -494,13 +494,17 @@ impl<'a> Effects<'a> {
     }
 
     fn lookup(&self, item: &Item) -> Option<(i32, Entry)> {
-        let id = i32::from(item.index as i16);
-
-        if (id as u32).wrapping_sub(1) > (MAX_ID - 1) as u32 {
+        if EXCLUDED_IDS.contains(&i32::from(item.index as i16)) {
             return None;
         }
 
-        if EXCLUDED_IDS.contains(&id) {
+        self.lookup_item(item)
+    }
+
+    fn lookup_item(&self, item: &Item) -> Option<(i32, Entry)> {
+        let id = i32::from(item.index as i16);
+
+        if (id as u32).wrapping_sub(1) > (MAX_ID - 1) as u32 {
             return None;
         }
 
@@ -1260,3 +1264,6 @@ pub fn stack_size(item: &Item) -> i32 {
 
     if (1..=500).contains(&value) { value } else { 1 }
 }
+
+#[cfg(test)]
+mod tests;

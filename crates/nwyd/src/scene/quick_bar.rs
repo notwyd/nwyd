@@ -214,3 +214,6 @@ pub fn cooldown_handled(
             cooldowns.running(effects.total_scaled(item, item_move::EFFECT_KIND), now_ms)
         })
 }
+
+#[cfg(test)]
+mod tests;
