@@ -168,6 +168,7 @@ fn build_discovery_accepts_new_constants_stack_slots_registers_and_image_bases()
     for (base, build, slot, register) in [
         (BASE, 0xc9d8, 0x1c, 6),
         (BASE, 0xc9d9, 0x24, 6),
+        (BASE, 0xc9da, 0x28, 6),
         (0x2800_0000, 0xcafe, 0x34, 3),
     ] {
         let (bytes, _) = fixture(base, build, slot, register);
@@ -550,7 +551,11 @@ fn malformed_pe_headers_sections_and_imports_cannot_supply_a_build() {
 
 #[test]
 fn installed_proxy_fixtures_resolve_the_audited_builds() {
-    for (variable, expected) in [("NWYD_PROXY_735", 0xc9d8), ("NWYD_PROXY_739", 0xc9d9)] {
+    for (variable, expected) in [
+        ("NWYD_PROXY_735", 0xc9d8),
+        ("NWYD_PROXY_739", 0xc9d9),
+        ("NWYD_PROXY_C9DA", 0xc9da),
+    ] {
         let Some(path) = std::env::var_os(variable) else {
             continue;
         };

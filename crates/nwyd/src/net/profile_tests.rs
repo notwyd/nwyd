@@ -49,9 +49,10 @@ fn assert_login(packet: &protocol::Packet, version: i32, tick: u32, account: &[u
 
 #[test]
 fn profile_version_and_watermark_survive_redirect_and_a_new_login() {
-    for (profile, version, field_tick, redirect_tick, next_login_tick) in [
-        (Profile::BuildC9D8, 0x0C9D_8301, 25003, 30001, 40001),
-        (Profile::BuildC9D9, 0x0C9D_9301, 25002, 30000, 40000),
+    for (profile, version, login_tick, field_tick, redirect_tick, next_login_tick) in [
+        (Profile::BuildC9D8, 0x0C9D_8301, 5000, 25003, 30001, 40001),
+        (Profile::BuildC9D9, 0x0C9D_9301, 5000, 25002, 30000, 40000),
+        (Profile::BuildC9DA, 0x0C9D_A301, 5001, 25003, 30000, 40001),
     ] {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         let address = listener.local_addr().unwrap().to_string();
@@ -63,7 +64,7 @@ fn profile_version_and_watermark_survive_redirect_and_a_new_login() {
             .login(&address, "Player", "testpass", 123, 5000)
             .unwrap();
         let mut initial = accept(&listener);
-        assert_login(&receive(&mut initial), version, 5000, b"Player");
+        assert_login(&receive(&mut initial), version, login_tick, b"Player");
         session
             .send(&mut client::keepalive(), "profile probe", 25002)
             .unwrap();

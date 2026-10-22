@@ -74,7 +74,7 @@ pub const MAC_LEN: usize = 6;
 
 pub const SHIPPED_VERSION: i32 = 0xC8C9 * 0x1000 + 0x301;
 
-pub const VERSION: i32 = crate::send_state::Profile::BuildC9D9.login_version();
+pub const VERSION: i32 = crate::send_state::Profile::BuildC9DA.login_version();
 
 pub const PROXY_DLL: &str = "version.dll";
 

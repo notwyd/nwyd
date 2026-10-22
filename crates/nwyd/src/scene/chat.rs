@@ -953,11 +953,7 @@ pub fn append(panels: &mut Panels, text: &str, color: u32, speaker: Option<&str>
 
     let width = panels.client_config.integer("chatlinepx");
 
-    let lines = styled_lines_width(
-        &mut panels.screens[index],
-        text,
-        i32::try_from(width).ok().filter(|&n| n > 0),
-    );
+    let lines = styled_lines_width(&mut panels.screens[index], text, width);
 
     let Some(element) = panels.screens[index].element_mut("ChatList", ElementType::ListView) else {
         return;
@@ -999,14 +995,10 @@ pub fn wrap_line(screen: &mut Screen, text: &str) -> Vec<String> {
 }
 
 fn styled_lines(screen: &mut Screen, text: &str) -> Option<Vec<ui::rich::Line>> {
-    styled_lines_width(screen, text, None)
+    styled_lines_width(screen, text, 0)
 }
 
-fn styled_lines_width(
-    screen: &mut Screen,
-    text: &str,
-    width: Option<i32>,
-) -> Option<Vec<ui::rich::Line>> {
+fn styled_lines_width(screen: &mut Screen, text: &str, width: i64) -> Option<Vec<ui::rich::Line>> {
     let element = screen.element("ChatList", ElementType::ListView)?;
 
     let (Some(list), Some(material)) = (element.widget.list(), element.layers.first()) else {
@@ -1015,15 +1007,37 @@ fn styled_lines_width(
 
     let content = list.content_rect(element.rect());
 
-    let width = width.unwrap_or(content[2] - content[0]);
-
     let font = material.font_index;
 
-    let gap = 0;
+    wrap_styled_lines(
+        text,
+        font,
+        width,
+        content[2] - content[0],
+        &mut screen.placed.ui.measure(),
+    )
+}
 
-    let layout = ui::rich::wrap(text, font, width, gap, &mut screen.placed.ui.measure())?;
+fn wrap_styled_lines(
+    text: &str,
+    font: i32,
+    width: i64,
+    content_width: i32,
+    measure: &mut dyn ui::layout::Measure,
+) -> Option<Vec<ui::rich::Line>> {
+    let width = if width > 0 {
+        width
+    } else {
+        i64::from(content_width)
+    };
 
-    (!layout.lines.is_empty()).then_some(layout.lines)
+    if !(80..=2000).contains(&width) {
+        return None;
+    }
+
+    let layout = ui::rich::wrap(text, font, width as i32, 0, measure)?;
+
+    (layout.truncated.is_none() && (1..=9).contains(&layout.lines.len())).then_some(layout.lines)
 }
 
 fn scroll_to_end(screen: &mut Screen) {
@@ -2533,3 +2547,6 @@ mod language_tests;
 
 #[cfg(test)]
 mod announcement_tests;
+
+#[cfg(test)]
+mod wrapping_tests;

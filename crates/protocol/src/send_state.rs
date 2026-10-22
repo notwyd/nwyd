@@ -6,8 +6,9 @@ pub type SharedSender = Arc<Mutex<Sender>>;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Profile {
     BuildC9D8,
-    #[default]
     BuildC9D9,
+    #[default]
+    BuildC9DA,
 }
 
 impl Profile {
@@ -15,6 +16,7 @@ impl Profile {
         match word {
             0xc9d8 => Some(Self::BuildC9D8),
             0xc9d9 => Some(Self::BuildC9D9),
+            0xc9da => Some(Self::BuildC9DA),
             _ => None,
         }
     }
@@ -23,6 +25,7 @@ impl Profile {
         match self {
             Self::BuildC9D8 => 0xc9d8,
             Self::BuildC9D9 => 0xc9d9,
+            Self::BuildC9DA => 0xc9da,
         }
     }
 
@@ -113,6 +116,9 @@ fn encode_account_tick(profile: Profile, tick: u32, account: &[u8; 16], baseline
             .wrapping_add(0x813de8fa)
             .rotate_right(7)
             .wrapping_mul(0xff0af98d),
+        Profile::BuildC9DA => (baseline.wrapping_add(0x1e52b65f) ^ 0x68ae3903)
+            .rotate_right(4)
+            .wrapping_mul(0x31d3ad5b),
     };
 
     let start = if account[0].eq_ignore_ascii_case(&b'V') && account[1] == b'_' {
@@ -143,6 +149,17 @@ fn encode_account_tick(profile: Profile, tick: u32, account: &[u8; 16], baseline
             hash = (hash ^ (hash >> 18)).wrapping_mul(0x15ad3e71);
             hash ^ (hash >> 18)
         }
+        Profile::BuildC9DA => {
+            hash = hash
+                .wrapping_add(tick & !1)
+                .rotate_right(20)
+                .wrapping_mul(0x2aafa093);
+            hash = (hash ^ (hash >> 11)).wrapping_mul(0x326db9d5);
+            hash = (hash ^ (hash >> 15)).wrapping_mul(0x767cdc71);
+            hash = (hash ^ (hash >> 18)).wrapping_mul(0x75542945);
+            hash = (hash ^ (hash >> 18)).wrapping_mul(0xb2e3b8d7);
+            hash ^ (hash >> 15)
+        }
     };
 
     tick ^ ((hash ^ tick) & 1)
@@ -167,6 +184,7 @@ mod tests {
         for (profile, word, version) in [
             (Profile::BuildC9D8, 0xc9d8, 0x0c9d8301),
             (Profile::BuildC9D9, 0xc9d9, 0x0c9d9301),
+            (Profile::BuildC9DA, 0xc9da, 0x0c9da301),
         ] {
             assert_eq!(Profile::from_build_word(word), Some(profile));
             assert_eq!(profile.build_word(), word);
@@ -174,21 +192,26 @@ mod tests {
             assert_eq!(Sender::new(profile).profile(), profile);
         }
 
-        for word in [0, 735, 739, 0xc9d7, 0xc9da, 0x0c9d9301, u32::MAX] {
+        for word in [0, 735, 739, 0xc9d7, 0xc9db, 0x0c9da301, u32::MAX] {
             assert_eq!(Profile::from_build_word(word), None);
         }
 
-        assert_eq!(Profile::default(), Profile::BuildC9D9);
-        assert_eq!(Sender::default().profile(), Profile::BuildC9D9);
+        assert_eq!(Profile::default(), Profile::BuildC9DA);
+        assert_eq!(Sender::default().profile(), Profile::BuildC9DA);
+        assert_eq!(crate::client::VERSION, Profile::default().login_version());
     }
 
     #[test]
-    fn dll_735_and_739_machine_vectors() {
-        for &(tick, name, baseline, old, new) in vectors::CASES {
+    fn profile_machine_vectors() {
+        for &(tick, name, baseline, c9d8, c9d9, c9da) in vectors::CASES {
             let mut account = [0; 16];
             account[..name.len()].copy_from_slice(name);
 
-            for (profile, expected) in [(Profile::BuildC9D8, old), (Profile::BuildC9D9, new)] {
+            for (profile, expected) in [
+                (Profile::BuildC9D8, c9d8),
+                (Profile::BuildC9D9, c9d9),
+                (Profile::BuildC9DA, c9da),
+            ] {
                 let actual = encode_account_tick(profile, tick, &account, baseline);
                 assert_eq!(
                     actual, expected,
@@ -236,6 +259,21 @@ mod tests {
                     106,
                 ],
             ),
+            (
+                Profile::BuildC9DA,
+                [
+                    1234,
+                    1002,
+                    1004,
+                    u32::MAX - 1,
+                    u32::MAX,
+                    101,
+                    101,
+                    102,
+                    104,
+                    107,
+                ],
+            ),
         ] {
             let sender: SharedSender = Arc::new(Mutex::new(Sender::new(profile)));
             let frames: &[(u16, &[u8], u32)] = &[
@@ -275,7 +313,7 @@ mod tests {
 
     #[test]
     fn login_capture_requires_complete_frame_and_clears_previous_account() {
-        for profile in [Profile::BuildC9D8, Profile::BuildC9D9] {
+        for profile in [Profile::BuildC9D8, Profile::BuildC9D9, Profile::BuildC9DA] {
             let mut sender = Sender::new(profile);
             let mut login = frame(0x20c, b"Player");
             assert_eq!(sender.prepare(&mut login[..39], 1002), 1002);

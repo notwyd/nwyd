@@ -1621,18 +1621,23 @@ pub fn load_item_help(game: &GameDir) -> std::io::Result<Vec<formats::data::item
 
     let mut help = item_help::parse(&bytes, cp);
 
-    if let Some(bytes) = [
-        b"Lang/EN/itemhelp.dat".as_slice(),
-        b"Lang/PT/itemhelp.dat",
-        b"itemhelp.dat",
-    ]
-    .into_iter()
-    .find_map(|path| game.read(path).ok())
-    {
+    if let Some(bytes) = item_help_colors(game) {
         item_help::overlay_colors(&mut help, &bytes);
     }
 
     Ok(help)
+}
+
+fn item_help_colors(game: &GameDir) -> Option<Vec<u8>> {
+    let selected = format!("Lang/{}/itemhelp.dat", game.language().dir());
+
+    [
+        selected.as_bytes(),
+        b"Lang/EN/itemhelp.dat",
+        b"itemhelp.dat",
+    ]
+    .into_iter()
+    .find_map(|path| game.read(path).ok())
 }
 
 #[cfg(test)]
@@ -1843,6 +1848,67 @@ mod language_tests {
         );
 
         assert_eq!(game.reads(), 1);
+    }
+
+    #[test]
+    fn item_help_uses_selected_language_colors_and_encoding() {
+        let root = Directory::new();
+
+        root.write(
+            "Lang/KR/itemhelp.dat",
+            b"1 1\n112233   \xC7\xD1\xB1\xB9\xBE\xEE\n",
+        );
+
+        root.write("Lang/EN/itemhelp.dat", b"1 1\n445566   English\n");
+
+        root.write("Lang/PT/itemhelp.dat", b"1 1\n778899   Portuguese\n");
+
+        root.write("itemhelp.dat", b"1 1\nAABBCC   Root\n");
+
+        let help = load_item_help(&root.game(Language::Korean)).unwrap();
+
+        assert_eq!(help[1].line[0], "한국어");
+
+        assert_eq!(help[1].color_override[0], 0x112233);
+
+        assert_eq!(help[1].argb(0), 0xff112233);
+    }
+
+    #[test]
+    fn item_help_colors_fall_back_to_english_before_root() {
+        let root = Directory::new();
+
+        root.write("Lang/EN/itemhelp.dat", b"1 1\n445566   Price \x80\n");
+
+        root.write("Lang/PT/itemhelp.dat", b"1 1\n778899   Portuguese\n");
+
+        root.write("itemhelp.dat", b"1 1\nAABBCC   Root\n");
+
+        let help = load_item_help(&root.game(Language::Korean)).unwrap();
+
+        assert_eq!(help[1].line[0], "Price €");
+
+        assert_eq!(help[1].color_override[0], 0x445566);
+    }
+
+    #[test]
+    fn item_help_colors_fall_back_to_root_without_using_an_unrelated_language() {
+        let root = Directory::new();
+
+        root.write("Lang/PT/itemhelp.dat", b"1 1\n778899   Portuguese\n");
+
+        let root_help = b"1 1\nAABBCC   Root\n";
+
+        root.write("itemhelp.dat", root_help);
+
+        assert_eq!(
+            item_help_colors(&root.game(Language::Korean)).as_deref(),
+            Some(root_help.as_slice())
+        );
+
+        fs::remove_file(root.0.join("itemhelp.dat")).unwrap();
+
+        assert!(item_help_colors(&root.game(Language::Korean)).is_none());
     }
 
     #[test]
