@@ -195,13 +195,13 @@ fn runtime_language_preserves_chat_draft_history_cooldowns_and_mode() {
 fn runtime_language_shout_submission_preserves_command_intent() {
     let mut panels = Panels::for_test();
 
-    panels.strings = translated(&[(SHOUT_WORD_RECORD, "shout")], "");
+    panels.strings = translated(&[(SHOUT_WORD_RECORD, "spk")], "");
 
-    panels.chat.shout_word = "shout".into();
+    panels.chat.shout_word = "spk".into();
 
     let reserved = Reserved::default();
 
-    let before = route_with_move_alpha(
+    let Enter::Sent(before) = route_with_move_alpha(
         &mut panels,
         1,
         "Synthetic",
@@ -209,12 +209,14 @@ fn runtime_language_shout_submission_preserves_command_intent() {
         1.0,
         &reserved,
         10000,
-        "/shout Synthetic draft",
-    );
+        "/spk Synthetic draft",
+    ) else {
+        panic!("English shout must send");
+    };
 
-    assert!(matches!(before, Enter::Command(ref word) if word == "shout"));
+    assert_eq!(before.mode, SHOUT);
 
-    assert!(panels.chat.outbox.is_empty());
+    assert_eq!(panels.chat.outbox, [before.packet.clone()]);
 
     let strings = translated(&[(SHOUT_WORD_RECORD, "gritar")], "");
 
@@ -222,7 +224,7 @@ fn runtime_language_shout_submission_preserves_command_intent() {
 
     relocalize(&mut panels, &strings);
 
-    let after = route_with_move_alpha(
+    let Enter::Sent(after) = route_with_move_alpha(
         &mut panels,
         1,
         "Synthetic",
@@ -230,17 +232,25 @@ fn runtime_language_shout_submission_preserves_command_intent() {
         1.0,
         &reserved,
         20000,
-        "/shout Synthetic draft",
+        "/spk Synthetic draft",
+    ) else {
+        panic!("old shout draft must still send after changing language");
+    };
+
+    assert_eq!(after, before);
+
+    assert_eq!(panels.chat.whisper, "gritar");
+
+    assert_eq!(panels.chat.shouts[0], "spk");
+
+    assert_eq!(
+        panels.chat.records.back().unwrap().text,
+        "[Synthetic] : spk> Synthetic draft"
     );
 
-    assert!(
-        matches!(after, Enter::Command(ref word) if word == "gritar"),
-        "old shout draft must remain a command, received {after:?}"
-    );
+    assert_eq!(panels.chat.outbox, [before.packet.clone(), after.packet]);
 
-    assert!(panels.chat.outbox.is_empty());
-
-    let current = route_with_move_alpha(
+    let Enter::Sent(current) = route_with_move_alpha(
         &mut panels,
         1,
         "Synthetic",
@@ -249,11 +259,23 @@ fn runtime_language_shout_submission_preserves_command_intent() {
         &reserved,
         30000,
         "/gritar New draft",
+    ) else {
+        panic!("Portuguese shout must send");
+    };
+
+    assert_eq!(current.mode, SHOUT);
+
+    assert_eq!(
+        current.packet,
+        channel_packet(1, WHISPER, "spk", "New draft")
     );
 
-    assert!(matches!(current, Enter::Command(ref word) if word == "gritar"));
+    assert_eq!(
+        panels.chat.records.back().unwrap().text,
+        "[Synthetic] : gritar> New draft"
+    );
 
-    assert!(panels.chat.outbox.is_empty());
+    assert_eq!(panels.chat.outbox.len(), 3);
 
     let ordinary = route_with_move_alpha(
         &mut panels,
@@ -268,7 +290,7 @@ fn runtime_language_shout_submission_preserves_command_intent() {
 
     assert!(matches!(ordinary, Enter::Sent(ref sent) if sent.mode == WHISPER));
 
-    assert_eq!(panels.chat.outbox.len(), 1);
+    assert_eq!(panels.chat.outbox.len(), 4);
 }
 
 #[test]

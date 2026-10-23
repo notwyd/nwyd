@@ -2166,6 +2166,29 @@ pub fn route_with_move_alpha(
             });
         }
 
+        if record == Some(SHOUT_WORD_RECORD) {
+            let body = rest.get(word.len()..).unwrap_or_default();
+
+            let filtered = censor(body.strip_prefix(' ').unwrap_or(body), reserved);
+
+            let packet = channel_packet(client_id, WHISPER, "spk", &filtered);
+
+            panels.chat.whisper = current_command_word(&panels.strings, record, &word);
+
+            let packet = queue_packet(panels, packet);
+
+            let echo = format!("[{speaker}] : {word}> {filtered}");
+
+            append(panels, &echo, MODES[WHISPER].color, None);
+
+            return Enter::Sent(Sent {
+                mode: SHOUT,
+                text: filtered,
+                packet,
+                balloon: false,
+            });
+        }
+
         if record == Some(1099) {
             let body = rest.get(word.len()..).unwrap_or_default();
 
@@ -2550,3 +2573,6 @@ mod announcement_tests;
 
 #[cfg(test)]
 mod wrapping_tests;
+
+#[cfg(test)]
+mod shout_tests;
