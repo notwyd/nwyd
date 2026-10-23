@@ -476,6 +476,16 @@ impl ObjectUniforms {
         }
     }
 
+    pub fn set_skin_material(&mut self) {
+        self.refine[3] = 3.0;
+    }
+
+    pub fn set_skin_refine(&mut self, glow: formats::mesh::glow::Glow, scroll: f32) {
+        let sphere = glow.uv == formats::mesh::glow::Uv::Sphere;
+        self.set_refine(glow, if sphere { scroll } else { 0.0 });
+        self.refine[3] = if sphere { 2.0 } else { 3.0 };
+    }
+
     pub fn new(world: Matrix4, params: &DrawParams, alpha_reference: f32) -> ObjectUniforms {
         ObjectUniforms {
             world: world.shader_constants(),
@@ -809,7 +819,13 @@ impl MeshRenderer {
     }
 
     pub fn new_ui(gpu: &Gpu, target_format: wgpu::TextureFormat, vendor: VendorClass) -> Self {
-        Self::with_depth(gpu, target_format, None, vendor, None)
+        Self::with_depth(
+            gpu,
+            target_format,
+            Some(crate::target::DEPTH_FORMAT),
+            vendor,
+            None,
+        )
     }
 
     fn with_depth(

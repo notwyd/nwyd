@@ -14,6 +14,7 @@ pub struct Interface {
     pub cape_refinement: bool,
     pub hide_hud: bool,
     pub hide_item_announcements: bool,
+    pub item_3d_preview: bool,
     pub zoom: bool,
     pub evok_size: u8,
 }
@@ -27,6 +28,7 @@ impl Default for Interface {
             cape_refinement: false,
             hide_hud: false,
             hide_item_announcements: false,
+            item_3d_preview: false,
             zoom: false,
             evok_size: 100,
         }
@@ -159,6 +161,10 @@ mod tests {
             },
             Interface {
                 hide_hud: true,
+                ..previous
+            },
+            Interface {
+                item_3d_preview: true,
                 ..previous
             },
             Interface {

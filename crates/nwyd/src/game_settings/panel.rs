@@ -186,6 +186,23 @@ fn extend_layout(ui: &mut PanelUi, languages: &[Language]) -> Result<()> {
             287,
             "",
         ),
+        ("effects", "item3dPreview", ElementType::Button, 25, 305, ""),
+        (
+            "effectsOn",
+            "item3dPreviewOn",
+            ElementType::Button,
+            25,
+            305,
+            "",
+        ),
+        (
+            "vEfx1Lbl",
+            "item3dPreviewLbl",
+            ElementType::Static,
+            46,
+            305,
+            "",
+        ),
     ] {
         let mut element = ui
             .panel
@@ -678,6 +695,8 @@ impl Panel {
                 "hideItemAnnouncementsOn" => {
                     interface_visible && self.draft.interface.hide_item_announcements
                 }
+                "item3dPreview" => interface_visible && !self.draft.interface.item_3d_preview,
+                "item3dPreviewOn" => interface_visible && self.draft.interface.item_3d_preview,
                 _ => interface_visible,
             };
 
@@ -769,6 +788,11 @@ impl Panel {
                     "Ocultar anúncios de itens"
                 } else {
                     "Hide item announcements"
+                }),
+                "item3dPreviewLbl" => element.set_display(if portuguese {
+                    "Prévia 3D dos itens"
+                } else {
+                    "3D item previews"
                 }),
                 "languageLabel" => {
                     element.set_display(if portuguese { "Idioma" } else { "Language" })
@@ -1003,6 +1027,9 @@ impl Panel {
                 }
                 "hideItemAnnouncements" | "hideItemAnnouncementsOn" => {
                     self.draft.interface.hide_item_announcements ^= true;
+                }
+                "item3dPreview" | "item3dPreviewOn" => {
+                    self.draft.interface.item_3d_preview ^= true;
                 }
                 "resDrop" => {
                     self.resolutions_open = !self.resolutions_open;

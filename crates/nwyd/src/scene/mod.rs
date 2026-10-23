@@ -101,6 +101,7 @@ pub mod interact;
 pub mod inventory;
 pub(crate) mod item_announcements;
 pub mod item_move;
+pub mod item_preview;
 pub mod item_prices;
 pub mod item_table;
 pub mod item_tip;
@@ -2670,8 +2671,29 @@ impl Scene {
 
         self.sync(gpu, renderer);
 
-        for quad in &draws {
+        let preview = if let Self::Field(scene) = self {
+            scene
+                .panels
+                .as_ref()
+                .and_then(|panels| panels.tooltip.queue_preview(gpu, renderer))
+        } else {
+            None
+        };
+
+        for (index, quad) in draws.iter().enumerate() {
+            if let Some((after, range)) = &preview
+                && *after == index
+            {
+                renderer.push_ui_model(range.clone());
+            }
+
             renderer.push(quad);
+        }
+
+        if let Some((after, range)) = preview
+            && after == draws.len()
+        {
+            renderer.push_ui_model(range);
         }
 
         draws.clear();

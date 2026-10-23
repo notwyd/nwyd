@@ -16,7 +16,7 @@ pub(crate) struct Bundle {
 }
 
 impl ObjectScene {
-    pub(super) fn empty(registries: Arc<Registries>) -> Self {
+    pub(crate) fn empty(registries: Arc<Registries>) -> Self {
         ObjectScene {
             records: Vec::new(),
             neighbour_records: Vec::new(),

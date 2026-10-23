@@ -88,13 +88,23 @@ fn vs(
         + frame.light1_color.rgb * diffuse_material.rgb * n_dot_l1
         + points[0];
 
-    let rgb = mix(diffuse_material.rgb, clamp(lit, vec3<f32>(0.0), vec3<f32>(1.0)), object.flags.x);
+    var rgb = mix(diffuse_material.rgb, clamp(lit, vec3<f32>(0.0), vec3<f32>(1.0)), object.flags.x);
+    if (object.refine.w > 1.5) {
+        let direction = normalize(vec3<f32>(-1.0, 1.0, 1.0));
+        let diffuse = mix(1.0, max(dot(n, direction), 0.0), object.flags.x);
+        rgb = min(diffuse_material.rgb * diffuse + object.material_ambient.rgb * 0.25 + object.material_emissive.rgb, vec3<f32>(1.0));
+    }
     out.diffuse = vec4<f32>(rgb, diffuse_material.a);
 
     out.view_depth = view_pos.z;
     out.uv = uv * object.uv0.xy + object.uv0.zw;
     out.uv1 = uv * object.uv1.xy + object.uv1.zw;
-    if (object.refine.w > 0.5) {
+    if (object.refine.w > 1.5 && object.refine.w < 2.5) {
+        let view_normal = (vec4<f32>(n, 0.0) * frame.view).xyz;
+        let model_scale = max(length(object.world[0].xyz), 0.000001);
+        let model_position = (vec4<f32>(pos, 0.0) * object.world * frame.view).xyz / model_scale;
+        out.uv1 = vec2<f32>(view_normal.x, model_position.y);
+    } else if (object.refine.w > 0.5 && object.refine.w < 1.5) {
         
         let view_normal = (vec4<f32>(n, 0.0) * frame.view).xyz;
         let incident = view_pos.xyz / max(length(view_pos.xyz), 0.000001);

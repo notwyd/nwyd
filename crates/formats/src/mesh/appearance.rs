@@ -626,24 +626,13 @@ fn mount_for_field_override(
     flags: u8,
     arena_item: u16,
 ) -> Option<Mount> {
-    use crate::data::item_effect::effect;
-
-    let items = effects.items;
-
     let worn = equip.items[MOUNT_SLOT];
 
     let item = i32::from(worn.index as i16);
 
-    let kind_of = |id: i32| -> i16 {
-        usize::try_from(id)
-            .ok()
-            .and_then(|id| items.get(id))
-            .map_or(0, |e| e.item_type)
-    };
-
     use item_list::item_type::{MOUNT, PET_STAGE2};
 
-    let kind = kind_of(item);
+    let kind = effects.items.get(usize::from(worn.index))?.item_type;
 
     if !MOUNT_ITEM_TYPES.contains(&kind) && !MOUNT_ID_WINDOW.contains(&item) {
         return None;
@@ -658,6 +647,48 @@ fn mount_for_field_override(
         return None;
     }
 
+    mount_appearance(&worn, effects, visuals, flags, arena_item)
+}
+
+pub fn mount_for_item(
+    worn: &account::Item,
+    effects: &Effects,
+    visuals: &[MountVisual],
+    flags: u8,
+) -> Option<Mount> {
+    let kind = effects.items.get(usize::from(worn.index))?.item_type;
+
+    if !MOUNT_ITEM_TYPES.contains(&kind)
+        && kind != MOUNT_SKIN_ITEM_TYPE
+        && !MOUNT_ID_WINDOW.contains(&i32::from(worn.index))
+    {
+        return None;
+    }
+
+    mount_appearance(worn, effects, visuals, flags, 0)
+        .filter(|mount| mount.model.is_some_and(|model| model != 0))
+}
+
+fn mount_appearance(
+    worn: &account::Item,
+    effects: &Effects,
+    visuals: &[MountVisual],
+    flags: u8,
+    arena_item: u16,
+) -> Option<Mount> {
+    let items = effects.items;
+
+    let item = i32::from(worn.index as i16);
+
+    let kind_of = |id: i32| -> i16 {
+        usize::try_from(id)
+            .ok()
+            .and_then(|id| items.get(id))
+            .map_or(0, |e| e.item_type)
+    };
+
+    let kind = kind_of(item);
+
     let mut grown = true;
 
     let mut appearance_item = item;
@@ -665,7 +696,7 @@ fn mount_for_field_override(
     let over = i32::from(worn.appearance as i16);
 
     if over == 0 {
-        grown = kind != MOUNT;
+        grown = !matches!(kind, item_list::item_type::MOUNT | MOUNT_SKIN_ITEM_TYPE);
     } else if MOUNT_ITEM_TYPES.contains(&kind_of(over)) || kind_of(over) == MOUNT_SKIN_ITEM_TYPE {
         if flags & FLAG_MOUNT_AS_WORN == 0 {
             appearance_item = over;
@@ -704,7 +735,7 @@ fn mount_for_field_override(
 
     let model = row.kind as u32;
 
-    let maturity = effects.total_scaled(&worn, effect::PET_MATURITY);
+    let maturity = effects.total_scaled(worn, effect::PET_MATURITY);
 
     let mut part_color = [0u8; MOUNT_PARTS];
 

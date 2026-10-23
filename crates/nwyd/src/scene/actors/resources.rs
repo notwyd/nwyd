@@ -177,6 +177,29 @@ impl ActorScene {
 }
 
 impl Bundle {
+    pub(crate) fn load(game: &GameDir, reg: &Registries, spec: &ModelSpec) -> Result<Option<Self>> {
+        let mut bundle = Self::default();
+        let index = Loader {
+            models: &mut bundle.models,
+            textures: &mut bundle.textures,
+            arena: &mut bundle.arena,
+            animations: &mut bundle.animations,
+            by_spec: &mut bundle.by_spec,
+            parts: &mut bundle.parts,
+            background_textures: false,
+        }
+        .load_model(
+            game,
+            &reg.entries,
+            &reg.valid,
+            &reg.sounds,
+            &reg.textures,
+            spec,
+        )?;
+
+        Ok(index.map(|_| bundle))
+    }
+
     pub(crate) fn prepare(
         game: &GameDir,
         reg: &Registries,

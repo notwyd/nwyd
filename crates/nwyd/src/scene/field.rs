@@ -2699,6 +2699,13 @@ pub(crate) fn append_frame_draws(scene: &mut FieldScene, out: &mut Vec<PlannedQu
     super::trade::finish_panel_close(scene);
 
     if let Some(panels) = scene.panels.as_mut() {
+        panels.tooltip.configure_preview(
+            scene.interface.item_3d_preview,
+            &scene.world.objects.registries,
+            (scene.layout.width, scene.layout.height),
+            scene.time.now_ms,
+        );
+
         screens::refresh_opened(panels, &scene.entered);
 
         super::merge_item::refresh(panels, &scene.entered);
@@ -2889,7 +2896,11 @@ pub(crate) fn append_frame_draws(scene: &mut FieldScene, out: &mut Vec<PlannedQu
         if let Some(screens) = screens {
             panels::refresh_icon_hover(hud, screens, entered);
 
+            let offset = out.len();
+
             out.extend(panels::field_frame_draws(hud, screens));
+
+            screens.tooltip.offset_preview(offset);
         } else {
             out.extend(hud::frame_draws(hud));
         }

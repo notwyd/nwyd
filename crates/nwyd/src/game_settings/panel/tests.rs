@@ -235,6 +235,105 @@ fn item_announcement_checkbox_localizes_and_only_shows_on_interface_without_drop
 }
 
 #[test]
+fn item_preview_checkbox_applies_saves_reopens_and_discards_changes() {
+    let files = SettingsFile::new();
+    let mut panel = panel(
+        Language::Portuguese,
+        &[Language::Portuguese, Language::English],
+    );
+    panel.path = files.path();
+    let initial = panel.draft;
+
+    assert!(!initial.interface.item_3d_preview);
+    assert!(!element(&panel, "item3dPreviewOn").visible);
+
+    click(&mut panel, "item3dPreview");
+
+    assert_eq!(
+        panel.draft,
+        Preferences {
+            interface: Interface {
+                item_3d_preview: true,
+                ..initial.interface
+            },
+            ..initial
+        }
+    );
+    assert!(panel.apply_requested);
+    assert_eq!(panel.applied, initial);
+    assert!(!element(&panel, "item3dPreview").visible);
+    assert!(element(&panel, "item3dPreviewOn").visible);
+
+    panel.save_draft().unwrap();
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.applied));
+    panel.close();
+    panel.open(Default::default());
+    assert!(panel.draft.interface.item_3d_preview);
+    assert!(element(&panel, "item3dPreviewOn").visible);
+
+    click(&mut panel, "item3dPreviewOn");
+    assert!(!panel.draft.interface.item_3d_preview);
+    panel.discard_draft();
+    assert!(panel.draft.interface.item_3d_preview);
+    assert!(element(&panel, "item3dPreviewOn").visible);
+    assert_eq!(Preferences::load(&panel.path).unwrap(), Some(panel.applied));
+
+    click(&mut panel, "item3dPreviewOn");
+    panel.path = files.0.join("missing/settings.json");
+    assert!(panel.save_draft().is_err());
+    assert_eq!(panel.draft, panel.applied);
+    assert!(panel.draft.interface.item_3d_preview);
+    assert!(element(&panel, "item3dPreviewOn").visible);
+}
+
+#[test]
+fn item_preview_checkbox_localizes_fits_and_only_shows_on_interface_without_dropdown() {
+    let mut panel = panel(
+        Language::Portuguese,
+        &[Language::Portuguese, Language::English],
+    );
+    let mut game = GameDir::from_files("synthetic-item-preview-language", []).unwrap();
+    click(&mut panel, "item3dPreview");
+
+    for (language, caption) in [
+        (Language::English, "3D item previews"),
+        (Language::Portuguese, "Prévia 3D dos itens"),
+    ] {
+        game.set_language(language);
+        panel.apply_language(&game, &ui::Strings::default());
+
+        assert_eq!(element(&panel, "item3dPreviewLbl").display, caption);
+        assert!(panel.draft.interface.item_3d_preview);
+        assert!(element(&panel, "item3dPreviewOn").visible);
+        assert!(element(&panel, "item3dPreviewLbl").visible);
+        assert!(
+            element(&panel, "hideItemAnnouncements").rect()[3]
+                <= element(&panel, "item3dPreviewOn").y
+        );
+        assert!(
+            element(&panel, "item3dPreviewOn").rect()[3]
+                <= panel.placed.ui.panel.close_button_location[1]
+        );
+
+        for tab in ["TabVid", "TabAud"] {
+            click(&mut panel, tab);
+            assert!(!element(&panel, "item3dPreview").visible);
+            assert!(!element(&panel, "item3dPreviewOn").visible);
+            assert!(!element(&panel, "item3dPreviewLbl").visible);
+        }
+
+        click(&mut panel, "TabIfc");
+        click(&mut panel, "languageDrop");
+        assert!(!element(&panel, "item3dPreview").visible);
+        assert!(!element(&panel, "item3dPreviewOn").visible);
+        assert!(!element(&panel, "item3dPreviewLbl").visible);
+        click(&mut panel, "languageDrop");
+        assert!(element(&panel, "item3dPreviewOn").visible);
+        assert!(element(&panel, "item3dPreviewLbl").visible);
+    }
+}
+
+#[test]
 fn view_distance_choices_apply_save_and_cancel_without_changing_other_settings() {
     use crate::scene::view_distance::ViewDistance;
 
@@ -1537,6 +1636,7 @@ fn localized_settings_labels_fit_using_the_bundled_font() {
             "evokLabel",
             "capeRefineLbl",
             "hideItemAnnouncementsLbl",
+            "item3dPreviewLbl",
             "rendererLabel",
             "rendererDrop",
             "rendererNotice",

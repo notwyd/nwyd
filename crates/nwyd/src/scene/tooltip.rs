@@ -11,6 +11,8 @@ use formats::data::item_list::ItemList;
 use formats::data::mount::{self, MountData};
 use formats::data::skill_data::{self, SkillData};
 use formats::ui::pane::{self, Pane};
+use std::ops::Range;
+use std::sync::Arc;
 use ui::draw::Interaction;
 use ui::input::Target;
 use ui::{Panel, Resource, Strings, Tooltip};
@@ -35,6 +37,9 @@ pub struct Tip {
     help: Vec<Help>,
     skills: Option<SkillData>,
     coupons: Vec<Coupon>,
+    game: Option<GameDir>,
+    preview: Option<super::item_preview::Preview>,
+    preview_frame: PreviewFrame,
     pub shown: Option<Shown>,
     pub raised_by: Option<Target>,
     pub notes: Vec<String>,
@@ -47,6 +52,23 @@ pub struct Shown {
     pub z_order: i32,
     pub item: i32,
     pub source_content: Option<i32>,
+    preview_source: Option<PreviewSource>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct PreviewSource {
+    cell: Cell,
+    right_aligned: bool,
+    equipment: formats::net::account::Equipment,
+}
+
+#[derive(Default)]
+struct PreviewFrame {
+    enabled: bool,
+    viewport: (u32, u32),
+    now_ms: u32,
+    ready: bool,
+    after: Option<usize>,
 }
 
 pub fn build(game: &GameDir, strings: &Strings, chains: &Chains, scale: f32) -> Result<Tip> {
@@ -109,6 +131,9 @@ pub fn build(game: &GameDir, strings: &Strings, chains: &Chains, scale: f32) -> 
         help,
         skills,
         coupons,
+        game: Some(game.clone()),
+        preview: None,
+        preview_frame: PreviewFrame::default(),
         shown: None,
         raised_by: None,
         notes,
@@ -158,6 +183,9 @@ impl Tip {
             help: Vec::new(),
             skills: None,
             coupons: Vec::new(),
+            game: None,
+            preview: None,
+            preview_frame: PreviewFrame::default(),
             shown: None,
             raised_by: None,
             notes: Vec::new(),
@@ -179,6 +207,10 @@ impl Tip {
         self.shown = None;
 
         self.raised_by = None;
+
+        self.preview_frame.ready = false;
+
+        self.preview_frame.after = None;
     }
 
     pub fn visible(&self) -> bool {
@@ -235,7 +267,15 @@ impl Tip {
             content.rows.push(row);
         }
 
-        self.render_content(cell, tables.strings, screen, &content)
+        let mut shown = self.render_content(cell, tables.strings, screen, &content);
+
+        shown.preview_source = Some(PreviewSource {
+            cell: *cell,
+            right_aligned: false,
+            equipment: tables.entered.equipment,
+        });
+
+        shown
     }
 
     pub fn update_item_link(
@@ -265,6 +305,10 @@ impl Tip {
         let width = shown.panel.right - shown.panel.left;
 
         shown.origin.0 = (cell.owner_origin.0 + cell.rect[2] - width).max(0);
+
+        if let Some(source) = &mut shown.preview_source {
+            source.right_aligned = true;
+        }
 
         self.raised_by = Some(target);
 
@@ -296,7 +340,15 @@ impl Tip {
             ),
         );
 
-        self.shown = Some(self.render_content(&cell, tables.strings, screen, &content));
+        let mut shown = self.render_content(&cell, tables.strings, screen, &content);
+
+        shown.preview_source = Some(PreviewSource {
+            cell,
+            right_aligned: false,
+            equipment: tables.entered.equipment,
+        });
+
+        self.shown = Some(shown);
 
         self.raised_by = Some(target);
     }
@@ -400,21 +452,97 @@ impl Tip {
             z_order: ui::tooltip::z_order(cell.owner_z),
             item: cell.index,
             source_content: cell.owner_content,
+            preview_source: None,
         }
     }
 
+    pub(super) fn configure_preview(
+        &mut self,
+        enabled: bool,
+        registries: &Arc<super::registries::Registries>,
+        viewport: (u32, u32),
+        now_ms: u32,
+    ) {
+        self.preview_frame = PreviewFrame {
+            enabled,
+            viewport,
+            now_ms,
+            ..PreviewFrame::default()
+        };
+
+        if enabled && self.preview.is_none() && self.game.is_some() {
+            self.preview = Some(super::item_preview::Preview::new(Arc::clone(registries)));
+        }
+    }
+
+    pub(super) fn mark_preview(&mut self, after: usize) {
+        self.preview_frame.after = self.preview_frame.ready.then_some(after);
+    }
+
+    pub(super) fn offset_preview(&mut self, offset: usize) {
+        if let Some(after) = &mut self.preview_frame.after {
+            *after += offset;
+        }
+    }
+
+    pub(super) fn queue_preview(
+        &self,
+        gpu: &render::Gpu,
+        renderer: &mut SceneRenderer,
+    ) -> Option<(usize, Range<usize>)> {
+        let after = self.preview_frame.after?;
+        let preview = self.preview.as_ref()?;
+
+        renderer.queue_ui_meshes(
+            gpu,
+            preview.identity,
+            &preview.resources,
+            &preview.uniforms,
+            &preview.frame,
+        );
+
+        Some((after, preview.range.clone()))
+    }
+
     pub fn frame_draws(&mut self, captions: bool) -> Vec<PlannedQuad> {
+        self.preview_frame.ready = false;
+        self.preview_frame.after = None;
+
         let Some(shown) = &self.shown else {
             return Vec::new();
         };
 
         self.ui.panel = shown.panel.clone();
 
+        let mut origin = shown.origin;
+
+        if let (Some(source), Some(preview)) = (shown.preview_source, &mut self.preview) {
+            preview.set_equipment(source.equipment);
+        }
+
+        if self.preview_frame.enabled
+            && let Some(source) = shown.preview_source
+            && let (Some(game), Some(preview)) = (&self.game, &mut self.preview)
+            && let Some((panel, position, rect)) =
+                preview_layout(shown, self.preview_frame.viewport, self.ui.scale)
+            && preview.prepare(
+                game,
+                source.cell.item,
+                rect,
+                self.preview_frame.viewport,
+                self.preview_frame.now_ms,
+            )
+        {
+            self.ui.panel = panel;
+            origin = position;
+            self.preview_frame.ready = true;
+        }
+
         let interaction = Interaction::default();
 
         let mut out = Vec::new();
 
-        for draw in self.ui.frame(&interaction, shown.origin) {
+        for draw in self.ui.frame(&interaction, origin) {
             if !captions && matches!(draw.source, Source::Caption(..)) {
                 continue;
             }
@@ -472,6 +600,62 @@ impl Tip {
     pub(super) fn for_each_ui(&mut self, visit: &mut impl FnMut(&mut PanelUi)) {
         visit(&mut self.ui);
     }
+}
+
+fn preview_layout(
+    shown: &Shown,
+    viewport: (u32, u32),
+    scale: f32,
+) -> Option<(Panel, (i32, i32), [f32; 4])> {
+    if !scale.is_finite() || scale <= 0.0 {
+        return None;
+    }
+
+    let source = shown.preview_source?;
+    let screen = (
+        (viewport.0 as f32 / scale) as i32,
+        (viewport.1 as f32 / scale) as i32,
+    );
+    let height = 112.min(screen.1 - shown.panel.height() - 8);
+
+    if height < 64 || shown.panel.width() > screen.0 {
+        return None;
+    }
+
+    let mut panel = shown.panel.clone();
+    let top = panel
+        .element(ui::tooltip::ANCHOR_NAME, pane::ElementType::Static)?
+        .y;
+
+    for element in &mut panel.elements {
+        if matches!(
+            element.name.as_str(),
+            ui::tooltip::ROW_NAME | ui::tooltip::COMMENT_NAME
+        ) {
+            element.y += height;
+        }
+    }
+
+    panel.bottom += height;
+
+    let size = (panel.width(), panel.height());
+    let mut origin = ui::tooltip::anchor(size, source.cell.rect, source.cell.owner_origin, screen);
+
+    if source.right_aligned {
+        origin.0 = source.cell.owner_origin.0 + source.cell.rect[2] - size.0;
+    }
+
+    origin.0 = origin.0.clamp(0, (screen.0 - size.0).max(0));
+    origin.1 = origin.1.clamp(0, (screen.1 - size.1).max(0));
+
+    let rect = [
+        (origin.0 + panel.left + 8) as f32 * scale,
+        (origin.1 + top + 4) as f32 * scale,
+        (panel.width() - 16) as f32 * scale,
+        (height - 8) as f32 * scale,
+    ];
+
+    Some((panel, origin, rect))
 }
 
 pub const PRICE_GAP: i32 = 13;
@@ -553,3 +737,6 @@ pub fn learner(entered: &Entered) -> item_tip::Learner {
         live_damage: None,
     }
 }
+
+#[cfg(test)]
+mod tests;

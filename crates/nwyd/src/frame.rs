@@ -26,6 +26,9 @@ pub use world_textures::MaterialUploadStats;
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod timing_tests;
 
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod ui_model_tests;
+
 #[must_use = "a prepared frame must be submitted or explicitly discarded"]
 pub struct PreparedFrame<'a> {
     renderer: &'a mut SceneRenderer,
@@ -190,6 +193,7 @@ pub struct SceneRenderer {
 
 struct UiModels {
     renderer: MeshRenderer,
+    depth: Option<DepthBuffer>,
     textures: Vec<MeshTexture>,
     resident: Option<(u64, usize, usize)>,
     spans: Vec<(u32, std::ops::Range<usize>)>,
@@ -1121,6 +1125,7 @@ impl SceneRenderer {
 
         let models = self.ui_models.get_or_insert_with(|| UiModels {
             renderer: MeshRenderer::new_ui(gpu, self.target_format, self.vendor),
+            depth: None,
             textures: Vec::new(),
             resident: None,
             spans: Vec::new(),
@@ -1226,6 +1231,17 @@ impl SceneRenderer {
     ) {
         self.sprites
             .prepare(gpu, &self.batcher, output_size, &self.textures);
+
+        if let Some(models) = &mut self.ui_models
+            && models.prepared
+            && !models.spans.is_empty()
+            && !models
+                .depth
+                .as_ref()
+                .is_some_and(|depth| depth.fits(output_size.0, output_size.1))
+        {
+            models.depth = Some(DepthBuffer::new(gpu, output_size.0, output_size.1));
+        }
 
         let Some((uniforms, stage1_enabled)) = self.world_frame else {
             return;
@@ -1570,63 +1586,81 @@ impl SceneRenderer {
     }
 
     fn encode_2d(&self, enc: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, has_world: bool) {
-        {
-            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: render::gpu_label("2D pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: if has_world {
-                            wgpu::LoadOp::Load
-                        } else {
-                            wgpu::LoadOp::Clear(if self.world_frame.is_some() {
-                                self.clear
-                            } else {
-                                CLEAR
-                            })
-                        },
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-                multiview_mask: None,
-            });
-
-            if let Some(models) = &self.ui_models
-                && models.prepared
-                && !models.spans.is_empty()
-            {
-                let mut previous = 0;
-
-                for (before, range) in &models.spans {
-                    self.sprites.draw_range(
-                        &mut pass,
-                        &self.batcher,
-                        &self.textures,
-                        previous..*before,
-                    );
-
-                    models
-                        .renderer
-                        .draw_range(&mut pass, &models.textures, range.clone());
-
-                    previous = *before;
-                }
-
-                self.sprites.draw_range(
-                    &mut pass,
-                    &self.batcher,
-                    &self.textures,
-                    previous..self.batcher.quad_count(),
-                );
+        let mut load = if has_world {
+            wgpu::LoadOp::Load
+        } else {
+            wgpu::LoadOp::Clear(if self.world_frame.is_some() {
+                self.clear
             } else {
-                self.sprites.draw(&mut pass, &self.batcher, &self.textures);
+                CLEAR
+            })
+        };
+        let mut previous = 0;
+
+        if let Some(models) = &self.ui_models
+            && models.prepared
+            && !models.spans.is_empty()
+        {
+            let depth = models.depth.as_ref().expect("prepare allocates UI depth");
+
+            for (before, range) in &models.spans {
+                self.encode_sprites(enc, view, load, previous..*before);
+                load = wgpu::LoadOp::Load;
+
+                let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: render::gpu_label("UI model pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view,
+                        depth_slice: None,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load,
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(depth.attachment()),
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                    multiview_mask: None,
+                });
+
+                models
+                    .renderer
+                    .draw_range(&mut pass, &models.textures, range.clone());
+
+                previous = *before;
             }
         }
+
+        self.encode_sprites(enc, view, load, previous..self.batcher.quad_count());
+    }
+
+    fn encode_sprites(
+        &self,
+        enc: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        load: wgpu::LoadOp<wgpu::Color>,
+        range: std::ops::Range<u32>,
+    ) {
+        let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: render::gpu_label("2D pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+            multiview_mask: None,
+        });
+
+        self.sprites
+            .draw_range(&mut pass, &self.batcher, &self.textures, range);
     }
 
     pub fn batch_stats(&self) -> (u32, usize) {

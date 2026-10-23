@@ -3397,6 +3397,8 @@ fn append_overlays(
 
     out.extend(panels.tooltip.frame_draws(captions));
 
+    panels.tooltip.mark_preview(out.len());
+
     for (slot, placed) in panels.msgbox.visible_mut() {
         append_panel(
             out,
