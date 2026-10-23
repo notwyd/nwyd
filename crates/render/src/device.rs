@@ -286,4 +286,14 @@ impl Gpu {
     pub fn is_lost(&self) -> bool {
         self.lost.load(Ordering::Acquire)
     }
+
+    pub fn submit_uploads(&self) {
+        if self.is_lost() {
+            return;
+        }
+
+        self.queue.submit([]);
+
+        let _ = self.device.poll(wgpu::PollType::Poll);
+    }
 }

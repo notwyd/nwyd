@@ -269,3 +269,70 @@ fn available_renderer_selection_and_unavailable_preference_fallback() {
         assert!(!fallback.available_backends().contains(&unavailable));
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+#[ignore = "requires a Vulkan graphics adapter with allocator reporting"]
+fn uploads_without_rendering_release_replaced_textures() {
+    use formats::texture::{MipLevel, PixelFormat, Texture};
+
+    let gpu = block_on(Gpu::open_with_backend(
+        Gpu::instance(),
+        None,
+        Some(RendererBackend::Vulkan),
+    ))
+    .expect("graphics adapter");
+    let validation = gpu.device.push_error_scope(wgpu::ErrorFilter::Validation);
+    let label = "unpresented texture replacement";
+    let texture = Texture {
+        width: 256,
+        height: 256,
+        format: PixelFormat::Rgba8Unorm,
+        mips: vec![MipLevel {
+            width: 256,
+            height: 256,
+            offset: 0,
+            len: 256 * 256 * 4,
+        }],
+        data: vec![127; 256 * 256 * 4],
+        source_len: 256 * 256 * 4,
+    };
+    let allocations = || {
+        gpu.device
+            .generate_allocator_report()
+            .expect("allocator reporting")
+            .allocations
+            .iter()
+            .filter(|allocation| allocation.name == label)
+            .count()
+    };
+    let wait = || {
+        gpu.device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(std::time::Duration::from_secs(10)),
+            })
+            .unwrap();
+    };
+
+    for _ in 0..4 {
+        let mut resident = None;
+        for _ in 0..16 {
+            resident = Some(crate::texture::upload(
+                &gpu,
+                &texture,
+                crate::texture::AlphaPolicy::Stored,
+                label,
+            ));
+        }
+        drop(resident);
+        wait();
+        assert_eq!(allocations(), 16);
+
+        gpu.submit_uploads();
+        wait();
+        assert_eq!(allocations(), 0);
+    }
+
+    assert!(block_on(validation.pop()).is_none());
+}

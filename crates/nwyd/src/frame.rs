@@ -14,6 +14,7 @@ use render::target::{DEPTH_FORMAT, DepthBuffer};
 use render::texture::{self, AlphaPolicy};
 use render::world::{FrameUniforms, TerrainRenderer, TileCache, TileUploadStats};
 use std::collections::HashMap;
+use std::sync::{Arc, Weak};
 use ui::draw::Owner;
 
 mod antialias;
@@ -28,6 +29,9 @@ mod timing_tests;
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod ui_model_tests;
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod ui_texture_tests;
 
 #[must_use = "a prepared frame must be submitted or explicitly discarded"]
 pub struct PreparedFrame<'a> {
@@ -151,6 +155,7 @@ pub struct SceneRenderer {
     sprites: SpriteRenderer,
     batcher: SpriteBatcher<TextureKey>,
     textures: TextureSet<TextureKey>,
+    texture_sources: HashMap<TextureKey, (Weak<formats::texture::Texture>, AlphaPolicy)>,
     ui_models: Option<UiModels>,
     caption_serials: HashMap<(PanelId, Owner, u32), (u64, usize)>,
     caption_owners: HashMap<u64, std::sync::Weak<()>>,
@@ -284,6 +289,7 @@ impl SceneRenderer {
             sprites,
             batcher: SpriteBatcher::new(),
             textures: TextureSet::new(),
+            texture_sources: HashMap::new(),
             ui_models: None,
             caption_serials: HashMap::new(),
             caption_owners: HashMap::new(),
@@ -369,6 +375,8 @@ impl SceneRenderer {
         alpha: AlphaPolicy,
         label: &str,
     ) {
+        self.texture_sources.remove(&key);
+
         let mode = match key {
             TextureKey::Scene(_)
             | TextureKey::EngineCursor(_)
@@ -394,6 +402,29 @@ impl SceneRenderer {
         self.textures.insert(key, bound);
 
         self.uploads += 1;
+    }
+
+    pub fn upload_shared(
+        &mut self,
+        gpu: &Gpu,
+        key: TextureKey,
+        decoded: &Arc<formats::texture::Texture>,
+        alpha: AlphaPolicy,
+        label: &str,
+    ) {
+        let source = Arc::downgrade(decoded);
+
+        if self
+            .texture_sources
+            .get(&key)
+            .is_some_and(|(previous, policy)| previous.ptr_eq(&source) && *policy == alpha)
+            && self.textures.get(&key).is_some()
+        {
+            return;
+        }
+
+        self.upload(gpu, key, decoded, alpha, label);
+        self.texture_sources.insert(key, (source, alpha));
     }
 
     pub fn upload_once(

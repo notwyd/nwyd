@@ -3,6 +3,7 @@ use assets::GameDir;
 use formats::text::Codepage;
 use formats::texture::{self, PixelFormat, Texture};
 use formats::world::ZONE_CELLS;
+use std::sync::Arc;
 
 pub const DYNAMIC_SLOT: u32 = 4;
 
@@ -117,7 +118,7 @@ pub struct Minimap {
     pub zoom: f32,
     pub zone: (u8, u8),
     pub tiles: Vec<Tile>,
-    pub composite: Texture,
+    pub composite: Arc<Texture>,
     pub labels: formats::world::minimap::Minimap,
     pub label_codepage: Codepage,
 }
@@ -135,7 +136,7 @@ impl Minimap {
             zoom: ZOOM_DEFAULT,
             zone,
             tiles,
-            composite,
+            composite: composite.into(),
             labels,
             label_codepage,
         })
@@ -152,7 +153,7 @@ impl Minimap {
 
         self.tiles = tiles;
 
-        self.composite = composite;
+        self.composite = composite.into();
 
         Ok(true)
     }
@@ -171,7 +172,7 @@ impl Minimap {
 
             self.tiles = tiles;
 
-            self.composite = composite;
+            self.composite = composite.into();
 
             return true;
         }
@@ -374,6 +375,51 @@ mod language_tests {
             minimap.labels.labels()[0].name(minimap.label_codepage),
             "Price €"
         );
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn minimap_texture_changes_only_when_a_new_composite_is_ready() {
+        let root = Directory::new();
+        root.write("Lang/EN/minimap.dat", b"128 128 1 0 0 Label\n");
+
+        let mut tile = vec![0; 22];
+        tile[..4].copy_from_slice(b"WT10");
+        tile[6] = 2;
+        tile[16..18].copy_from_slice(&128u16.to_le_bytes());
+        tile[18..20].copy_from_slice(&128u16.to_le_bytes());
+        tile[20] = 32;
+        tile[21] = 0x28;
+        tile.extend([0, 0, 255, 255].repeat(128 * 128));
+        root.write("UI/m0808.wyt", &tile);
+
+        let game = root.game();
+        let mut minimap = Minimap::build(&game, (1, 1), Scale::Full).unwrap();
+        let original = Arc::clone(&minimap.composite);
+
+        assert!(!minimap.recentre(&game, (1, 1)).unwrap());
+        assert!(Arc::ptr_eq(&original, &minimap.composite));
+        assert!(!minimap.recentre_background(&game, (1, 1)));
+        assert!(Arc::ptr_eq(&original, &minimap.composite));
+
+        assert!(minimap.recentre(&game, (8, 8)).unwrap());
+        assert!(!Arc::ptr_eq(&original, &minimap.composite));
+        assert_ne!(original.data, minimap.composite.data);
+
+        let loaded = Arc::clone(&minimap.composite);
+        assert!(!minimap.recentre_background(&game, (20, 20)));
+        assert!(Arc::ptr_eq(&loaded, &minimap.composite));
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !minimap.recentre_background(&game, (20, 20)) {
+            assert!(std::time::Instant::now() < deadline);
+            assert!(Arc::ptr_eq(&loaded, &minimap.composite));
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+
+        assert!(!Arc::ptr_eq(&loaded, &minimap.composite));
+        assert_eq!(original.data, minimap.composite.data);
+        assert!(!minimap.recentre_background(&game, (20, 20)));
     }
 
     #[test]

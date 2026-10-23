@@ -50,7 +50,8 @@ pub(crate) fn background() -> (
                 mips: Vec::new(),
                 data: vec![0; 4],
                 source_len: 0,
-            },
+            }
+            .into(),
         },
     )
 }

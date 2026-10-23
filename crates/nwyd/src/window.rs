@@ -2770,6 +2770,10 @@ impl Client {
 
         if let Some(live) = &self.live {
             live.renderer.finish_upload_frame();
+
+            if self.frames == frames_before {
+                live.gpu.submit_uploads();
+            }
         }
 
         if self.diagnostics.done(self.frames) {

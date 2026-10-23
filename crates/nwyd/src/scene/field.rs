@@ -2612,7 +2612,7 @@ pub fn upload(scene: &FieldScene, gpu: &Gpu, renderer: &mut SceneRenderer) {
     super::minipopup::upload(&scene.minipopup_icons, gpu, renderer);
 
     for (slot, loaded) in &scene.chrome {
-        renderer.upload(
+        renderer.upload_shared(
             gpu,
             TextureKey::Scene(*slot),
             &loaded.texture,
@@ -2631,7 +2631,7 @@ pub fn upload(scene: &FieldScene, gpu: &Gpu, renderer: &mut SceneRenderer) {
         );
     }
 
-    renderer.upload(
+    renderer.upload_shared(
         gpu,
         TextureKey::Scene(minimap::DYNAMIC_SLOT),
         &scene.minimap.composite,

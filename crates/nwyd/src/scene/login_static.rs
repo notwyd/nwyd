@@ -234,7 +234,7 @@ pub struct LoadedTexture {
     pub alpha: AlphaPolicy,
     pub color_key: ColorKey,
     pub keyed_texels: usize,
-    pub texture: Texture,
+    pub texture: std::sync::Arc<Texture>,
 }
 
 #[derive(Debug)]
@@ -493,7 +493,7 @@ pub fn upload(
     renderer: &mut crate::frame::SceneRenderer,
 ) {
     for (slot, loaded) in &scene.textures {
-        renderer.upload(
+        renderer.upload_shared(
             gpu,
             crate::frame::TextureKey::Scene(*slot),
             &loaded.texture,
@@ -633,7 +633,7 @@ pub fn load_texture(
         alpha: AlphaPolicy::for_flag(entry.format_flag),
         color_key,
         keyed_texels,
-        texture: decoded,
+        texture: decoded.into(),
     }))
 }
 
