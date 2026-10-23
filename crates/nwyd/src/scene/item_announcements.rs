@@ -23,7 +23,7 @@ impl Filter {
             };
             let table = strdef::parse(&bytes, Codepage::for_language(language));
             for record in RECORDS {
-                if let Some(template) = Template::new(table.get(record))
+                if let Some(template) = Template::new(record, table.get(record))
                     && !templates.contains(&template)
                 {
                     templates.push(template);
@@ -50,10 +50,11 @@ impl Filter {
 #[derive(PartialEq, Eq)]
 struct Template {
     parts: Vec<String>,
+    optional_npc: bool,
 }
 
 impl Template {
-    fn new(text: &str) -> Option<Self> {
+    fn new(record: usize, text: &str) -> Option<Self> {
         let parts: Vec<_> = text.trim().trim_end_matches('!').split("%s").collect();
         if !(2..=7).contains(&parts.len())
             || parts[1..parts.len() - 1].iter().any(|part| part.is_empty())
@@ -65,6 +66,7 @@ impl Template {
             return None;
         }
         Some(Self {
+            optional_npc: record == 1584 && parts.len() == 4,
             parts: parts.into_iter().map(str::to_owned).collect(),
         })
     }
@@ -77,16 +79,21 @@ impl Template {
         let Some(mut rest) = rest.strip_suffix(self.parts.last().unwrap()) else {
             return false;
         };
-        for literal in &self.parts[1..self.parts.len() - 1] {
+        let literals = &self.parts[1..self.parts.len() - 1];
+        for (index, literal) in literals.iter().enumerate() {
             let Some((at, _)) = rest
                 .match_indices(literal)
                 .find(|(at, _)| !rest[..*at].trim().is_empty())
             else {
-                return false;
+                return self.optional_npc
+                    && index + 1 == literals.len()
+                    && rest
+                        .strip_suffix(literal.trim_end())
+                        .is_some_and(|field| !field.trim().is_empty());
             };
             rest = &rest[at + literal.len()..];
         }
-        !rest.trim().is_empty()
+        self.optional_npc || !rest.trim().is_empty()
     }
 }
 
@@ -149,13 +156,30 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn item_obtained_announcements_allow_a_missing_npc() {
+        let filter = Filter::load(&game());
+        for text in [
+            "Synthetic obtained the item Synthetic Sword at the ",
+            "Synthetic obteve o item Espada Sintética no ",
+        ] {
+            for punctuation in ["", "!", "!!"] {
+                let text = format!("{text}{punctuation}");
+                assert!(filter.matches(&console(&text)), "{text}");
+            }
+        }
+    }
+
+    #[test]
     fn literal_filter_preserves_other_messages_and_player_chat() {
         let filter = Filter::load(&game());
         for text in [
             "Your refinement succeeded",
             "Server maintenance in five minutes",
             "Synthetic obtained the item at the Synthetic NPC!",
-            "Synthetic obtained the item Synthetic Sword at the !",
+            "Synthetic obtained the item  at the !!",
+            " obtained the item Synthetic Sword at the !!",
+            "Synthetic refined an item to +!!",
+            "Synthetic reinforced Synthetic Sword to +!!",
             "obtained the item Synthetic Sword at the Synthetic NPC!",
             "!!120000",
             "!#26120",
@@ -163,17 +187,21 @@ pub(crate) mod tests {
         ] {
             assert!(!filter.matches(&console(text)), "{text}");
         }
-        let text = "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!!";
-        for opcode in [server::CHAT_SAY, server::CHAT_SHOUT, server::CHAT_CHANNEL] {
+        for text in [
+            "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!!",
+            "Synthetic obtained the item Synthetic Sword at the !!",
+        ] {
+            for opcode in [server::CHAT_SAY, server::CHAT_SHOUT, server::CHAT_CHANNEL] {
+                assert!(!filter.matches(&ChatLine {
+                    opcode,
+                    ..console(text)
+                }));
+            }
             assert!(!filter.matches(&ChatLine {
-                opcode,
+                speaker: 37,
                 ..console(text)
             }));
         }
-        assert!(!filter.matches(&ChatLine {
-            speaker: 37,
-            ..console(text)
-        }));
     }
 
     #[test]
@@ -204,9 +232,9 @@ pub(crate) mod tests {
             "%d earned %s",
             "Synthetic reward",
         ] {
-            assert!(Template::new(text).is_none(), "{text}");
+            assert!(Template::new(1584, text).is_none(), "{text}");
         }
-        let template = Template::new("[Reward] %s obtained %s.").unwrap();
+        let template = Template::new(1584, "[Reward] %s obtained %s.").unwrap();
         assert!(template.matches("[Reward] Jogador Sintético obtained Espada Épica."));
         for text in [
             "prefix [Reward] Synthetic obtained Sword.",

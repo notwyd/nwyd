@@ -336,7 +336,7 @@ fn field_item_announcement_filter_preserves_server_clocks_and_other_notices() {
     );
     let line = ChatLine {
         opcode: CHAT_CONSOLE,
-        text: "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!!".into(),
+        text: "Synthetic obtained the item Synthetic Sword at the !!".into(),
         ..Default::default()
     };
     assert!(filter.matches(&line));

@@ -147,7 +147,7 @@ fn plain_server_item_announcements_follow_applied_preferences_and_preserve_login
     login_scene(&mut client).strings = translated(&[(1584, "%s obteve o item %s no %s")], "");
     let line = protocol::server::ChatLine {
         opcode: protocol::server::CHAT_CONSOLE,
-        text: "Synthetic obtained the item Synthetic Sword at the Synthetic NPC!".into(),
+        text: "Synthetic obtained the item Synthetic Sword at the !!".into(),
         ..Default::default()
     };
     client
